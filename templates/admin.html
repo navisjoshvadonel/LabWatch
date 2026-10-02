@@ -669,23 +669,23 @@
           <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="mepco-logo-img">
           <div class="brand-divider"></div>
           <div class="labwatch-titles">
-            <span class="labwatch-title">LabPulse / LabWatch</span>
+            <span class="labwatch-title">LabWatch</span>
             <span class="labwatch-dept">IT Staff Administration &amp; Triage Dashboard</span>
           </div>
         </a>
       </div>
 
       <nav class="campus-nav-tabs">
-        <a href="/admin" class="nav-tab-link active">
-          <span>🛠️ Admin Triage</span>
+        <a href="#triage-section" class="nav-tab-link active">
+          <span>🛠️ Ticket Triage</span>
         </a>
-        <a href="/monitor" class="nav-tab-link">
-          <span>📊 Live PC Monitor</span>
+        <a href="#wol-section" class="nav-tab-link">
+          <span>⚡ WoL Remote Action</span>
         </a>
-        <a href="/report" class="nav-tab-link">
-          <span>📝 Student Report Portal</span>
+        <a href="#resolved-section" class="nav-tab-link">
+          <span>✅ Resolved Log</span>
         </a>
-        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">
+        <a href="/logout" class="nav-tab-link" style="color:#dc2626; font-weight:700;">
           <span>🚪 Logout</span>
         </a>
       </nav>
@@ -772,7 +772,7 @@
     <!-- ===================================================================== -->
     <!-- SECTION 1: PENDING TICKETS TABLE (OLDEST FIRST)                        -->
     <!-- ===================================================================== -->
-    <section class="dashboard-section">
+    <section class="dashboard-section" id="triage-section">
       <div class="section-header">
         <div>
           <h2 class="section-title">
@@ -883,7 +883,7 @@
     <!-- ===================================================================== -->
     <!-- SECTION 2: THE "REMOTE RESTART" BUTTON FOR OFFLINE PCs (C WoL)        -->
     <!-- ===================================================================== -->
-    <section class="dashboard-section">
+    <section class="dashboard-section" id="wol-section">
       <div class="section-header">
         <div>
           <h2 class="section-title">
@@ -940,7 +940,7 @@
     <!-- ===================================================================== -->
     <!-- SECTION 3: RESOLVED TICKETS — GREEN BADGE LOG & EMAIL AUDIT          -->
     <!-- ===================================================================== -->
-    <section class="dashboard-section">
+    <section class="dashboard-section" id="resolved-section">
       <div class="section-header">
         <div>
           <h2 class="section-title">
