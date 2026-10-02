@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Issue Reporting Form | Mepco Schlenk Engineering College</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --mepco-blue: #0066b3;
+      --mepco-blue-hover: #00508c;
+      --mepco-blue-dark: #003e6d;
+      --mepco-navy: #0b2545;
+      --mepco-cyan: #0099da;
+      --mepco-cyan-light: #e0f2fe;
+      --mepco-gold: #d97706;
+      --mepco-gold-hover: #b45309;
+
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --border-color: #e2e8f0;
+      --border-input: #cbd5e1;
+
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+
+      --badge-online-bg: #dcfce7;
+      --badge-online-text: #15803d;
+      --badge-offline-bg: #ffe4e6;
+      --badge-offline-text: #be123c;
+      --badge-pending-bg: #fef3c7;
+      --badge-pending-text: #b45309;
+
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --transition: all 0.15s ease-in-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      font-size: 0.875rem;
+    }
+
+    /* Institutional Strip */
+    .mepco-top-bar {
+      background-color: var(--mepco-navy);
+      color: #ffffff;
+      padding: 0.35rem 1.5rem;
+      font-size: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .top-bar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .top-bar-contact {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      color: #cbd5e1;
+    }
+    .top-bar-accreditation {
+      color: #93c5fd;
+      font-weight: 600;
+    }
+
+    /* Main Navigation Header */
+    .mepco-main-header {
+      background-color: #ffffff;
+      border-bottom: 2px solid var(--mepco-blue);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.65rem 1.5rem;
+    }
+    .main-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .header-left-group {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .mepco-brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      text-decoration: none;
+    }
+    .mepco-logo-img {
+      height: 44px;
+      width: auto;
+      max-width: 240px;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-divider {
+      width: 1px;
+      height: 34px;
+      background-color: #cbd5e1;
+    }
+    .labwatch-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .labwatch-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--mepco-blue);
+      line-height: 1.2;
+    }
+    .labwatch-dept {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Navigation Links */
+    .campus-nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background-color: var(--bg-canvas);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+    .nav-tab-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .nav-tab-link:hover {
+      color: var(--mepco-blue);
+      background-color: rgba(0, 102, 179, 0.06);
+    }
+    .nav-tab-link.active {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 102, 179, 0.25);
+    }
+
+    /* Container */
+    .page-container {
+      max-width: 900px;
+      margin: 1.5rem auto 3rem;
+      padding: 1.5rem 1.5rem;
+    }
+
+    /* Breadcrumb / Phase Banner */
+    .phase-badge-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .phase-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--mepco-cyan-light);
+      color: var(--mepco-blue-dark);
+      border: 1px solid #bae6fd;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* Form Card */
+    .form-card {
+      background-color: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .card-header {
+      background-color: #ffffff;
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--mepco-navy);
+      margin-bottom: 0.25rem;
+    }
+    .card-subtitle {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .card-body {
+      padding: 1.75rem;
+    }
+
+    /* Form Layout Grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-group-full {
+      grid-column: 1 / -1;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .form-label .required-dot {
+      color: #e11d48;
+      margin-left: 2px;
+    }
+    .form-label-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: normal;
+    }
+
+    .form-select, .form-input, .form-textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      color: var(--text-main);
+      background-color: #ffffff;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-md);
+      transition: var(--transition);
+      outline: none;
+    }
+    .form-select:focus, .form-input:focus, .form-textarea:focus {
+      border-color: var(--mepco-blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 179, 0.15);
+    }
+    .form-textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    /* Workstation Helper Info Box */
+    .workstation-preview-box {
+      margin-top: 0.35rem;
+      padding: 0.5rem 0.75rem;
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pc-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .pc-status-online {
+      background-color: var(--badge-online-bg);
+      color: var(--badge-online-text);
+    }
+    .pc-status-offline {
+      background-color: var(--badge-offline-bg);
+      color: var(--badge-offline-text);
+    }
+
+    /* Submit Button Area */
+    .card-footer {
+      padding: 1.25rem 1.75rem;
+      background-color: #f8fafc;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .btn-submit-request {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+      border: none;
+      padding: 0.65rem 1.5rem;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+      box-shadow: 0 2px 4px rgba(0, 102, 179, 0.2);
+    }
+    .btn-submit-request:hover {
+      background-color: var(--mepco-blue-hover);
+      box-shadow: 0 4px 8px rgba(0, 102, 179, 0.3);
+      transform: translateY(-1px);
+    }
+    .btn-submit-request:active {
+      transform: translateY(0);
+    }
+
+    /* Alerts */
+    .alert-success {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 1.25rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .alert-error {
+      background-color: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #9f1239;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .ticket-success-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      background-color: #dcfce7;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      color: #15803d;
+    }
+    .success-actions {
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .btn-link-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .btn-link-primary {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+    }
+    .btn-link-primary:hover {
+      background-color: var(--mepco-blue-hover);
+    }
+    .btn-link-secondary {
+      background-color: #e2e8f0;
+      color: var(--text-main);
+    }
+    .btn-link-secondary:hover {
+      background-color: #cbd5e1;
+    }
+
+    /* Footer */
+    .page-footer {
+      max-width: 1200px;
+      margin: 3rem auto 2rem;
+      padding: 0 1.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      padding-top: 1.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .card-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn-submit-request {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Institutional Top Bar -->
+  <div class="mepco-top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-contact">
+        <span>🏫 <strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
+        <span>📍 Aids Department</span>
+      </div>
+      <div class="top-bar-accreditation" style="display:flex; align-items:center; gap:0.85rem;">
+        <span style="background:rgba(255,255,255,.15); padding:0.25rem 0.65rem; border-radius:4px; color:#e0f2fe; font-size:0.75rem;">
+          🎓 Active Session: <strong>{{ logged_user['full_name'] if logged_user else 'Student' }}</strong> ({{ (logged_user['role'] if logged_user else 'Student')|title }})
+        </span>
+        <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.22rem 0.65rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.3rem;">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main Navigation Header -->
+  <header class="mepco-main-header">
+    <div class="main-header-inner">
+      <div class="header-left-group">
+        <a href="/report" class="mepco-brand-lockup">
+          <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="mepco-logo-img">
+          <div class="brand-divider"></div>
+          <div class="labwatch-titles">
+            <span class="labwatch-title">LabPulse / LabWatch</span>
+            <span class="labwatch-dept">Laboratory PC Fault Reporting Portal &bull; Student Tier</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="campus-nav-tabs">
+        <a href="/report" class="nav-tab-link active">
+          <span>📝 Report Fault</span>
+        </a>
+        <a href="javascript:void(0)" onclick="promptTicketSearch()" class="nav-tab-link">
+          <span>🔍 Track Ticket Status</span>
+        </a>
+        {% if logged_user and logged_user['role'] in ['admin', 'technician'] %}
+        <a href="/admin" class="nav-tab-link">
+          <span>🛠️ Admin Dashboard</span>
+        </a>
+        <a href="/monitor" class="nav-tab-link">
+          <span>📊 Live Monitor</span>
+        </a>
+        {% endif %}
+        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">
+          <span>🚪 Logout</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 3. Form Content Container -->
+  <main class="page-container">
+
+    <div class="phase-badge-strip">
+      <span class="phase-pill">
+        <span>Phase 1 (Input)</span> • Client Tier
+      </span>
+      <span style="font-size: 0.75rem; color: var(--text-muted);">
+        Connected to Flask Application Tier & SQLite WAL Engine
+      </span>
+    </div>
+
+    <!-- Error Alert Banner -->
+    {% if error_message %}
+    <div class="alert-error">
+      <span style="font-size: 1.25rem;">⚠️</span>
+      <div>
+        <strong>Submission Failed:</strong> {{ error_message }}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Success Confirmation Banner -->
+    {% if success_ticket %}
+    <div class="alert-success">
+      <span style="font-size: 1.5rem;">✅</span>
+      <div>
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.25rem;">
+          Fault Request Submitted Successfully!
+        </h4>
+        <p style="font-size: 0.85rem; line-height: 1.4;">
+          Your request has been logged as Ticket <span class="ticket-success-id">{{ success_ticket.ticket_number }}</span>
+          for <strong>{{ success_ticket.pc_number }}</strong> in <strong>{{ success_ticket.lab_name }}</strong>.
+          Initial status: <strong>Pending</strong> (queued oldest-first for IT triage).
+        </p>
+        <div class="success-actions">
+          <a href="/admin" class="btn-link-action btn-link-primary">
+            <span>🛠️ View on Admin Dashboard &rarr;</span>
+          </a>
+          <a href="/report" class="btn-link-action btn-link-secondary">
+            <span>➕ Submit Another Request</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- User Issue Reporting Form Card -->
+    <div class="form-card">
+      <div class="card-header">
+        <h1 class="card-title">User Issue Reporting Form</h1>
+        <p class="card-subtitle">
+          Submit laboratory computer hardware, software, or network connectivity faults to the IT support staff.
+        </p>
+      </div>
+
+      <!-- Step 4 Core: Form with POST request to Python Server -->
+      <form action="/report" method="POST" id="issue-reporting-form">
+        <div class="card-body">
+          <div class="form-grid">
+
+            <!-- 1. Lab Room Dropdown -->
+            <div class="form-group">
+              <label for="lab_id" class="form-label">
+                <span>Lab Room <span class="required-dot">*</span></span>
+                <span class="form-label-hint">6 Department Labs</span>
+              </label>
+              <select name="lab_id" id="lab_id" class="form-select" required onchange="onLabChange()">
+                <option value="" disabled selected>-- Select Laboratory Room --</option>
+                {% for lab in labs %}
+                <option value="{{ lab.id }}">
+                  {{ lab.lab_name }} ({{ lab.location }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- 2. PC Number Dropdown (Dynamic based on Lab) -->
+            <div class="form-group">
+              <label for="pc_number" class="form-label">
+                <span>Workstation / PC Number <span class="required-dot">*</span></span>
+                <span class="form-label-hint" id="pc-count-hint">Select Lab First</span>
+              </label>
+              <select name="pc_number" id="pc_number" class="form-select" required onchange="onPCChange()" disabled>
+                <option value="" disabled selected>-- First select a Lab Room above --</option>
+              </select>
+              <div class="workstation-preview-box" id="pc-preview-box" style="display: none;">
+                <span id="pc-preview-text">Workstation details...</span>
+                <span id="pc-preview-status" class="pc-status-pill">Online</span>
+              </div>
+            </div>
+
+            <!-- 3. Issue Category Dropdown -->
+            <div class="form-group">
+              <label for="issue_category" class="form-label">
+                <span>Issue Category <span class="required-dot">*</span></span>
+              </label>
+              <select name="issue_category" id="issue_category" class="form-select" required>
+                <option value="" disabled selected>-- Select Issue Classification --</option>
+                <option value="Operating System">Operating System / Frozen / Kernel Panic</option>
+                <option value="Network Connectivity">Network Connectivity (Ping Timeout / Unreachable)</option>
+                <option value="Hardware Fault">Hardware Fault (RAM, Motherboard, Power Supply)</option>
+                <option value="Peripheral / Display">Peripheral / Display (Blank Monitor, Keyboard/Mouse)</option>
+                <option value="Software Crash">Software Crash (Compilation Toolchain, Drivers)</option>
+                <option value="Power Issue">Power Issue (System Won't Power On, Unstable)</option>
+                <option value="Other">Other Operational Fault</option>
+              </select>
+            </div>
+
+            <!-- Priority Selector -->
+            <div class="form-group">
+              <label for="priority" class="form-label">
+                <span>Urgency / Priority</span>
+              </label>
+              <select name="priority" id="priority" class="form-select">
+                <option value="Medium" selected>Medium (Standard Lab Session)</option>
+                <option value="Critical">Critical (Mid-Term Exam / Frozen PC)</option>
+                <option value="High">High (Impacting Practical Class)</option>
+                <option value="Low">Low (Minor Glitch)</option>
+              </select>
+            </div>
+
+            <!-- Reporter Identification -->
+            <div class="form-group form-group-full">
+              <label for="reporter_name" class="form-label">
+                <span>Reporter Identification (Verified Session)</span>
+              </label>
+              <input type="text" name="reporter_name" id="reporter_name" class="form-input"
+                     value="{{ logged_user['full_name'] if logged_user else 'Student Reporter' }} ({{ logged_user['username'] if logged_user else 'student' }})" readonly style="background-color:#f1f5f9; cursor:not-allowed;" required>
+            </div>
+
+            <!-- Issue Description -->
+            <div class="form-group form-group-full">
+              <label for="description" class="form-label">
+                <span>Fault Description & Observations</span>
+                <span class="form-label-hint">Provide error messages or symptom details</span>
+              </label>
+              <textarea name="description" id="description" class="form-textarea"
+                        placeholder="e.g. PC-30 completely froze during deep learning model compilation. System does not respond to keyboard or mouse. Needs remote restart."
+                        required></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Submit Button Footer -->
+        <div class="card-footer">
+          <div style="font-size: 0.75rem; color: var(--text-secondary);">
+            🔒 Data Validation active: Server confirms PC matches designated lab before insertion.
+          </div>
+          <button type="submit" class="btn-submit-request" id="submit-request-btn">
+            <span>🚀 Submit Request</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <footer class="page-footer">
+    <p>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      Developed by venki and navi &bull; LabWatch Laboratory PC Fault Reporting System
+    </p>
+  </footer>
+
+  <!-- Script to dynamically update PC dropdown when Lab changes -->
+  <script>
+    function promptTicketSearch() {
+      const tck = prompt("Enter your Ticket ID to check resolution status (e.g. TCK-101):");
+      if (tck && tck.trim()) {
+        window.location.href = "/status/" + encodeURIComponent(tck.trim());
+      }
+    }
+    // Embedded JSON data of computers grouped by lab_id from Python
+    const computersByLab = {{ computers_by_lab_json | safe }};
+
+    function onLabChange() {
+      const labSelect = document.getElementById("lab_id");
+      const pcSelect = document.getElementById("pc_number");
+      const pcHint = document.getElementById("pc-count-hint");
+      const previewBox = document.getElementById("pc-preview-box");
+      const selectedLabId = labSelect.value;
+
+      pcSelect.innerHTML = '<option value="" disabled selected>-- Select Workstation PC --</option>';
+      previewBox.style.display = "none";
+
+      if (!selectedLabId || !computersByLab[selectedLabId]) {
+        pcSelect.disabled = true;
+        pcHint.textContent = "Select Lab First";
+        return;
+      }
+
+      const pcs = computersByLab[selectedLabId];
+      pcHint.textContent = `${pcs.length} PCs assigned to room`;
+
+      pcs.forEach(pc => {
+        const option = document.createElement("option");
+        option.value = pc.pc_number;
+        const statusTag = pc.status === "Online" ? "Online" : `⚠️ ${pc.status.toUpperCase()}`;
+        option.textContent = `${pc.pc_number} (${pc.ip_address}) [${statusTag}]`;
+        option.dataset.ip = pc.ip_address;
+        option.dataset.mac = pc.mac_address;
+        option.dataset.status = pc.status;
+        pcSelect.appendChild(option);
+      });
+
+      pcSelect.disabled = false;
+    }
+
+    function onPCChange() {
+      const pcSelect = document.getElementById("pc_number");
+      const previewBox = document.getElementById("pc-preview-box");
+      const previewText = document.getElementById("pc-preview-text");
+      const previewStatus = document.getElementById("pc-preview-status");
+
+      const selectedOption = pcSelect.options[pcSelect.selectedIndex];
+      if (!selectedOption || !selectedOption.dataset.ip) {
+        previewBox.style.display = "none";
+        return;
+      }
+
+      const ip = selectedOption.dataset.ip;
+      const mac = selectedOption.dataset.mac;
+      const status = selectedOption.dataset.status;
+
+      previewText.innerHTML = `Workstation <strong>${selectedOption.value}</strong> • IP: <code>${ip}</code> • MAC: <code>${mac}</code>`;
+      previewStatus.textContent = status;
+      previewStatus.className = "pc-status-pill " + (status === "Online" ? "pc-status-online" : "pc-status-offline");
+      previewBox.style.display = "flex";
+    }
+
+    // Auto-select first lab on page load if coming from query parameter
+    window.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const prefillLab = urlParams.get("lab_id");
+      const prefillPc = urlParams.get("pc");
+      const prefillCategory = urlParams.get("category");
+
+      if (prefillLab) {
+        const labSelect = document.getElementById("lab_id");
+        labSelect.value = prefillLab;
+        onLabChange();
+
+        if (prefillPc) {
+          const pcSelect = document.getElementById("pc_number");
+          pcSelect.value = prefillPc;
+          onPCChange();
+        }
+      }
+
+      if (prefillCategory) {
+        const catSelect = document.getElementById("issue_category");
+        catSelect.value = prefillCategory;
+      }
+    });
+  </script>
+</body>
+</html>

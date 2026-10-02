@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard & IT Staff Triage | Mepco Schlenk Engineering College</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --mepco-blue: #0066b3;
+      --mepco-blue-hover: #00508c;
+      --mepco-blue-dark: #003e6d;
+      --mepco-navy: #0b2545;
+      --mepco-cyan: #0099da;
+      --mepco-cyan-light: #e0f2fe;
+      --mepco-gold: #d97706;
+      --mepco-gold-hover: #b45309;
+
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-alt: #f1f5f9;
+      --border-color: #e2e8f0;
+      --border-card: #e2e8f0;
+
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+
+      --badge-online-bg: #dcfce7;
+      --badge-online-text: #15803d;
+      --badge-online-border: #86efac;
+
+      --badge-offline-bg: #ffe4e6;
+      --badge-offline-text: #be123c;
+      --badge-offline-border: #fca5a5;
+
+      --badge-pending-bg: #fef3c7;
+      --badge-pending-text: #b45309;
+      --badge-pending-border: #fde68a;
+
+      --badge-resolved-bg: #e0e7ff;
+      --badge-resolved-text: #3730a3;
+      --badge-resolved-border: #c7d2fe;
+
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --transition: all 0.15s ease-in-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      font-size: 0.875rem;
+    }
+
+    /* Top Strip */
+    .mepco-top-bar {
+      background-color: var(--mepco-navy);
+      color: #ffffff;
+      padding: 0.35rem 1.5rem;
+      font-size: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .top-bar-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .top-bar-contact {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      color: #cbd5e1;
+    }
+    .top-bar-accreditation {
+      color: #93c5fd;
+      font-weight: 600;
+    }
+    .admin-badge-strip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: rgba(255, 255, 255, 0.15);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+
+    /* Main Navigation Header */
+    .mepco-main-header {
+      background-color: #ffffff;
+      border-bottom: 2px solid var(--mepco-blue);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.65rem 1.5rem;
+    }
+    .main-header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .header-left-group {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .mepco-brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      text-decoration: none;
+    }
+    .mepco-logo-img {
+      height: 44px;
+      width: auto;
+      max-width: 240px;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-divider {
+      width: 1px;
+      height: 34px;
+      background-color: #cbd5e1;
+    }
+    .labwatch-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .labwatch-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--mepco-blue);
+      line-height: 1.2;
+    }
+    .labwatch-dept {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Navigation Links */
+    .campus-nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background-color: var(--bg-canvas);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+    .nav-tab-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .nav-tab-link:hover {
+      color: var(--mepco-blue);
+      background-color: rgba(0, 102, 179, 0.06);
+    }
+    .nav-tab-link.active {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 102, 179, 0.25);
+    }
+
+    /* Container */
+    .page-container {
+      max-width: 1440px;
+      margin: 1.5rem auto 3rem;
+      padding: 0 1.5rem;
+    }
+
+    /* Phase 3 Banner */
+    .dashboard-top-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .heading-title-group h1 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--mepco-navy);
+      letter-spacing: -0.01em;
+    }
+    .heading-title-group p {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .phase-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--mepco-cyan-light);
+      color: var(--mepco-blue-dark);
+      border: 1px solid #bae6fd;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* KPI Summary Cards */
+    .kpi-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .kpi-card.highlight-warning {
+      border-left: 4px solid var(--mepco-gold);
+    }
+    .kpi-card.highlight-danger {
+      border-left: 4px solid #e11d48;
+    }
+    .kpi-card.highlight-info {
+      border-left: 4px solid var(--mepco-blue);
+    }
+    .kpi-card.highlight-success {
+      border-left: 4px solid #16a34a;
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kpi-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+    .kpi-desc {
+      font-size: 0.71875rem;
+      color: var(--text-muted);
+    }
+
+    /* Banner for C Execution Output */
+    .c-output-banner {
+      background-color: #0f172a;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-md);
+    }
+    .c-banner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 0.5rem;
+    }
+    .c-banner-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .c-console-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: #4ade80;
+      background-color: #020617;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-sm);
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    /* Notification message banner */
+    .alert-banner-info {
+      background-color: #e0f2fe;
+      border: 1px solid #bae6fd;
+      color: #0369a1;
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Section Cards */
+    .dashboard-section {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.75rem;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 1rem 1.5rem;
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--mepco-navy);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .badge-counter {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .badge-counter-warning {
+      background-color: var(--mepco-gold);
+      color: #ffffff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    /* Tables */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+    .admin-table th {
+      background-color: #f8fafc;
+      color: var(--text-secondary);
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--border-color);
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .admin-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+      color: var(--text-main);
+    }
+    .admin-table tr:hover {
+      background-color: #f8fafc;
+    }
+    .admin-table tr.highlight-oldest {
+      background-color: #fffbeb;
+    }
+
+    /* Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .status-pending {
+      background-color: var(--badge-pending-bg);
+      color: var(--badge-pending-text);
+      border: 1px solid var(--badge-pending-border);
+    }
+    .status-online {
+      background-color: var(--badge-online-bg);
+      color: var(--badge-online-text);
+      border: 1px solid var(--badge-online-border);
+    }
+    .status-offline {
+      background-color: var(--badge-offline-bg);
+      color: var(--badge-offline-text);
+      border: 1px solid var(--badge-offline-border);
+    }
+    .status-resolved {
+      background-color: var(--badge-resolved-bg);
+      color: var(--badge-resolved-text);
+      border: 1px solid var(--badge-resolved-border);
+    }
+
+    .priority-badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .priority-critical {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #f87171;
+    }
+    .priority-high {
+      background-color: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fb923c;
+    }
+    .priority-medium {
+      background-color: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .ticket-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--mepco-navy);
+      background-color: #f1f5f9;
+      padding: 0.15rem 0.4rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .age-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.71875rem;
+      font-weight: 700;
+      color: #b45309;
+      background-color: #fef3c7;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Buttons */
+    .actions-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+    .btn-resolve {
+      background-color: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: var(--transition);
+      box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2);
+    }
+    .btn-resolve:hover {
+      background-color: #15803d;
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
+    }
+
+    /* Special Remote Restart Button (WoL) */
+    .btn-remote-restart {
+      background-color: #e11d48;
+      color: #ffffff;
+      border: none;
+      padding: 0.45rem 0.95rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78125rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: var(--transition);
+      box-shadow: 0 1px 3px rgba(225, 29, 72, 0.25);
+    }
+    .btn-remote-restart:hover {
+      background-color: #be123c;
+      box-shadow: 0 3px 6px rgba(225, 29, 72, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn-restart-sm {
+      background-color: #f43f5e;
+      color: #ffffff;
+      border: none;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.71875rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: var(--transition);
+    }
+    .btn-restart-sm:hover {
+      background-color: #e11d48;
+    }
+
+    /* Offline PC Grid Cards */
+    .offline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+    }
+    .offline-card {
+      background-color: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.85rem;
+    }
+    .offline-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .offline-pc-id {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #9f1239;
+    }
+    .offline-lab-name {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .offline-meta {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-footer {
+      max-width: 1440px;
+      margin: 3rem auto 2rem;
+      padding: 0 1.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      padding-top: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-cards-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 600px) {
+      .kpi-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Institutional Top Bar -->
+  <div class="mepco-top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-contact">
+        <span>🏫 <strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
+        <span>📍 Aids Department</span>
+      </div>
+      <div class="top-bar-accreditation" style="display:flex; align-items:center; gap:0.85rem;">
+        <span class="admin-badge-strip">
+          🛡️ IT Staff Active Session: <strong>{{ logged_user['full_name'] if logged_user else 'IT Administrator' }}</strong> ({{ (logged_user['role'] if logged_user else 'Admin')|title }})
+        </span>
+        <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.22rem 0.65rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.3rem;">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main Navigation Header -->
+  <header class="mepco-main-header">
+    <div class="main-header-inner">
+      <div class="header-left-group">
+        <a href="/admin" class="mepco-brand-lockup">
+          <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="mepco-logo-img">
+          <div class="brand-divider"></div>
+          <div class="labwatch-titles">
+            <span class="labwatch-title">LabPulse / LabWatch</span>
+            <span class="labwatch-dept">IT Staff Administration &amp; Triage Dashboard</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="campus-nav-tabs">
+        <a href="/admin" class="nav-tab-link active">
+          <span>🛠️ Admin Triage</span>
+        </a>
+        <a href="/monitor" class="nav-tab-link">
+          <span>📊 Live PC Monitor</span>
+        </a>
+        <a href="/report" class="nav-tab-link">
+          <span>📝 Student Report Portal</span>
+        </a>
+        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">
+          <span>🚪 Logout</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 3. Main Dashboard Body -->
+  <main class="page-container">
+
+    <!-- Phase 3 Top Heading -->
+    <div class="dashboard-top-heading">
+      <div class="heading-title-group">
+        <h1>IT Staff Administration & Ticket Triage Dashboard</h1>
+        <p>Phase 3 (Action) — Real-time fault resolution queue and C protocol Wake-on-LAN remote execution</p>
+      </div>
+      <div>
+        <span class="phase-pill">
+          <span>Phase 3 (Action)</span> • IT Staff Tier
+        </span>
+      </div>
+    </div>
+
+    <!-- Notification Alert Message if redirected -->
+    {% if status_msg %}
+    <div class="alert-banner-info">
+      <span style="font-size: 1.25rem;">ℹ️</span>
+      <div>{{ status_msg }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Live C Program Output Terminal Banner (When Remote Restart was clicked) -->
+    {% if restarted_pc and c_output %}
+    <div class="c-output-banner">
+      <div class="c-banner-header">
+        <div class="c-banner-title">
+          <span>⚡ C Language Protocol Executed (Wake-on-LAN Magic Packet)</span>
+          <span style="background-color: #0369a1; color: #ffffff; padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">Target: {{ restarted_pc }}</span>
+        </div>
+        <span style="font-size: 0.72rem; color: #94a3b8;">Executed via <code>bin/labpulse_monitor.exe --restart {{ restarted_pc }}</code></span>
+      </div>
+      <div class="c-console-box">{{ c_output }}</div>
+    </div>
+    {% endif %}
+
+    <!-- 4 Summary KPI Metric Cards -->
+    <div class="kpi-cards-grid">
+      <div class="kpi-card highlight-warning">
+        <div class="kpi-label">
+          <span>Pending Tickets</span>
+          <span>⏳ FIFO Queue</span>
+        </div>
+        <div class="kpi-value">{{ stats.pending_count }}</div>
+        <div class="kpi-desc">Sorted strictly oldest-first for priority triage</div>
+      </div>
+
+      <div class="kpi-card highlight-danger">
+        <div class="kpi-label">
+          <span>Offline PCs</span>
+          <span>⚡ Action Required</span>
+        </div>
+        <div class="kpi-value">{{ stats.offline_count }}</div>
+        <div class="kpi-desc">ICMP Echo ping unresponsive (WoL available)</div>
+      </div>
+
+      <div class="kpi-card highlight-info">
+        <div class="kpi-label">
+          <span>Total Monitored PCs</span>
+          <span>🖥️ 6 AI/Data Labs</span>
+        </div>
+        <div class="kpi-value">{{ stats.total_computers }}</div>
+        <div class="kpi-desc">140 Workstations across CSE AI & Data Labs</div>
+      </div>
+
+      <div class="kpi-card highlight-success">
+        <div class="kpi-label">
+          <span>Resolved Tickets</span>
+          <span>✅ Closed</span>
+        </div>
+        <div class="kpi-value">{{ stats.resolved_count }}</div>
+        <div class="kpi-desc">Verified operational by IT staff</div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 1: PENDING TICKETS TABLE (OLDEST FIRST)                        -->
+    <!-- ===================================================================== -->
+    <section class="dashboard-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span>📋 Pending Fault Tickets Queue</span>
+            <span class="badge-counter-warning">{{ pending_tickets|length }} Pending</span>
+          </h2>
+          <p class="section-subtitle">
+            Query: <code>SELECT * FROM TICKETS WHERE status = 'Pending' ORDER BY reported_at ASC</code> (Oldest First)
+          </p>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); background: #fef3c7; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #fde68a;">
+          ⏰ <strong>Queue Rule:</strong> Older tickets appear at top to guarantee First-In, First-Out (FIFO) service
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        {% if pending_tickets %}
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Ticket #</th>
+              <th>Reported Time (Oldest First)</th>
+              <th>Laboratory</th>
+              <th>Workstation</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Reporter</th>
+              <th>Description</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in pending_tickets %}
+            <tr {% if loop.first %}class="highlight-oldest"{% endif %}>
+              <td>
+                <span class="ticket-code">{{ ticket.ticket_number }}</span>
+                {% if loop.first %}
+                <div style="font-size: 0.65rem; color: #b45309; font-weight: 700; margin-top: 2px;">⚡ HIGHEST AGE PRIORITY</div>
+                {% endif %}
+              </td>
+              <td>
+                <div style="font-weight: 600;">{{ ticket.reported_at }}</div>
+                <span class="age-badge">Position #{{ loop.index }}</span>
+              </td>
+              <td>
+                <div style="font-weight: 600;">{{ ticket.lab_name }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ticket.lab_location }}</div>
+              </td>
+              <td>
+                <div style="font-weight: 700; color: var(--mepco-navy);">{{ ticket.pc_number }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ticket.ip_address }}</div>
+                {% if ticket.pc_status == 'Offline' or ticket.pc_status == 'Faulty' %}
+                <span class="status-badge status-offline" style="margin-top: 2px;">Offline</span>
+                {% else %}
+                <span class="status-badge status-online" style="margin-top: 2px;">Online</span>
+                {% endif %}
+              </td>
+              <td>{{ ticket.issue_category }}</td>
+              <td>
+                {% if ticket.priority == 'Critical' %}
+                <span class="priority-badge priority-critical">Critical</span>
+                {% elif ticket.priority == 'High' %}
+                <span class="priority-badge priority-high">High</span>
+                {% else %}
+                <span class="priority-badge priority-medium">{{ ticket.priority }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="font-weight: 600;">{{ ticket.reporter_name }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ticket.reporter_email }}</div>
+              </td>
+              <td style="max-width: 240px; font-size: 0.78125rem;">
+                {{ ticket.description }}
+              </td>
+              <td style="text-align: right;">
+                <div class="actions-cell" style="justify-content: flex-end;">
+                  <!-- Mark as Resolved Button (Step 4 Requirement) -->
+                  <form method="POST" action="/admin/resolve/{{ ticket.id }}" style="display: inline;">
+                    <button type="submit" class="btn-resolve" title="Verify fault resolved and update database">
+                      <span>✓ Mark as Resolved</span>
+                    </button>
+                  </form>
+
+                  <!-- Remote Restart Button if PC is offline -->
+                  {% if ticket.pc_status == 'Offline' or ticket.pc_status == 'Faulty' %}
+                  <form method="POST" action="/admin/restart/{{ ticket.pc_number }}" style="display: inline;">
+                    <button type="submit" class="btn-restart-sm" title="Execute C WoL program to reboot PC">
+                      <span>⚡ Restart</span>
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🎉</div>
+          <h3>All Caught Up! No Pending Tickets</h3>
+          <p>Every reported laboratory PC fault has been resolved.</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 2: THE "REMOTE RESTART" BUTTON FOR OFFLINE PCs (C WoL)        -->
+    <!-- ===================================================================== -->
+    <section class="dashboard-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span>⚡ Offline Workstations & Remote Action Center (C Socket Wake-on-LAN)</span>
+            <span class="badge-counter" style="background-color: #e11d48;">{{ offline_pcs|length }} Offline</span>
+          </h2>
+          <p class="section-subtitle">
+            Click "Remote Restart" to execute compiled C program (<code>bin/labpulse_monitor.exe --restart &lt;PC_ID&gt;</code>) sending UDP Magic Packet to MAC
+          </p>
+        </div>
+        <div style="font-size: 0.75rem; color: #9f1239; background: #ffe4e6; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #fca5a5;">
+          📡 <strong>Protocol:</strong> UDP Socket <code>IPPROTO_UDP</code> broadcast to <code>255.255.255.255:9</code>
+        </div>
+      </div>
+
+      {% if offline_pcs %}
+      <div class="offline-grid">
+        {% for pc in offline_pcs %}
+        <div class="offline-card">
+          <div class="offline-card-top">
+            <div>
+              <div class="offline-pc-id">{{ pc.pc_number }}</div>
+              <div class="offline-lab-name">🏛️ {{ pc.lab_name }}</div>
+            </div>
+            <span class="status-badge status-offline">Offline</span>
+          </div>
+
+          <div class="offline-meta">
+            <div>IP Address: <strong>{{ pc.ip_address }}</strong></div>
+            <div>MAC Address: <strong>{{ pc.mac_address }}</strong></div>
+            <div>Specs: <span style="color: var(--text-secondary);">{{ pc.specs }}</span></div>
+            <div>Last Echo: <span style="color: #9f1239;">{{ pc.last_heartbeat or 'Ping timed out' }}</span></div>
+          </div>
+
+          <!-- Step 4 Core: The "Remote Restart" Button executing C program -->
+          <form method="POST" action="/admin/restart/{{ pc.pc_number }}">
+            <button type="submit" class="btn-remote-restart" style="width: 100%; justify-content: center;"
+                    id="btn-restart-{{ pc.pc_number }}">
+              <span>⚡ Remote Restart (C WoL)</span>
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">🟢</div>
+        <h3>All 140 Laboratory Workstations Are Online!</h3>
+        <p>C ICMP Echo Pinger reports active responses from all machines.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 3: RESOLVED TICKETS — GREEN BADGE LOG & EMAIL AUDIT          -->
+    <!-- ===================================================================== -->
+    <section class="dashboard-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span>&#x2705; Resolved Tickets &#8212; Green Badge &amp; Email Notification Log</span>
+            <span class="badge-counter" style="background-color: #16a34a;">{{ resolved_tickets|length }} Resolved</span>
+          </h2>
+          <p class="section-subtitle">
+            Step 5 (Phase 4 Resolution &amp; Feedback): Database archived, green badges active,
+            <code>smtplib</code> 'PC Fixed' emails dispatched to reporters
+          </p>
+        </div>
+        <div style="font-size: 0.75rem; color: #15803d; background: #f0fdf4; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #bbf7d0;">
+          &#128231; <strong>SMTP:</strong> Gmail STARTTLS port 587 &bull;
+          <span id="smtp-mode-badge" style="font-weight:700;">checking&hellip;</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        {% if resolved_tickets %}
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Ticket #</th>
+              <th>Laboratory</th>
+              <th>Workstation</th>
+              <th>Category</th>
+              <th>Reporter</th>
+              <th>Reported At</th>
+              <th>&#x2705; Resolved At</th>
+              <th>Status</th>
+              <th>Reporter Self-Check</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in resolved_tickets %}
+            <tr>
+              <td><span class="ticket-code">{{ ticket.ticket_number }}</span></td>
+              <td>{{ ticket.lab_name }}</td>
+              <td><strong>{{ ticket.pc_number }}</strong></td>
+              <td>{{ ticket.issue_category }}</td>
+              <td>{{ ticket.reporter_name }}</td>
+              <td>{{ ticket.reported_at }}</td>
+              <td><span style="color: #16a34a; font-weight: 600;">{{ ticket.resolved_at or '&#8212;' }}</span></td>
+              <td>
+                <span class="status-badge status-resolved">&#x2705; Resolved</span>
+              </td>
+              <td>
+                <a href="/status/{{ ticket.ticket_number }}"
+                   target="_blank"
+                   style="font-size:0.71875rem; font-weight:600; color: var(--mepco-blue);
+                          text-decoration: none; display:inline-flex; align-items:center; gap:0.3rem;">
+                  &#128269; View Status &#8594;
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state" style="padding: 2rem;">
+          <p>No resolved tickets yet. Resolve a pending ticket above to see the green badge and email log here.</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 4: STEP 5 — LIVE EMAIL NOTIFICATION ACTIVITY LOG              -->
+    <!-- ===================================================================== -->
+    <section class="dashboard-section" id="notification-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span>&#128231; Step 5 &#8212; Email Notification Dispatch Log</span>
+            <span class="badge-counter" id="email-log-counter" style="background-color: #0099da;">loading&hellip;</span>
+          </h2>
+          <p class="section-subtitle">
+            Python <code>smtplib.SMTP(host, 587)</code> &rarr; <code>starttls()</code>
+            &rarr; <code>sendmail()</code> &#8212; 'PC Fixed' emails auto-dispatched on resolution
+          </p>
+        </div>
+        <button onclick="refreshNotifications()" style="background:var(--mepco-blue);color:#fff;border:none;
+          padding:0.35rem 0.75rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+          &#128260; Refresh
+        </button>
+      </div>
+
+      <div style="padding: 0.75rem 1.5rem; background: #f8fafc; border-bottom: 1px solid var(--border-color);
+                  font-size: 0.75rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; color: var(--text-secondary);">
+        <span>&#128225; <strong>SMTP Host:</strong> <code>smtp.gmail.com:587</code> (STARTTLS RFC 3207)</span>
+        <span>&#9993; <strong>Sender:</strong> <code>labpulse.mepco@gmail.com</code></span>
+        <span>&#128274; <strong>Auth:</strong> App Password (env: <code>LABPULSE_SMTP_PASSWORD</code>)</span>
+        <span id="smtp-live-status" style="font-weight:700; color: #b45309;">&#x23F3; loading&hellip;</span>
+      </div>
+
+      <div id="email-log-body" style="padding: 1.25rem 1.5rem;">
+        <p style="color: var(--text-muted); font-size: 0.8125rem;">Loading notification log&hellip;</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="page-footer">
+    <p>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      Developed by venki and navi &bull; LabWatch IT Staff Administration Portal
+    </p>
+  </footer>
+
+  <script>
+    function renderEmailEntry(e) {
+      const statusIcon = e.sent ? '&#x2705;' : '&#x274C;';
+      const modeTag = e.demo_mode
+        ? '<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">DEMO MODE</span>'
+        : '<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">LIVE SMTP</span>';
+      const noteText = e.note
+        ? `<div style="color:#64748b;font-size:0.75rem;margin-top:0.3rem;">${e.note}</div>`
+        : (e.error ? `<div style="color:#e11d48;font-size:0.75rem;margin-top:0.3rem;">&#9888; ${e.error}</div>` : '');
+      return `
+      <div style="border:1px solid #e2e8f0;border-radius:6px;padding:0.85rem 1rem;margin-bottom:0.75rem;background:#fff;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+          <div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 7px;border-radius:4px;">${e.ticket_number}</span>
+            &nbsp;${statusIcon}&nbsp;
+            <span style="font-size:0.8125rem;font-weight:600;color:#0f172a;">${e.pc_number} &#8212; ${e.lab_name}</span>
+            &nbsp;${modeTag}
+          </div>
+          <div style="font-size:0.71875rem;color:#64748b;">${e.timestamp}</div>
+        </div>
+        <div style="margin-top:0.4rem;font-size:0.78125rem;color:#475569;">
+          <strong>To:</strong> ${e.to_email}&nbsp;(${e.reporter}) &nbsp;|&nbsp;
+          <strong>Subject:</strong> ${e.subject}
+        </div>
+        ${noteText}
+      </div>`;
+    }
+
+    function refreshNotifications() {
+      fetch('/api/notifications/status?limit=20')
+        .then(r => r.json())
+        .then(data => {
+          const counter = document.getElementById('email-log-counter');
+          if (counter) counter.textContent = `${data.notifications_sent} Dispatched`;
+
+          const smtpBadge = document.getElementById('smtp-mode-badge');
+          const smtpLive  = document.getElementById('smtp-live-status');
+          if (data.smtp_demo_mode) {
+            if (smtpBadge) { smtpBadge.textContent = 'Demo Mode (offline safe)'; smtpBadge.style.color = '#b45309'; }
+            if (smtpLive)  { smtpLive.textContent = '&#9888; Demo Mode &#8212; set LABPULSE_SMTP_PASSWORD to enable live dispatch'; smtpLive.style.color = '#b45309'; }
+          } else {
+            if (smtpBadge) { smtpBadge.textContent = 'Live SMTP Active'; smtpBadge.style.color = '#15803d'; }
+            if (smtpLive)  { smtpLive.textContent = '&#x2705; Live SMTP Active (Gmail STARTTLS)'; smtpLive.style.color = '#15803d'; }
+          }
+
+          const body = document.getElementById('email-log-body');
+          if (!body) return;
+          if (!data.recent_emails || data.recent_emails.length === 0) {
+            body.innerHTML = '<p style="color:#64748b;font-size:0.8125rem;">No emails dispatched yet. Resolve a pending ticket to trigger the first notification.</p>';
+          } else {
+            body.innerHTML = data.recent_emails.map(renderEmailEntry).join('');
+          }
+        })
+        .catch(err => {
+          const body = document.getElementById('email-log-body');
+          if (body) body.innerHTML = `<p style="color:#e11d48;font-size:0.8125rem;">Error fetching notifications: ${err}</p>`;
+        });
+    }
+
+    refreshNotifications();
+    setInterval(refreshNotifications, 10000);
+  </script>
+
+</body>
+</html>

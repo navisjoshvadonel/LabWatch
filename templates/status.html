@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Status | LabPulse — Mepco Schlenk Engineering College</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --mepco-blue: #0066b3;
+      --mepco-blue-hover: #00508c;
+      --mepco-blue-dark: #003e6d;
+      --mepco-navy: #0b2545;
+      --mepco-cyan-light: #e0f2fe;
+      --mepco-gold: #d97706;
+
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --border-color: #e2e8f0;
+      --border-input: #cbd5e1;
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -2px rgba(0,0,0,.04);
+      --transition: all 0.15s ease-in-out;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* ── Top Bar ── */
+    .mepco-top-bar {
+      background: var(--mepco-navy);
+      color: #fff;
+      padding: 0.35rem 1.5rem;
+      font-size: 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .top-bar-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .top-bar-contact { display: flex; gap: 1.25rem; color: #cbd5e1; }
+    .top-bar-accreditation { color: #93c5fd; font-weight: 600; }
+
+    /* ── Main Header ── */
+    .mepco-main-header {
+      background: #fff; border-bottom: 2px solid var(--mepco-blue);
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+      position: sticky; top: 0; z-index: 100;
+      padding: 0.65rem 1.5rem;
+    }
+    .main-header-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1.5rem; flex-wrap: wrap;
+    }
+    .mepco-brand-lockup {
+      display: flex; align-items: center; gap: 0.85rem; text-decoration: none;
+    }
+    .mepco-logo-img { height: 44px; width: auto; max-width: 240px; object-fit: contain; }
+    .brand-divider { width: 1px; height: 34px; background: #cbd5e1; }
+    .labwatch-title  { font-size: 1.15rem; font-weight: 800; color: var(--mepco-blue); line-height: 1.2; }
+    .labwatch-dept   { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+
+    .campus-nav-tabs {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: var(--bg-canvas); padding: 0.25rem;
+      border-radius: var(--radius-md); border: 1px solid var(--border-color);
+    }
+    .nav-tab-link {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.4rem 0.85rem; font-size: 0.8125rem; font-weight: 600;
+      color: var(--text-secondary); text-decoration: none;
+      border-radius: var(--radius-sm); transition: var(--transition);
+    }
+    .nav-tab-link:hover { color: var(--mepco-blue); background: rgba(0,102,179,.06); }
+    .nav-tab-link.active { background: var(--mepco-blue); color: #fff; box-shadow: 0 1px 3px rgba(0,102,179,.25); }
+
+    /* ── Page Container ── */
+    .page-container { max-width: 760px; margin: 2rem auto 4rem; padding: 0 1.5rem; }
+
+    /* ── Auto-refresh bar ── */
+    .auto-refresh-strip {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #f1f5f9; border: 1px solid var(--border-color);
+      border-radius: var(--radius-md); padding: 0.5rem 0.85rem;
+      margin-bottom: 1.25rem; font-size: 0.75rem; color: var(--text-secondary);
+      flex-wrap: wrap; gap: 0.5rem;
+    }
+    .refresh-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
+                   display: inline-block; margin-right: 0.3rem;
+                   animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Status Card ── */
+    .status-card {
+      background: #fff; border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color); box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    /* Resolved header banner */
+    .status-header-resolved {
+      background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+      padding: 2rem 2rem 1.5rem;
+      display: flex; align-items: flex-start; gap: 1.25rem;
+    }
+    .status-header-pending {
+      background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+      padding: 2rem 2rem 1.5rem;
+      display: flex; align-items: flex-start; gap: 1.25rem;
+    }
+    .status-header-error {
+      background: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
+      padding: 2rem 2rem 1.5rem;
+      display: flex; align-items: flex-start; gap: 1.25rem;
+    }
+    .status-icon { font-size: 2.5rem; line-height: 1; }
+    .status-header-text h1 { font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem; }
+    .status-header-text p { font-size: 0.875rem; color: rgba(255,255,255,.85); }
+
+    /* Body */
+    .status-card-body { padding: 1.75rem 2rem; }
+
+    /* Field rows */
+    .field-grid {
+      display: grid; grid-template-columns: 180px 1fr;
+      gap: 0.75rem 1rem; margin-bottom: 1.5rem;
+    }
+    .field-label {
+      font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      display: flex; align-items: center;
+    }
+    .field-value { font-size: 0.875rem; color: var(--text-main); display: flex; align-items: center; }
+    .field-value strong { font-weight: 700; }
+
+    /* Badge styles */
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
+    }
+    .badge-resolved { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-pending  { background: #fef3c7; color: #b45309;  border: 1px solid #fde68a; }
+    .badge-progress { background: #dbeafe; color: #1d4ed8;  border: 1px solid #93c3fd; }
+    .badge-critical { background: #fee2e2; color: #991b1b;  border: 1px solid #f87171; }
+    .badge-online   { background: #dcfce7; color: #15803d;  border: 1px solid #86efac; }
+    .badge-offline  { background: #ffe4e6; color: #be123c;  border: 1px solid #fca5a5; }
+
+    .mono { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.8125rem; }
+
+    /* Resolution notes box */
+    .resolution-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: var(--radius-md); padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .resolution-box-title {
+      font-size: 0.75rem; font-weight: 700; color: #15803d;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;
+    }
+    .resolution-box-notes { font-size: 0.875rem; color: #166534; line-height: 1.6; }
+
+    /* Email dispatch notice */
+    .email-notice {
+      background: var(--mepco-cyan-light); border: 1px solid #bae6fd;
+      border-radius: var(--radius-md); padding: 0.85rem 1.1rem;
+      margin-bottom: 1.5rem; font-size: 0.8125rem; color: #0369a1;
+      display: flex; align-items: flex-start; gap: 0.65rem; line-height: 1.55;
+    }
+
+    /* Search again form */
+    .search-form {
+      border-top: 1px solid var(--border-color);
+      padding: 1.25rem 2rem; background: #f8fafc;
+      display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1; min-width: 180px; padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-input); border-radius: var(--radius-md);
+      font-family: inherit; font-size: 0.875rem; outline: none;
+      transition: var(--transition);
+    }
+    .search-input:focus { border-color: var(--mepco-blue); box-shadow: 0 0 0 3px rgba(0,102,179,.15); }
+    .btn-search {
+      background: var(--mepco-blue); color: #fff; border: none;
+      padding: 0.5rem 1.1rem; border-radius: var(--radius-md);
+      font-size: 0.8125rem; font-weight: 700; cursor: pointer;
+      transition: var(--transition); white-space: nowrap;
+    }
+    .btn-search:hover { background: var(--mepco-blue-hover); }
+
+    /* Action links */
+    .action-links { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; }
+    .btn-action {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8125rem; font-weight: 600; text-decoration: none;
+      padding: 0.4rem 0.85rem; border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .btn-primary   { background: var(--mepco-blue); color: #fff; }
+    .btn-primary:hover { background: var(--mepco-blue-hover); }
+    .btn-secondary { background: #e2e8f0; color: var(--text-main); }
+    .btn-secondary:hover { background: #cbd5e1; }
+
+    /* Error / not-found */
+    .not-found-card {
+      background: #fff; border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden;
+    }
+
+    /* Footer */
+    .page-footer {
+      max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem;
+      text-align: center; font-size: 0.75rem; color: var(--text-muted);
+      border-top: 1px solid var(--border-color); padding-top: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .field-grid { grid-template-columns: 1fr; gap: 0.35rem; }
+      .field-label { text-transform: none; font-size: 0.7rem; }
+      .status-card-body { padding: 1.25rem; }
+      .search-form { flex-direction: column; padding: 1rem; }
+      .btn-search { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Institutional Top Bar -->
+  <div class="mepco-top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-contact">
+        <span>🏫 <strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
+        <span>📍 Aids Department</span>
+      </div>
+      <div class="top-bar-accreditation" style="display:flex; align-items:center; gap:0.85rem;">
+        <span style="background:rgba(255,255,255,.15); padding:0.25rem 0.65rem; border-radius:4px; color:#e0f2fe; font-size:0.75rem;">
+          👤 Active Session: <strong>{{ logged_user['full_name'] if logged_user else 'User' }}</strong> ({{ (logged_user['role'] if logged_user else 'User')|title }})
+        </span>
+        <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.22rem 0.65rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.3rem;">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="mepco-main-header">
+    <div class="main-header-inner">
+      <a href="/report" class="mepco-brand-lockup">
+        <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="mepco-logo-img">
+        <div class="brand-divider"></div>
+        <div>
+          <div class="labwatch-title">LabPulse / LabWatch</div>
+          <div class="labwatch-dept">Workstation Fault Ticket Resolution Status</div>
+        </div>
+      </a>
+      <nav class="campus-nav-tabs">
+        <a href="/report" class="nav-tab-link">📝 Report Fault</a>
+        {% if logged_user and logged_user['role'] in ['admin', 'technician'] %}
+        <a href="/admin" class="nav-tab-link">🛠️ Admin Dashboard</a>
+        <a href="/monitor" class="nav-tab-link">📊 Live Monitor</a>
+        {% endif %}
+        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">🚪 Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page Body -->
+  <main class="page-container">
+
+    {% if error %}
+    <!-- ── Ticket Not Found ── -->
+    <div class="not-found-card">
+      <div class="status-header-error">
+        <div class="status-icon">🔍</div>
+        <div class="status-header-text">
+          <h1>Ticket Not Found</h1>
+          <p>No record of "{{ ticket_number }}" in the LabPulse database.</p>
+        </div>
+      </div>
+      <div class="status-card-body">
+        <p style="color: var(--text-secondary); margin-bottom: 1.25rem;">
+          {{ error }} Please double-check the ticket number (e.g., <code class="mono">TCK-104</code>)
+          from your submission confirmation or re-submit a fault report.
+        </p>
+        <div class="action-links">
+          <a href="/report" class="btn-action btn-primary">📝 Submit New Report</a>
+          <a href="/"       class="btn-action btn-secondary">📊 Live Monitor</a>
+        </div>
+      </div>
+      <div class="search-form">
+        <span style="font-size:0.75rem; color: var(--text-muted); font-weight:600;">Check another ticket:</span>
+        <form action="" method="GET" onsubmit="goToTicket(event)" style="display:flex;gap:.65rem;flex:1;">
+          <input class="search-input" id="search-ticket-id" type="text"
+                 placeholder="e.g. TCK-104" maxlength="12" autocomplete="off">
+          <button type="submit" class="btn-search">🔎 Search</button>
+        </form>
+      </div>
+    </div>
+
+    {% else %}
+
+    <!-- ── Auto-Refresh Bar ── -->
+    <div class="auto-refresh-strip" id="refresh-strip">
+      <span><span class="refresh-dot"></span> Live status tracking — refreshes every 15 seconds</span>
+      <span id="refresh-countdown" style="font-weight:600; color: var(--mepco-blue);">Next: 15s</span>
+    </div>
+
+    <!-- ── Status Card ── -->
+    <div class="status-card">
+
+      {% if ticket.status == 'Resolved' or ticket.status == 'Closed' %}
+      <!-- GREEN RESOLVED HEADER BANNER -->
+      <div class="status-header-resolved">
+        <div class="status-icon">✅</div>
+        <div class="status-header-text">
+          <h1>Issue Resolved — PC Back Online!</h1>
+          <p>
+            Your fault report for <strong>{{ ticket.pc_number }}</strong> in
+            <strong>{{ ticket.lab_name }}</strong> has been fully resolved by IT Support Staff.
+            A 'PC Fixed' email notification was dispatched to your registered email address.
+          </p>
+        </div>
+      </div>
+
+      {% elif ticket.status == 'In Progress' %}
+      <!-- AMBER IN PROGRESS HEADER -->
+      <div class="status-header-pending">
+        <div class="status-icon">🔧</div>
+        <div class="status-header-text">
+          <h1>Technician Assigned — In Progress</h1>
+          <p>
+            Your fault report for <strong>{{ ticket.pc_number }}</strong> in
+            <strong>{{ ticket.lab_name }}</strong> is being actively worked on by IT Support Staff.
+          </p>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- YELLOW PENDING HEADER -->
+      <div class="status-header-pending">
+        <div class="status-icon">⏳</div>
+        <div class="status-header-text">
+          <h1>Report Received — Awaiting Technician</h1>
+          <p>
+            Your fault report for <strong>{{ ticket.pc_number }}</strong> in
+            <strong>{{ ticket.lab_name }}</strong> is queued for triage.
+            IT Support processes tickets in the order they were received.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Card Body -->
+      <div class="status-card-body">
+
+        <!-- Status Badge -->
+        <div style="margin-bottom: 1.25rem;">
+          {% if ticket.status == 'Resolved' or ticket.status == 'Closed' %}
+          <span class="badge badge-resolved" style="font-size:0.875rem; padding: 0.35rem 0.85rem;">
+            ✅ {{ ticket.status }} — Green Badge Active
+          </span>
+          {% elif ticket.status == 'In Progress' %}
+          <span class="badge badge-progress" style="font-size:0.875rem; padding: 0.35rem 0.85rem;">
+            🔧 {{ ticket.status }}
+          </span>
+          {% else %}
+          <span class="badge badge-pending" style="font-size:0.875rem; padding: 0.35rem 0.85rem;">
+            ⏳ {{ ticket.status }}
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Ticket Details Grid -->
+        <div class="field-grid">
+          <div class="field-label">Ticket Number</div>
+          <div class="field-value"><span class="mono">{{ ticket.ticket_number }}</span></div>
+
+          <div class="field-label">Workstation</div>
+          <div class="field-value">
+            <strong>{{ ticket.pc_number }}</strong>&nbsp;
+            ({{ ticket.ip_address }})&nbsp;
+            {% if ticket.pc_status == 'Online' %}
+            <span class="badge badge-online">Online</span>
+            {% else %}
+            <span class="badge badge-offline">{{ ticket.pc_status }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field-label">Laboratory</div>
+          <div class="field-value">{{ ticket.lab_name }} &nbsp;({{ ticket.lab_location }})</div>
+
+          <div class="field-label">Issue Category</div>
+          <div class="field-value">{{ ticket.issue_category }}</div>
+
+          <div class="field-label">Description</div>
+          <div class="field-value" style="flex-direction:column; align-items:flex-start;">
+            <span>{{ ticket.description }}</span>
+          </div>
+
+          <div class="field-label">Priority</div>
+          <div class="field-value">
+            {% if ticket.priority == 'Critical' %}
+            <span class="badge badge-critical">Critical</span>
+            {% else %}
+            <span class="badge badge-pending">{{ ticket.priority }}</span>
+            {% endif %}
+          </div>
+
+          <div class="field-label">Reported At</div>
+          <div class="field-value">{{ ticket.reported_at }}</div>
+
+          <div class="field-label">Reporter</div>
+          <div class="field-value">{{ ticket.reporter_name }} &nbsp;({{ ticket.reporter_email }})</div>
+
+          {% if ticket.resolved_at %}
+          <div class="field-label">✅ Resolved At</div>
+          <div class="field-value" style="color:#15803d; font-weight:600;">
+            {{ ticket.resolved_at }}
+          </div>
+          {% endif %}
+        </div>
+
+        {% if ticket.status == 'Resolved' or ticket.status == 'Closed' %}
+
+        <!-- Resolution Notes Box (Green) -->
+        {% if ticket.resolution_notes %}
+        <div class="resolution-box">
+          <div class="resolution-box-title">
+            <span>🛠️</span> IT Technician Resolution Notes
+          </div>
+          <div class="resolution-box-notes">{{ ticket.resolution_notes }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Email Notification Confirmation -->
+        <div class="email-notice">
+          <span style="font-size:1.1rem;">📧</span>
+          <div>
+            <strong>Email Notification Dispatched:</strong> A detailed 'PC Fixed' notification email
+            was automatically sent to <strong>{{ ticket.reporter_email }}</strong> via Python
+            <code>smtplib</code> (STARTTLS / Gmail SMTP port 587) when this ticket was resolved.
+            Check your inbox.
+          </div>
+        </div>
+
+        <div class="action-links">
+          <a href="/report" class="btn-action btn-primary">📝 Report Another Issue</a>
+          <a href="/" class="btn-action btn-secondary">📊 Live Monitor</a>
+        </div>
+
+        {% else %}
+
+        <p style="color:var(--text-secondary); font-size:0.8125rem; margin-bottom:1rem;">
+          This page auto-refreshes every 15 seconds. Once IT Staff marks this ticket as resolved,
+          a green <strong>✅ Resolved</strong> badge will appear here and a 'PC Fixed' email
+          notification will be sent automatically to <strong>{{ ticket.reporter_email }}</strong>.
+        </p>
+
+        <div class="action-links">
+          {% if logged_user and logged_user['role'] in ['admin', 'technician'] %}
+          <a href="/admin" class="btn-action btn-primary">🛠️ IT Admin Dashboard</a>
+          {% endif %}
+          <a href="/report" class="btn-action btn-secondary">📝 Submit Another Report</a>
+        </div>
+
+        {% endif %}
+
+      </div>
+
+      <!-- Search Bar Footer -->
+      <div class="search-form">
+        <span style="font-size:0.75rem; color: var(--text-muted); font-weight:600;">Check another ticket:</span>
+        <form action="" method="GET" onsubmit="goToTicket(event)" style="display:flex;gap:.65rem;flex:1;">
+          <input class="search-input" id="search-ticket-id" type="text"
+                 placeholder="e.g. TCK-104" maxlength="12" autocomplete="off">
+          <button type="submit" class="btn-search">🔎 Search</button>
+        </form>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </main>
+
+  <footer class="page-footer">
+    <p>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      Developed by venki and navi &bull; LabWatch Fault Monitoring System
+    </p>
+  </footer>
+
+  <script>
+    // ── Navigate to another ticket ──────────────────────────────────────────
+    function goToTicket(e) {
+      e.preventDefault();
+      const val = (document.getElementById("search-ticket-id").value || "").trim().toUpperCase();
+      if (val) window.location.href = "/status/" + encodeURIComponent(val);
+    }
+
+    // ── Auto-refresh countdown (polls every 15 s for green badge update) ───
+    {% if ticket and (ticket.status == 'Pending' or ticket.status == 'In Progress') %}
+    let countdown = 15;
+    const countEl = document.getElementById("refresh-countdown");
+    const timer = setInterval(() => {
+      countdown--;
+      if (countEl) countEl.textContent = "Next: " + countdown + "s";
+      if (countdown <= 0) {
+        // Poll /api/notifications/status to check if this ticket has been resolved
+        fetch("/api/notifications/status?limit=50")
+          .then(r => r.json())
+          .then(data => {
+            const resolved = (data.recently_resolved || []).find(
+              t => t.ticket_number === "{{ ticket.ticket_number }}"
+            );
+            if (resolved) {
+              // Ticket just resolved — reload to show green badge
+              window.location.reload();
+            } else {
+              countdown = 15;
+            }
+          })
+          .catch(() => { countdown = 15; });
+      }
+    }, 1000);
+    {% endif %}
+  </script>
+</body>
+</html>

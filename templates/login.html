@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabWatch Sign In | Mepco Schlenk Engineering College</title>
+  <meta name="description" content="LabWatch — Laboratory PC Fault Reporting & Monitoring System login portal for students and IT staff of Mepco Schlenk Engineering College, Sivakasi.">
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── CSS Custom Properties (Mepco Brand Palette) ───────────────────────── */
+    :root {
+      --mepco-blue:      #0066b3;
+      --mepco-blue-dark: #004f8c;
+      --mepco-navy:      #0b2545;
+      --mepco-navy-deep: #071a35;
+      --mepco-cyan:      #0099da;
+      --mepco-gold:      #d97706;
+      --mepco-gold-lt:   #f59e0b;
+
+      /* Student portal */
+      --student-accent:  #0066b3;
+      --student-glow:    rgba(0,102,179,.18);
+      --student-badge:   #e0f0ff;
+
+      /* Admin portal */
+      --admin-accent:    #0b2545;
+      --admin-alt:       #d97706;
+      --admin-glow:      rgba(217,119,6,.18);
+      --admin-badge:     #fef3c7;
+
+      --bg-page:    #ffffff;
+      --bg-card:    #ffffff;
+      --text-main:  #0f172a;
+      --text-sub:   #475569;
+      --text-muted: #94a3b8;
+      --border:     #dde3ec;
+      --radius:     10px;
+      --shadow-card: 0 10px 40px rgba(11,37,69,.13), 0 2px 8px rgba(0,0,0,.05);
+      --transition: all .22s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-size: 0.875rem;
+      overflow-x: hidden;
+    }
+
+    /* ── Page Layout ─────────────────────────────────────────────────────────── */
+    .page-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Institutional Header ────────────────────────────────────────────────── */
+    .inst-header {
+      background: var(--mepco-navy);
+      padding: 0;
+    }
+    .inst-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.7rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      flex-wrap: wrap;
+    }
+    .inst-logo {
+      height: 52px;
+      width: auto;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .inst-text { flex: 1; }
+    .inst-name {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+    .inst-sub {
+      font-size: 0.72rem;
+      color: #93c5fd;
+      font-weight: 500;
+      margin-top: 0.15rem;
+    }
+    .inst-badges {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .inst-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      letter-spacing: 0.03em;
+      border: 1px solid rgba(255,255,255,.2);
+      color: #e2e8f0;
+    }
+    .badge-naac { background: rgba(22,163,74,.25); }
+    .badge-nba  { background: rgba(217,119,6,.25); }
+    .badge-anna { background: rgba(99,102,241,.25); }
+
+    /* ── Accent bar below header ─────────────────────────────────────────────── */
+    .accent-bar {
+      height: 4px;
+      background: linear-gradient(90deg,
+        var(--mepco-blue) 0%,
+        var(--mepco-cyan) 50%,
+        var(--mepco-gold) 100%);
+    }
+
+    /* ── Main body (Two-column layout) ───────────────────────────────────────── */
+    .main-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .portal-layout {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.95fr;
+      gap: 2.5rem;
+      align-items: center;
+    }
+
+    /* ── Left Column: Exact Institutional Vision & Mission Ovals ─────────────── */
+    .vision-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 2.2rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mepco-oval-card {
+      background: #1688ca;
+      border-radius: 95px;
+      width: 100%;
+      max-width: 420px;
+      padding: 2.2rem 2.2rem;
+      text-align: center;
+      box-shadow: 0 10px 28px rgba(22, 136, 202, 0.22);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+      cursor: default;
+    }
+
+    /* ── Smooth Floating Animation ─────────────────────────────────────────── */
+    @keyframes floatCard1 {
+      0%, 100% {
+        transform: translateY(0px);
+        box-shadow: 0 10px 28px rgba(22, 136, 202, 0.22);
+      }
+      50% {
+        transform: translateY(-12px);
+        box-shadow: 0 22px 40px rgba(22, 136, 202, 0.34);
+      }
+    }
+
+    @keyframes floatCard2 {
+      0%, 100% {
+        transform: translateY(0px);
+        box-shadow: 0 10px 28px rgba(22, 136, 202, 0.22);
+      }
+      50% {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 36px rgba(22, 136, 202, 0.32);
+      }
+    }
+
+    .mepco-oval-card.card-float-1 {
+      animation: floatCard1 5.4s ease-in-out infinite;
+    }
+
+    .mepco-oval-card.card-float-2 {
+      animation: floatCard2 6s ease-in-out infinite 1.2s;
+    }
+
+    .mepco-oval-card:hover {
+      animation-play-state: paused;
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 24px 46px rgba(22, 136, 202, 0.38);
+    }
+
+    .mepco-oval-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0b2545;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.85rem;
+    }
+
+    .mepco-oval-desc {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.05rem;
+      line-height: 1.48;
+      color: #ffffff;
+      font-weight: 400;
+    }
+
+    /* ── Right Column: Login Panel ───────────────────────────────────────────── */
+    .login-panel {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .login-card {
+      width: 100%;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    /* Portal switcher tabs */
+    .portal-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .portal-tab {
+      padding: 1rem 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: #f1f5f9;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      letter-spacing: 0.01em;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      position: relative;
+    }
+    .portal-tab::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: transparent;
+      transition: var(--transition);
+    }
+    .portal-tab.active[data-portal="student"] {
+      background: #fff;
+      color: var(--student-accent);
+    }
+    .portal-tab.active[data-portal="student"]::after {
+      background: var(--student-accent);
+    }
+    .portal-tab.active[data-portal="admin"] {
+      background: #fff;
+      color: var(--admin-alt);
+    }
+    .portal-tab.active[data-portal="admin"]::after {
+      background: var(--admin-alt);
+    }
+    .tab-icon { font-size: 1rem; }
+
+    /* Card body */
+    .card-body { padding: 1.75rem 2rem 2rem; }
+
+    /* Portal heading */
+    .portal-heading-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .portal-avatar {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .portal-avatar.student { background: var(--student-badge); }
+    .portal-avatar.admin   { background: var(--admin-badge); }
+    .portal-title  { font-size: 1.05rem; font-weight: 800; color: var(--text-main); line-height: 1.2; }
+    .portal-subtitle { font-size: 0.75rem; color: var(--text-sub); margin-top: 0.2rem; }
+
+    /* Error banner */
+    .error-banner {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.78125rem;
+      color: #991b1b;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .error-banner:empty { display: none; }
+
+    /* Success banner */
+    .success-banner {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.78125rem;
+      color: #166534;
+      display: none;
+    }
+
+    /* Form fields */
+    .field-group { margin-bottom: 1.15rem; }
+    .field-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.02em;
+    }
+    .field-input-wrap {
+      position: relative;
+    }
+    .field-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.875rem;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    .field-input {
+      width: 100%;
+      padding: 0.65rem 0.75rem 0.65rem 2.25rem;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      color: var(--text-main);
+      background: #f8fafc;
+      outline: none;
+      transition: var(--transition);
+    }
+    .field-input::placeholder { color: var(--text-muted); }
+    .field-input:focus {
+      border-color: var(--mepco-blue);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(0,102,179,.12);
+    }
+    .admin-active .field-input:focus {
+      border-color: var(--admin-alt);
+      box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+    }
+
+    /* Submit button */
+    .btn-login {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      letter-spacing: 0.01em;
+      position: relative;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: var(--transition);
+    }
+    .btn-login:hover::before { background: rgba(255,255,255,.12); }
+    .btn-login:active { transform: translateY(1px); }
+
+    .btn-login.student-btn {
+      background: linear-gradient(135deg, var(--mepco-blue) 0%, #0080d8 100%);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0,102,179,.3);
+    }
+    .btn-login.admin-btn {
+      background: linear-gradient(135deg, var(--mepco-navy) 0%, #163060 100%);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(11,37,69,.35);
+    }
+
+    /* ── Developer Tag Card (Venki & Navi - AIDS Dept) ─────────────────────── */
+    .developer-credit-tag {
+      margin-top: 1.25rem;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      max-width: 440px;
+    }
+    .credit-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid var(--mepco-gold);
+      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      box-shadow: 0 4px 12px rgba(11,37,69,.07);
+      width: 100%;
+      transition: var(--transition);
+    }
+    .credit-pill:hover {
+      box-shadow: 0 6px 16px rgba(11,37,69,.12);
+      border-color: #94a3b8;
+    }
+    .credit-avatar {
+      font-size: 1.4rem;
+      background: #fef3c7;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #fde68a;
+      flex-shrink: 0;
+    }
+    .credit-meta {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+    .credit-line1 {
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: var(--mepco-navy);
+      letter-spacing: -0.01em;
+    }
+    .credit-line2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--mepco-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.1rem;
+    }
+
+    /* ── Page Footer ─────────────────────────────────────────────────────────── */
+    .page-footer {
+      background: var(--mepco-navy-deep);
+      color: rgba(255,255,255,.55);
+      text-align: center;
+      font-size: 0.72rem;
+      padding: 0.85rem 1.5rem;
+      line-height: 1.6;
+    }
+
+    .btn-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Header divider ──────────────────────────────────────────────────────── */
+    .header-divider {
+      width: 1px;
+      height: 38px;
+      background: rgba(255,255,255,0.25);
+      margin: 0 0.25rem;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .portal-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .vision-panel {
+        order: 2;
+      }
+      .login-panel {
+        order: 1;
+      }
+      .header-divider {
+        display: none;
+      }
+    }
+    @media (max-width: 480px) {
+      .card-body { padding: 1.25rem 1.25rem 1.5rem; }
+      .portal-tab { font-size: 0.75rem; padding: 0.75rem 0.5rem; }
+      .motto-phrase { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-shell">
+
+  <!-- ── Institutional Header: Logo on Left, System Title on Right (No Duplicate College Name) ── -->
+  <header class="inst-header">
+    <div class="inst-header-inner">
+      <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="inst-logo">
+      <div class="header-divider"></div>
+      <div class="inst-text">
+        <div class="inst-name" style="font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em;">LabWatch</div>
+        <div class="inst-sub" style="color: #93c5fd; font-size: 0.78rem; font-weight: 600;">
+          Laboratory PC Fault Reporting &amp; Monitoring System &bull; AIDS Department
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="accent-bar"></div>
+
+  <!-- ── Main Body: 2-Column Institutional Layout ── -->
+  <div class="main-body">
+
+    <div class="portal-layout">
+
+      <!-- ── Left Column: Project Vision & Motto (Floating Badges) ── -->
+      <aside class="vision-panel" aria-label="Project Vision and Motto">
+
+        <!-- Project Vision Oval Card (Floating) -->
+        <div class="mepco-oval-card card-float-1">
+          <div class="mepco-oval-title">PROJECT VISION</div>
+          <div class="mepco-oval-desc">
+            Envisioning Smart Academic Labs Where<br>
+            No Student is Delayed by Hardware Faults,<br>
+            Empowered by Continuous Telemetry &amp;<br>
+            Zero-Downtime Computing
+          </div>
+        </div>
+
+        <!-- Project Motto Oval Card (Floating) -->
+        <div class="mepco-oval-card card-float-2">
+          <div class="mepco-oval-title">PROJECT MOTTO</div>
+          <div class="mepco-oval-desc">
+            “Every Packet Monitored,<br>
+            Every Fault Resolved”<br>
+            Bridging Instant Student Reporting<br>
+            with Rapid Diagnostics &amp; Fixes
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- ── Right Column: Clean Login Panel ── -->
+      <main class="login-panel" id="login-root">
+
+        <div class="login-card" id="login-card">
+
+          {% if msg %}
+          <div style="background:#ecfdf5; border-bottom:1px solid #a7f3d0; color:#065f46; padding:0.65rem 1.25rem; font-size:0.8rem; font-weight:600; text-align:center;">
+            ✅ {{ msg }}
+          </div>
+          {% endif %}
+          {% if error %}
+          <div style="background:#fef2f2; border-bottom:1px solid #fecaca; color:#991b1b; padding:0.65rem 1.25rem; font-size:0.8rem; font-weight:600; text-align:center;">
+            ⚠️ {{ error }}
+          </div>
+          {% endif %}
+
+          <!-- Portal Switcher Tabs -->
+          <div class="portal-tabs" role="tablist">
+            <button class="portal-tab active" data-portal="student"
+                    role="tab" id="tab-student" aria-controls="pane-student"
+                    onclick="switchPortal('student')">
+              <span class="tab-icon">🎓</span> Student / Staff
+            </button>
+            <button class="portal-tab" data-portal="admin"
+                    role="tab" id="tab-admin" aria-controls="pane-admin"
+                    onclick="switchPortal('admin')">
+              <span class="tab-icon">🛠️</span> IT Admin
+            </button>
+          </div>
+
+          <!-- ── STUDENT PORTAL ── -->
+          <div class="card-body" id="pane-student" role="tabpanel">
+
+            <div class="portal-heading-wrap">
+              <div class="portal-avatar student">🎓</div>
+              <div>
+                <div class="portal-title" id="student-form-title">Student Sign In</div>
+                <div class="portal-subtitle" id="student-form-sub">Access LabWatch to report a workstation fault</div>
+              </div>
+            </div>
+
+            <div class="error-banner" id="student-error" role="alert"></div>
+            <div class="success-banner" id="student-success"></div>
+
+            <form id="student-login-form" autocomplete="on" novalidate>
+              <div class="field-group">
+                <label class="field-label" for="s-username">Student / Staff Username</label>
+                <div class="field-input-wrap">
+                  <span class="field-icon">👤</span>
+                  <input class="field-input" type="text" id="s-username" name="username"
+                         placeholder="e.g. 23cs101 or faculty.name"
+                         autocomplete="username" required>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="s-password">Password</label>
+                <div class="field-input-wrap">
+                  <span class="field-icon">🔒</span>
+                  <input class="field-input" type="password" id="s-password" name="password"
+                         placeholder="Enter password"
+                         autocomplete="current-password" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-login student-btn" id="student-submit">
+                <div class="btn-spinner" id="student-spinner"></div>
+                <span id="student-btn-text">Sign In to Student Portal</span>
+              </button>
+            </form>
+
+          </div>
+
+          <!-- ── ADMIN PORTAL ── -->
+          <div class="card-body admin-active" id="pane-admin" role="tabpanel" style="display:none;">
+
+            <div class="portal-heading-wrap">
+              <div class="portal-avatar admin">🛠️</div>
+              <div>
+                <div class="portal-title">IT Administrator Sign In</div>
+                <div class="portal-subtitle">LabWatch IT Staff &amp; Technician Triage Dashboard</div>
+              </div>
+            </div>
+
+            <div class="error-banner" id="admin-error" role="alert"></div>
+            <div class="success-banner" id="admin-success"></div>
+
+            <form id="admin-login-form" autocomplete="off" novalidate>
+              <div class="field-group">
+                <label class="field-label" for="a-username">IT Staff Username</label>
+                <div class="field-input-wrap">
+                  <span class="field-icon">🆔</span>
+                  <input class="field-input" type="text" id="a-username" name="username"
+                         placeholder="IT Staff / Admin username"
+                         autocomplete="username" required>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="a-password">Admin Password</label>
+                <div class="field-input-wrap">
+                  <span class="field-icon">🔑</span>
+                  <input class="field-input" type="password" id="a-password" name="password"
+                         placeholder="Administrator password"
+                         autocomplete="current-password" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-login admin-btn" id="admin-submit">
+                <div class="btn-spinner" id="admin-spinner"></div>
+                <span id="admin-btn-text">Sign In to Admin Dashboard</span>
+              </button>
+            </form>
+
+          </div>
+
+        </div><!-- /.login-card -->
+
+        <!-- Developed by venki and navi -->
+        <div class="developer-credit-tag">
+          <div class="credit-pill">
+            <div class="credit-avatar">⚡</div>
+            <div class="credit-meta">
+              <div class="credit-line1">Developed by venki and navi</div>
+              <div class="credit-line2">Aids Department</div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+    </div><!-- /.portal-layout -->
+
+  </div><!-- /.main-body -->
+
+  <!-- ── Page Footer ── -->
+  <footer class="page-footer">
+    Mepco Schlenk Engineering College, Sivakasi &mdash; Aids Department
+  </footer>
+
+</div><!-- /.page-shell -->
+
+<script>
+  /* ── Portal Switcher ─────────────────────────────────────────────────────── */
+  function switchPortal(portal) {
+    document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + portal).classList.add('active');
+    document.getElementById('pane-student').style.display = portal === 'student' ? 'block' : 'none';
+    document.getElementById('pane-admin').style.display   = portal === 'admin'   ? 'block' : 'none';
+    // Update URL param without reload
+    const url = new URL(window.location);
+    url.searchParams.set('portal', portal);
+    window.history.replaceState({}, '', url);
+  }
+
+  // On page load, honour server-rendered portal param
+  const initPortal = "{{ portal }}";
+  if (initPortal === 'admin') switchPortal('admin');
+
+  // Show server-side error if present
+  const initError = "{{ error }}";
+  if (initError && initError !== 'None' && initError !== '') {
+    const errEl = document.getElementById(initPortal + '-error') || document.getElementById('student-error');
+    if (errEl) { errEl.textContent = '⚠️ ' + initError.replace(/<[^>]+>/g,''); }
+  }
+
+  /* ── Generic form handler ────────────────────────────────────────────────── */
+  function handleLogin(formId, portal, errorId, successId, spinnerId, btnTextId, btnId) {
+    const form    = document.getElementById(formId);
+    const errorEl = document.getElementById(errorId);
+    const succEl  = document.getElementById(successId);
+    const spinner = document.getElementById(spinnerId);
+    const btnTxt  = document.getElementById(btnTextId);
+    const btn     = document.getElementById(btnId);
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      errorEl.textContent = '';
+      succEl.style.display = 'none';
+
+      const username = form.querySelector('input[name="username"]').value.trim();
+      const password = form.querySelector('input[name="password"]').value.trim();
+
+      if (!username || !password) {
+        errorEl.textContent = '⚠️  Please enter both username and password.';
+        return;
+      }
+
+      // Loading state
+      btn.disabled = true;
+      spinner.style.display = 'block';
+      btnTxt.textContent = 'Signing in…';
+
+      try {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+          // Show success, then redirect
+          succEl.textContent = '✅ ' + data.message + ' Redirecting…';
+          succEl.style.display = 'block';
+          const role = (data.user && data.user.role) || 'student';
+          setTimeout(() => {
+            if (portal === 'admin' || role === 'admin' || role === 'technician') {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/report';
+            }
+          }, 900);
+        } else {
+          errorEl.textContent = '⚠️  ' + (data.error || 'Login failed. Please check your credentials.');
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          btnTxt.textContent = portal === 'admin' ? 'Sign In to Admin Dashboard' : 'Sign In to Student Portal';
+        }
+      } catch (err) {
+        errorEl.textContent = '⚠️  Network error. Please ensure the server is running.';
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        btnTxt.textContent = portal === 'admin' ? 'Sign In to Admin Dashboard' : 'Sign In to Student Portal';
+      }
+    });
+  }
+
+  handleLogin('student-login-form', 'student', 'student-error', 'student-success', 'student-spinner', 'student-btn-text', 'student-submit');
+  handleLogin('admin-login-form',   'admin',   'admin-error',   'admin-success',   'admin-spinner',   'admin-btn-text',   'admin-submit');
+</script>
+
+</body>
+</html>

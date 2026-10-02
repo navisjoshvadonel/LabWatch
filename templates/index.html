@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabWatch | Mepco Schlenk Engineering College - PC Fault Reporting & Monitoring System</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       THEME 3: "CAMPUS CUSTOM" - MEPCO SCHLENK ENGINEERING COLLEGE BRANDING
+       Official institutional palette:
+       - Primary Mepco Blue: #0066B3 / #0072CE (Cobalt Cyan-Blue)
+       - Deep Navy Utility: #004E8A / #0b2545
+       - Secondary Accent: Mepco Sky Cyan #0099DA & Academic Amber/Gold #D97706
+       - Canvas: Clean White (#FFFFFF) & subtle cool gray (#F8FAFC)
+       ========================================================================== */
+    :root {
+      /* Mepco Institutional Color Tokens */
+      --mepco-blue: #0066b3;
+      --mepco-blue-hover: #00508c;
+      --mepco-blue-dark: #003e6d;
+      --mepco-navy: #0b2545;
+      --mepco-cyan: #0099da;
+      --mepco-cyan-light: #e0f2fe;
+      --mepco-gold: #d97706;
+      --mepco-gold-hover: #b45309;
+      
+      /* Canvas & Clean White Surfaces */
+      --bg-canvas: #f8fafc;        /* Subtle cool gray canvas */
+      --bg-surface: #ffffff;       /* Pure clean white */
+      --bg-surface-alt: #f1f5f9;   /* Off-white for table zebra striping */
+      --bg-input: #ffffff;
+      
+      --border-color: #e2e8f0;     /* Crisp light border */
+      --border-input: #cbd5e1;     /* Distinct form input border */
+      --border-card: #e2e8f0;
+      
+      /* Typography */
+      --text-main: #0f172a;        /* Deep slate 900 for high readability */
+      --text-secondary: #475569;   /* Slate 600 */
+      --text-muted: #64748b;       /* Slate 500 */
+      
+      /* Status Semantics (Clean light badges) */
+      --badge-online-bg: #dcfce7;
+      --badge-online-text: #15803d;
+      --badge-online-border: #86efac;
+      
+      --badge-offline-bg: #ffe4e6;
+      --badge-offline-text: #be123c;
+      --badge-offline-border: #fca5a5;
+      
+      --badge-faulty-bg: #fef3c7;
+      --badge-faulty-text: #b45309;
+      --badge-faulty-border: #fde68a;
+
+      --badge-resolved-bg: #e0e7ff;
+      --badge-resolved-text: #3730a3;
+      --badge-resolved-border: #c7d2fe;
+      
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --transition: all 0.15s ease-in-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      font-size: 0.875rem;
+    }
+
+    /* ==========================================================================
+       MEPCO SCHLENK INSTITUTIONAL DUAL-TIER HEADER
+       ========================================================================== */
+    /* Tier 1: Top Institutional Utility Strip */
+    .mepco-top-bar {
+      background-color: var(--mepco-navy);
+      color: #ffffff;
+      padding: 0.35rem 1.5rem;
+      font-size: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .top-bar-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .top-bar-contact {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      color: #cbd5e1;
+    }
+
+    .top-bar-contact span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .top-bar-accreditation {
+      color: #93c5fd;
+      font-weight: 600;
+    }
+
+    .top-bar-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .role-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 0.15rem 0.3rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .role-btn {
+      padding: 0.18rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .role-btn:hover {
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .role-btn.active {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+    }
+
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background-color: rgba(255, 255, 255, 0.15);
+      padding: 0.18rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.71875rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .user-avatar-mini {
+      width: 18px;
+      height: 18px;
+      background-color: var(--mepco-gold);
+      color: #ffffff;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 0.625rem;
+      font-weight: 800;
+    }
+
+    /* Tier 2: Main Application Header (Clean White, Logo + LabWatch + Tabs) */
+    .mepco-main-header {
+      background-color: #ffffff;
+      border-bottom: 2px solid var(--mepco-blue);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.65rem 1.5rem;
+    }
+
+    .main-header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    /* Left Group: Logo + LabWatch Text + Navigation Tabs */
+    .header-left-group {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      flex-wrap: nowrap;
+    }
+
+    .mepco-brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+    }
+
+    /* Official Mepco Logo Image */
+    .mepco-logo-img {
+      height: 48px;
+      width: auto;
+      max-width: 260px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 38px;
+      background-color: #cbd5e1;
+    }
+
+    .labwatch-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .labwatch-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .labwatch-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--mepco-blue);
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .noc-badge {
+      background-color: var(--mepco-cyan-light);
+      color: var(--mepco-blue-dark);
+      border: 1px solid #bae6fd;
+      font-size: 0.625rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .labwatch-dept {
+      font-size: 0.71875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Primary Navigation Tabs grouped on Left */
+    .campus-nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background-color: var(--bg-canvas);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .nav-tab:hover {
+      color: var(--mepco-blue);
+      background-color: rgba(0, 102, 179, 0.06);
+    }
+
+    /* Active Tab in Mepco Blue */
+    .nav-tab.active {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 102, 179, 0.25);
+    }
+
+    .nav-tab .badge {
+      background-color: rgba(0, 0, 0, 0.08);
+      color: inherit;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .nav-tab.active .badge {
+      background-color: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+
+    /* Right Group: Live Status */
+    .header-right-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .campus-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-md);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+    }
+
+    /* ==========================================================================
+       MAIN CONTENT (Clean White Backgrounds & Subtle Canvas)
+       ========================================================================== */
+    main {
+      max-width: 1440px;
+      margin: 1.25rem auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    /* KPI Metric Cards in Clean White Institutional Style */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 960px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .kpi-row { grid-template-columns: 1fr; }
+    }
+
+    .kpi-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 1.15rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: var(--transition);
+    }
+
+    .kpi-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    .kpi-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+
+    .kpi-val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text-main);
+    }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+
+    /* Daemon Bar (Clean, no testing buttons) */
+    .daemon-bar {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-left: 4px solid var(--mepco-blue);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.8125rem;
+    }
+
+    .daemon-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .daemon-title {
+      font-weight: 700;
+      color: var(--mepco-blue);
+    }
+
+    .daemon-msg {
+      color: var(--text-secondary);
+    }
+
+    .daemon-protocol {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background-color: var(--bg-surface-alt);
+      border: 1px solid var(--border-color);
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Views */
+    .tab-view {
+      display: none;
+    }
+    .tab-view.active {
+      display: block;
+    }
+
+    /* ==========================================================================
+       TOOLBAR & CONTROLS
+       ========================================================================== */
+    .toolbar-panel {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* Standardized Form Inputs in Clean White */
+    select.campus-input, input.campus-input, textarea.campus-input {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-input);
+      color: var(--text-main);
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-family: inherit;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    select.campus-input:focus, input.campus-input:focus, textarea.campus-input:focus {
+      border-color: var(--mepco-blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 179, 0.15);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.95rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    /* Mepco Primary Action Button */
+    .btn-mepco-primary {
+      background-color: var(--mepco-blue);
+      color: #ffffff;
+      border-color: var(--mepco-blue);
+    }
+    .btn-mepco-primary:hover {
+      background-color: var(--mepco-blue-hover);
+      border-color: var(--mepco-blue-hover);
+    }
+
+    .btn-campus-secondary {
+      background-color: #ffffff;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-input);
+    }
+    .btn-campus-secondary:hover {
+      background-color: var(--bg-surface-alt);
+      color: var(--text-main);
+    }
+
+    /* Compact WoL Button in Academic Gold */
+    .btn-wol-gold {
+      background-color: var(--mepco-gold);
+      color: #ffffff;
+      border: 1px solid var(--mepco-gold-hover);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: var(--transition);
+    }
+    .btn-wol-gold:hover {
+      background-color: var(--mepco-gold-hover);
+    }
+
+    .btn-report-subtle {
+      background-color: #ffffff;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-report-subtle:hover {
+      background-color: var(--mepco-cyan-light);
+      color: var(--mepco-blue);
+      border-color: var(--mepco-blue);
+    }
+
+    /* ==========================================================================
+       TAB 1: LIVE MONITOR (PC GRID IN CLEAN WHITE)
+       ========================================================================== */
+    .pc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1rem;
+    }
+
+    .pc-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.15rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: var(--transition);
+    }
+
+    .pc-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    /* Alert Styling for offline machines */
+    .pc-card.status-Offline, .pc-card.status-Faulty {
+      border-left: 4px solid #e11d48;
+      background-color: #fffbfa;
+    }
+
+    .pc-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .pc-number {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Clean Status Badges */
+    .status-badge {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-badge.Online {
+      background-color: var(--badge-online-bg);
+      color: var(--badge-online-text);
+      border: 1px solid var(--badge-online-border);
+    }
+
+    .status-badge.Offline {
+      background-color: var(--badge-offline-bg);
+      color: var(--badge-offline-text);
+      border: 1px solid var(--badge-offline-border);
+    }
+
+    .status-badge.Faulty, .status-badge.InProgress {
+      background-color: var(--badge-faulty-bg);
+      color: var(--badge-faulty-text);
+      border: 1px solid var(--badge-faulty-border);
+    }
+
+    .status-badge.Resolved {
+      background-color: var(--badge-resolved-bg);
+      color: var(--badge-resolved-text);
+      border: 1px solid var(--badge-resolved-border);
+    }
+
+    /* Strict 2-column key-value grid */
+    .pc-kv-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .kv-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+    }
+
+    .kv-key {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .kv-val {
+      color: var(--text-main);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .kv-val.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78125rem;
+      color: #1e293b;
+    }
+
+    .kv-val.lab-highlight {
+      color: var(--mepco-blue);
+      font-weight: 700;
+    }
+
+    .pc-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ==========================================================================
+       TAB 2: TICKET TRIAGE (CONNECTED ZEBRA DATA TABLE)
+       ========================================================================== */
+    .table-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow-x: auto;
+    }
+
+    table.campus-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.8125rem;
+    }
+
+    table.campus-table th {
+      background-color: var(--bg-surface-alt);
+      color: var(--text-secondary);
+      padding: 0.75rem 1rem;
+      font-size: 0.71875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    table.campus-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    /* Clean Zebra Striping */
+    table.campus-table tbody tr:nth-child(even) {
+      background-color: #ffffff;
+    }
+    table.campus-table tbody tr:nth-child(odd) {
+      background-color: #fbfcfe;
+    }
+    table.campus-table tbody tr:hover {
+      background-color: #f1f5f9;
+    }
+
+    .ticket-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--mepco-blue);
+      background-color: var(--mepco-cyan-light);
+      border: 1px solid #bae6fd;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+    }
+
+    .priority-badge {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      text-transform: capitalize;
+    }
+    .priority-Critical { background-color: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+    .priority-High { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+    .priority-Medium { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .priority-Low { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* ==========================================================================
+       TAB 3: REPORT FAULT (CAMPUS FORM WITH CRISP INPUTS)
+       ========================================================================== */
+    .form-panel {
+      max-width: 760px;
+      margin: 0 auto;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      padding: 2.25rem;
+    }
+
+    .form-heading {
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+
+    .form-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--mepco-blue);
+      margin-bottom: 0.35rem;
+    }
+
+    .form-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field-label {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .field-label span.req {
+      color: #e11d48;
+      margin-left: 0.2rem;
+    }
+
+    .campus-input-full {
+      width: 100%;
+    }
+
+    .validation-hint {
+      font-size: 0.75rem;
+      color: #e11d48;
+      margin-top: 0.25rem;
+      display: none;
+    }
+
+    .form-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ==========================================================================
+       TAB 4: C TELEMETRY CONSOLE
+       ========================================================================== */
+    .telemetry-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .telemetry-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .telemetry-screen {
+      background-color: #0f172a;
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78125rem;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+
+    .telemetry-line {
+      padding: 0.45rem 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .t-ts { color: #94a3b8; flex-shrink: 0; }
+    .t-tag { color: #38bdf8; font-weight: 600; flex-shrink: 0; }
+    .t-msg { color: #f8fafc; flex-grow: 1; word-break: break-word; }
+
+    /* ==========================================================================
+       MODAL & TOASTS
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(2px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-window {
+      background-color: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      width: 100%;
+      max-width: 520px;
+      padding: 1.75rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--mepco-blue);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+    #toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 400px;
+    }
+
+    .toast {
+      background-color: #ffffff;
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--mepco-blue);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      font-size: 0.8125rem;
+      color: var(--text-main);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: toastIn 0.2s ease-out;
+    }
+    .toast.success { border-left-color: #10b981; }
+    .toast.error { border-left-color: #e11d48; }
+    .toast.warning { border-left-color: var(--mepco-gold); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       MEPCO SCHLENK DUAL-TIER CAMPUS HEADER
+       Tier 1: Top Institutional Info Strip
+       ========================================================================== -->
+  <div class="mepco-top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-contact">
+        <span>📍 Sivakasi - 626 005, Tamil Nadu</span>
+        <span>📞 +91-4562-235104, 235120</span>
+        <span>✉ msec@mepcoeng.ac.in</span>
+        <span class="top-bar-accreditation">Autonomous | NBA (Tier-I) | NAAC 'A' Grade</span>
+      </div>
+
+      <div class="top-bar-profile">
+        <a href="/admin" style="color:#e0f2fe; text-decoration:none; font-weight:600; font-size:0.75rem; margin-right:0.5rem; background:rgba(255,255,255,.1); padding:0.2rem 0.5rem; border-radius:4px;">
+          🛠️ IT Admin Dashboard
+        </a>
+        <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.2rem 0.55rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.25rem;">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tier 2: Main Application Header (Clean White, Logo + LabWatch + Tabs) -->
+  <header class="mepco-main-header">
+    <div class="main-header-inner">
+      <div class="header-left-group">
+        <!-- Official Mepco Logo + LabWatch Brand Lockup -->
+        <div class="mepco-brand-lockup">
+          <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="mepco-logo-img" />
+          <div class="brand-divider"></div>
+          <div class="labwatch-titles">
+            <div class="labwatch-title-row">
+              <span class="labwatch-title">LabWatch</span>
+              <span class="noc-badge">Campus NOC</span>
+            </div>
+            <span class="labwatch-dept">Dept. of Computer Science & Engineering</span>
+          </div>
+        </div>
+
+        <!-- Primary Navigation Tabs grouped on Left -->
+        <nav class="campus-nav-tabs" aria-label="Campus Navigation">
+          <button class="nav-tab active" id="tab-btn-monitor" onclick="switchTab('tab-monitor')">
+            <span>🖥️ Live Monitor</span>
+            <span class="badge" id="badge-total-pcs">60</span>
+          </button>
+          <button class="nav-tab" id="tab-btn-tickets" onclick="switchTab('tab-tickets')">
+            <span>🎫 Ticket Triage</span>
+            <span class="badge" id="badge-pending-tickets">0</span>
+          </button>
+          <button class="nav-tab" id="tab-btn-report" onclick="switchTab('tab-report')">
+            <span>📝 Report Fault</span>
+          </button>
+          <button class="nav-tab" id="tab-btn-telemetry" onclick="switchTab('tab-telemetry')">
+            <span>📡 C Telemetry</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Right Group: Status Badge -->
+      <div class="header-right-group">
+        <div class="campus-live-badge">
+          <div class="live-dot"></div>
+          <span>Core Daemon Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN CONTENT
+       ========================================================================== -->
+  <main>
+    <!-- Metric KPI Cards in Clean White Institutional Style -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--mepco-cyan-light); color: var(--mepco-blue);">🖥️</div>
+        <div>
+          <div class="kpi-val" id="stat-total-pcs">60</div>
+          <div class="kpi-label">Total Workstations</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: #dcfce7; color: #15803d;">✅</div>
+        <div>
+          <div class="kpi-val" style="color: #15803d;" id="stat-online-pcs">--</div>
+          <div class="kpi-label">Online & Responsive</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: #ffe4e6; color: #be123c;">⚠️</div>
+        <div>
+          <div class="kpi-val" style="color: #be123c;" id="stat-offline-pcs">--</div>
+          <div class="kpi-label">Offline / Frozen (e.g. PC-30)</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: #fef3c7; color: #b45309;">🎫</div>
+        <div>
+          <div class="kpi-val" style="color: #b45309;" id="stat-pending-tickets">--</div>
+          <div class="kpi-label">Active Fault Tickets</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daemon Status Bar (Clean, no developer testing buttons) -->
+    <div class="daemon-bar">
+      <div class="daemon-left">
+        <div class="live-dot" style="box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);"></div>
+        <div>
+          <span class="daemon-title">Mepco C Network Daemon:</span>
+          <span class="daemon-msg" id="daemon-summary-text">Monitoring departmental lab computers via RAW IPPROTO_ICMP sockets & UDP:9 WoL engine...</span>
+        </div>
+      </div>
+      <div class="daemon-protocol">
+        Socket Layer: <strong>RAW ICMP & UDP WoL</strong>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         TAB 1: LIVE MONITOR (PC GRID)
+         ======================================================================== -->
+    <section class="tab-view active" id="tab-monitor">
+      <div class="toolbar-panel">
+        <div class="toolbar-left">
+          <span class="toolbar-tag">Department Lab:</span>
+          <select id="monitor-lab-filter" class="campus-input" onchange="loadComputers()">
+            <option value="all">All Laboratories</option>
+          </select>
+
+          <span class="toolbar-tag" style="margin-left: 0.5rem;">Status:</span>
+          <select id="monitor-status-filter" class="campus-input" onchange="filterComputersGrid()">
+            <option value="all">All Statuses</option>
+            <option value="Online">Online</option>
+            <option value="Offline">Offline / Faulty</option>
+          </select>
+        </div>
+
+        <div class="toolbar-left">
+          <input type="text" id="monitor-search" class="campus-input" placeholder="Search PC, IP or MAC..." oninput="filterComputersGrid()" style="width: 220px;">
+          <button class="btn btn-campus-secondary" onclick="loadComputers()">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <div class="pc-grid" id="computers-container">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         TAB 2: TICKET TRIAGE (CONNECTED ZEBRA DATA TABLE)
+         ======================================================================== -->
+    <section class="tab-view" id="tab-tickets">
+      <div class="toolbar-panel">
+        <div class="toolbar-left">
+          <span class="toolbar-tag">Status Filter:</span>
+          <select id="ticket-status-filter" class="campus-input" onchange="loadTickets()">
+            <option value="all">All Statuses</option>
+            <option value="Pending" selected>Pending (Oldest First)</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
+          </select>
+
+          <span class="toolbar-tag" style="margin-left: 0.5rem;">Laboratory:</span>
+          <select id="ticket-lab-filter" class="campus-input" onchange="loadTickets()">
+            <option value="all">All Labs</option>
+          </select>
+        </div>
+
+        <button class="btn btn-mepco-primary" onclick="switchTab('tab-report')">+ File New Ticket</button>
+      </div>
+
+      <div class="table-card">
+        <table class="campus-table">
+          <thead>
+            <tr>
+              <th>Ticket #</th>
+              <th>Workstation</th>
+              <th>Laboratory</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Priority</th>
+              <th>Reported By</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tickets-table-body">
+            <!-- Rendered via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         TAB 3: REPORT FAULT (CAMPUS FORM WITH CRISP INPUTS)
+         ======================================================================== -->
+    <section class="tab-view" id="tab-report">
+      <div class="form-panel">
+        <div class="form-heading">
+          <h2 class="form-title">Submit PC Fault Report</h2>
+          <p class="form-desc">Mepco Schlenk Engineering College - CSE Department Workstation Incident Portal. Real-time verification confirms that the selected PC matches the designated laboratory room.</p>
+        </div>
+
+        <form id="fault-report-form" onsubmit="handleTicketSubmit(event)">
+          <div class="form-grid">
+            <div class="form-field">
+              <label class="field-label" for="form-lab-select">1. Department Laboratory <span class="req">*</span></label>
+              <select id="form-lab-select" class="campus-input campus-input-full" required onchange="handleLabChange()">
+                <option value="" disabled selected>-- Choose Laboratory --</option>
+              </select>
+              <div class="validation-hint" id="lab-val-hint">Please choose a laboratory room</div>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label" for="form-pc-select">2. Workstation Computer <span class="req">*</span></label>
+              <select id="form-pc-select" class="campus-input campus-input-full" required onchange="validatePcLabMatch()">
+                <option value="" disabled selected>-- Select Lab First --</option>
+              </select>
+              <div class="validation-hint" id="pc-val-hint"></div>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label" for="form-category-select">3. Issue Category <span class="req">*</span></label>
+              <select id="form-category-select" class="campus-input campus-input-full" required>
+                <option value="Network Connectivity">Network Connectivity (DHCP, Ping, LAN Cable)</option>
+                <option value="Operating System">Operating System (Freeze, Kernel Panic, Boot)</option>
+                <option value="Hardware Fault">Hardware Fault (RAM, SSD, Motherboard, SMPS)</option>
+                <option value="Peripheral / Display">Peripheral / Display (Monitor, Keyboard, Mouse)</option>
+                <option value="Software Crash">Software Crash (GCC, IDE, Terminal, Packet Capture)</option>
+                <option value="Power Issue">Power Issue (No power, SMPS failure)</option>
+                <option value="Other">Other Miscellaneous Issue</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label" for="form-priority-select">4. Urgency Priority <span class="req">*</span></label>
+              <select id="form-priority-select" class="campus-input campus-input-full">
+                <option value="Low">Low (Informational / minor glitch)</option>
+                <option value="Medium" selected>Medium (Standard lab exercise)</option>
+                <option value="High">High (Coursework / exam session blocked)</option>
+                <option value="Critical">Critical (System frozen / urgent hardware)</option>
+              </select>
+            </div>
+
+            <div class="form-field full">
+              <label class="field-label" for="form-description">5. Detailed Fault Description <span class="req">*</span></label>
+              <textarea id="form-description" class="campus-input campus-input-full" rows="4" required placeholder="Describe symptoms, error codes, loose RJ45 clip, or freeze behavior (e.g. PC-30 ping timed out, failed DHCP lease)..."></textarea>
+              <div class="validation-hint" id="desc-val-hint">Please provide a descriptive fault summary</div>
+            </div>
+          </div>
+
+          <div class="form-bottom">
+            <button type="reset" class="btn btn-campus-secondary">Reset</button>
+            <button type="submit" class="btn btn-mepco-primary" id="btn-submit-ticket">Submit Fault Report</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         TAB 4: C TELEMETRY CONSOLE
+         ======================================================================== -->
+    <section class="tab-view" id="tab-telemetry">
+      <div class="telemetry-card">
+        <div class="telemetry-header">
+          <div>
+            <strong style="color: var(--mepco-blue); font-size: 0.95rem;">Core Network Protocols Event Stream</strong>
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem;">Live feed of RAW socket ICMP echo pings, automated 'Network Down' alerts, and UDP Wake-on-LAN packets.</p>
+          </div>
+          <button class="btn btn-campus-secondary" onclick="loadTelemetry()">🔄 Refresh Events</button>
+        </div>
+
+        <div class="telemetry-screen" id="telemetry-log-container">
+          <!-- Rendered via JavaScript -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       TICKET TRIAGE / RESOLUTION MODAL
+       ========================================================================== -->
+  <div class="modal-overlay" id="resolve-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-ticket-title">Triage Ticket</h3>
+        <button class="modal-close" onclick="closeResolveModal()">&times;</button>
+      </div>
+
+      <form id="resolve-form" onsubmit="submitTicketResolution(event)">
+        <input type="hidden" id="modal-ticket-id">
+        <div class="form-field" style="margin-bottom: 1rem;">
+          <label class="field-label">Status Action <span class="req">*</span></label>
+          <select id="modal-status-select" class="campus-input campus-input-full" required>
+            <option value="In Progress">In Progress (Investigating / Cable checked)</option>
+            <option value="Resolved" selected>Resolved (Verified working)</option>
+            <option value="Closed">Closed (Archived)</option>
+          </select>
+        </div>
+
+        <div class="form-field" style="margin-bottom: 1.25rem;">
+          <label class="field-label">Technician Resolution Notes <span class="req">*</span></label>
+          <textarea id="modal-notes" class="campus-input campus-input-full" rows="3" required placeholder="e.g. Reconnected loose RJ45 cable and issued Wake-on-LAN remote restart. Machine rebooted and passed ICMP echo ping."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-campus-secondary" onclick="closeResolveModal()">Cancel</button>
+          <button type="submit" class="btn btn-mepco-primary">Save Updates</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Institutional Footer -->
+  <footer class="page-footer" style="max-width:1440px; margin:3rem auto 2rem; padding:0 1.5rem; text-align:center; font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:1.5rem;">
+    <p>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      Developed by venki and navi &bull; LabWatch Single-Page Live Monitoring Grid
+    </p>
+  </footer>
+
+  <!-- Toast Shelf -->
+  <div id="toast-container"></div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT APPLICATION LOGIC
+       ========================================================================== -->
+  <script>
+    // State
+    let currentUser = {
+      id: 2,
+      username: "navis",
+      full_name: "Navis Joshva",
+      role: "student",
+      roll: "Student (Roll #21CS042)"
+    };
+
+    let allLabs = [];
+    let allComputers = [];
+    let allTickets = [];
+
+    // Switch Role Profiles
+    function setRole(role, id, name) {
+      let rollText = "";
+      if (name.includes("Navis")) rollText = "(Roll #21CS042)";
+      else if (name.includes("Venkat")) rollText = "(Roll #21CS088)";
+      else if (role === "technician") rollText = "(Lab Tech)";
+      else rollText = "(Admin)";
+
+      currentUser = { id, username: role + "_" + id, full_name: name, role, roll: rollText };
+
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      if (name.includes("Navis")) document.getElementById('pill-navis').classList.add('active');
+      else if (name.includes("Venkat")) document.getElementById('pill-venkat').classList.add('active');
+      else if (role === "technician") document.getElementById('pill-tech').classList.add('active');
+      else document.getElementById('pill-admin').classList.add('active');
+
+      document.getElementById('current-user-name').innerText = name;
+      document.getElementById('current-user-roll').innerText = rollText;
+      document.getElementById('avatar-letter').innerText = name.charAt(0);
+
+      showToast(`Active profile: ${name} [${role.toUpperCase()}]`, 'info');
+      loadTickets();
+    }
+
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+
+      if (tabId === 'tab-monitor') document.getElementById('tab-btn-monitor').classList.add('active');
+      if (tabId === 'tab-tickets') document.getElementById('tab-btn-tickets').classList.add('active');
+      if (tabId === 'tab-report') document.getElementById('tab-btn-report').classList.add('active');
+      if (tabId === 'tab-telemetry') document.getElementById('tab-btn-telemetry').classList.add('active');
+
+      if (tabId === 'tab-monitor') loadComputers();
+      if (tabId === 'tab-tickets') loadTickets();
+      if (tabId === 'tab-telemetry') loadTelemetry();
+    }
+
+    // Clean Toast Alerts
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 250);
+      }, 3500);
+    }
+
+    // Load Labs from Database
+    async function loadLabs() {
+      try {
+        const res = await fetch('/api/labs');
+        const data = await res.json();
+        allLabs = data.labs || [];
+
+        const monitorSelect = document.getElementById('monitor-lab-filter');
+        monitorSelect.innerHTML = '<option value="all">All Laboratories</option>';
+
+        const ticketSelect = document.getElementById('ticket-lab-filter');
+        ticketSelect.innerHTML = '<option value="all">All Labs</option>';
+
+        const formSelect = document.getElementById('form-lab-select');
+        formSelect.innerHTML = '<option value="" disabled selected>-- Choose Laboratory --</option>';
+
+        allLabs.forEach(lab => {
+          const opt1 = document.createElement('option');
+          opt1.value = lab.id;
+          opt1.textContent = `${lab.lab_name} (${lab.total_pcs} PCs)`;
+          monitorSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = lab.id;
+          opt2.textContent = lab.lab_name;
+          ticketSelect.appendChild(opt2);
+
+          const opt3 = document.createElement('option');
+          opt3.value = lab.id;
+          opt3.textContent = `${lab.lab_name} (${lab.location})`;
+          formSelect.appendChild(opt3);
+        });
+      } catch (err) {
+        console.error("Failed loading labs:", err);
+      }
+    }
+
+    // Load Computers
+    async function loadComputers() {
+      const labFilter = document.getElementById('monitor-lab-filter').value;
+      try {
+        const res = await fetch(`/api/computers?lab_id=${labFilter}`);
+        const data = await res.json();
+        allComputers = data.computers || [];
+        renderComputersGrid(allComputers);
+        updateStats();
+      } catch (err) {
+        console.error("Failed loading computers:", err);
+      }
+    }
+
+    function renderComputersGrid(computers) {
+      const container = document.getElementById('computers-container');
+      container.innerHTML = '';
+
+      if (computers.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">No workstations match criteria</div>';
+        return;
+      }
+
+      computers.forEach(pc => {
+        const card = document.createElement('div');
+        card.className = `pc-card status-${pc.status}`;
+
+        const isOnline = pc.status === 'Online';
+        const heartbeatTime = pc.last_heartbeat ? pc.last_heartbeat.split(' ')[1] : 'No Signal';
+
+        card.innerHTML = `
+          <div>
+            <div class="pc-card-header">
+              <span class="pc-number">🖥️ ${pc.pc_number}</span>
+              <span class="status-badge ${pc.status}">${pc.status}</span>
+            </div>
+
+            <div class="pc-kv-grid">
+              <div class="kv-row">
+                <span class="kv-key">IP Address</span>
+                <span class="kv-val mono">${pc.ip_address}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">MAC Address</span>
+                <span class="kv-val mono">${pc.mac_address}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Laboratory</span>
+                <span class="kv-val lab-highlight">${pc.lab_name}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Last Heartbeat</span>
+                <span class="kv-val mono">${heartbeatTime}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pc-card-footer">
+            <span style="font-size: 0.71875rem; color: var(--text-muted);">PC #${pc.id}</span>
+            ${!isOnline ? 
+              `<button class="btn-wol-gold" onclick="triggerWolRestart('${pc.pc_number}')">⚡ WoL Restart</button>` : 
+              `<button class="btn-report-subtle" onclick="quickReport('${pc.lab_id}', '${pc.id}')">Report Fault</button>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterComputersGrid() {
+      const statusFilter = document.getElementById('monitor-status-filter').value;
+      const search = document.getElementById('monitor-search').value.toLowerCase().trim();
+
+      const filtered = allComputers.filter(pc => {
+        const matchStatus = (statusFilter === 'all') ||
+                            (statusFilter === 'Online' && pc.status === 'Online') ||
+                            (statusFilter === 'Offline' && pc.status !== 'Online');
+        const matchSearch = !search ||
+                            pc.pc_number.toLowerCase().includes(search) ||
+                            pc.ip_address.includes(search) ||
+                            pc.mac_address.toLowerCase().includes(search) ||
+                            (pc.lab_name && pc.lab_name.toLowerCase().includes(search));
+        return matchStatus && matchSearch;
+      });
+      renderComputersGrid(filtered);
+    }
+
+    // Load Tickets
+    async function loadTickets() {
+      const status = document.getElementById('ticket-status-filter').value;
+      const lab = document.getElementById('ticket-lab-filter').value;
+      try {
+        const res = await fetch(`/api/tickets?status=${status}&lab_id=${lab}`);
+        const data = await res.json();
+        allTickets = data.tickets || [];
+        renderTicketsTable(allTickets);
+        updateStats();
+      } catch (err) {
+        console.error("Failed loading tickets:", err);
+      }
+    }
+
+    function renderTicketsTable(tickets) {
+      const tbody = document.getElementById('tickets-table-body');
+      tbody.innerHTML = '';
+
+      if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">No tickets found matching the selected filter.</td></tr>';
+        return;
+      }
+
+      tickets.forEach(t => {
+        const tr = document.createElement('tr');
+        const isResolved = t.status === 'Resolved' || t.status === 'Closed';
+        const reporterDisplay = t.reporter_name || "Navis Joshva";
+
+        tr.innerHTML = `
+          <td><span class="ticket-code">${t.ticket_number}</span></td>
+          <td><strong style="color: var(--text-main); font-weight: 700;">${t.pc_number}</strong></td>
+          <td style="color: var(--mepco-blue); font-weight: 600;">${t.lab_name}</td>
+          <td>${t.issue_category}</td>
+          <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${t.description}">${t.description}</td>
+          <td><span class="priority-badge priority-${t.priority}">${t.priority}</span></td>
+          <td><strong>${reporterDisplay}</strong></td>
+          <td><span class="status-badge ${t.status === 'Resolved' ? 'Resolved' : (t.status === 'Pending' ? 'Offline' : 'Faulty')}">${t.status}</span></td>
+          <td>
+            ${!isResolved ? 
+              `<button class="btn btn-mepco-primary" style="padding: 0.25rem 0.55rem; font-size: 0.75rem;" onclick="openResolveModal(${t.id}, '${t.ticket_number}', '${t.status}')">Triage</button>` : 
+              `<span style="color: #15803d; font-size: 0.75rem; font-weight: 700;">✓ Resolved</span>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Dynamic Form Handlers (Data Validation)
+    async function handleLabChange() {
+      const labId = document.getElementById('form-lab-select').value;
+      const pcSelect = document.getElementById('form-pc-select');
+      pcSelect.innerHTML = '<option value="" disabled selected>Loading workstations in this lab...</option>';
+
+      try {
+        const res = await fetch(`/api/computers?lab_id=${labId}`);
+        const data = await res.json();
+        pcSelect.innerHTML = '<option value="" disabled selected>-- Select Workstation in this Lab --</option>';
+        data.computers.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.dataset.labId = c.lab_id;
+          opt.dataset.pcNumber = c.pc_number;
+          opt.textContent = `${c.pc_number} (${c.ip_address}) - [${c.status}]`;
+          pcSelect.appendChild(opt);
+        });
+      } catch (err) {
+        pcSelect.innerHTML = '<option value="" disabled>Error loading PCs</option>';
+      }
+    }
+
+    function validatePcLabMatch() {
+      const labSelect = document.getElementById('form-lab-select');
+      const pcSelect = document.getElementById('form-pc-select');
+      const hint = document.getElementById('pc-val-hint');
+
+      const selectedOpt = pcSelect.options[pcSelect.selectedIndex];
+      if (selectedOpt && selectedOpt.dataset.labId) {
+        if (selectedOpt.dataset.labId !== labSelect.value) {
+          hint.textContent = `Validation Error: ${selectedOpt.dataset.pcNumber} belongs to another lab!`;
+          hint.style.display = 'block';
+          return false;
+        }
+      }
+      hint.style.display = 'none';
+      return true;
+    }
+
+    async function handleTicketSubmit(e) {
+      e.preventDefault();
+      const labId = document.getElementById('form-lab-select').value;
+      const compId = document.getElementById('form-pc-select').value;
+      const category = document.getElementById('form-category-select').value;
+      const priority = document.getElementById('form-priority-select').value;
+      const desc = document.getElementById('form-description').value.trim();
+
+      if (!validatePcLabMatch()) return;
+
+      const payload = {
+        user_id: currentUser.id,
+        lab_id: parseInt(labId),
+        computer_id: parseInt(compId),
+        issue_category: category,
+        priority: priority,
+        description: desc
+      };
+
+      try {
+        const res = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast(`Success: Ticket ${data.ticket.ticket_number} logged successfully!`, 'success');
+          document.getElementById('fault-report-form').reset();
+          switchTab('tab-tickets');
+          loadTickets();
+        } else {
+          showToast(`Validation Failed: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showToast("Network error submitting fault report", 'error');
+      }
+    }
+
+    function quickReport(labId, pcId) {
+      switchTab('tab-report');
+      document.getElementById('form-lab-select').value = labId;
+      handleLabChange().then(() => {
+        document.getElementById('form-pc-select').value = pcId;
+      });
+    }
+
+    // Modal & Triage Updates
+    function openResolveModal(id, number, currentStatus) {
+      document.getElementById('modal-ticket-id').value = id;
+      document.getElementById('modal-ticket-title').innerText = `Triage Ticket ${number}`;
+      document.getElementById('modal-status-select').value = currentStatus === 'Pending' ? 'In Progress' : 'Resolved';
+      document.getElementById('resolve-modal').classList.add('active');
+    }
+
+    function closeResolveModal() {
+      document.getElementById('resolve-modal').classList.remove('active');
+    }
+
+    async function submitTicketResolution(e) {
+      e.preventDefault();
+      const id = document.getElementById('modal-ticket-id').value;
+      const status = document.getElementById('modal-status-select').value;
+      const notes = document.getElementById('modal-notes').value.trim();
+
+      try {
+        const res = await fetch(`/api/tickets/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: status,
+            technician_id: currentUser.id,
+            resolution_notes: notes
+          })
+        });
+
+        if (res.ok) {
+          showToast(`Ticket updated to status [${status}]`, 'success');
+          closeResolveModal();
+          loadTickets();
+        } else {
+          showToast("Failed to update ticket", 'error');
+        }
+      } catch (err) {
+        showToast("Error updating ticket", 'error');
+      }
+    }
+
+    // Wake-on-LAN Remote Action
+    async function triggerWolRestart(pcId) {
+      showToast(`Broadcasting WoL Magic Packet to ${pcId}...`, 'warning');
+      try {
+        const res = await fetch('/api/restart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pc_id: pcId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✓ WoL Magic Packet transmitted to ${pcId} (${data.target_mac}) via UDP:9`, 'success');
+          loadTelemetry();
+        } else {
+          showToast(`WoL failed: ${data.error}`, 'error');
+        }
+      } catch (e) {
+        showToast("WoL socket dispatch error", 'error');
+      }
+    }
+
+    // Telemetry Events
+    async function loadTelemetry() {
+      try {
+        const res = await fetch('/api/telemetry');
+        const data = await res.json();
+        const container = document.getElementById('telemetry-log-container');
+        container.innerHTML = '';
+
+        if (!data.events || data.events.length === 0) {
+          container.innerHTML = '<div style="color: #94a3b8; padding: 1rem;">No recent C daemon telemetry events.</div>';
+          return;
+        }
+
+        data.events.forEach(evt => {
+          const div = document.createElement('div');
+          div.className = 'telemetry-line';
+          div.innerHTML = `
+            <span class="t-ts">[${evt.timestamp.split(' ')[1]}]</span>
+            <span class="t-tag">[${evt.type}]</span>
+            <span class="t-msg">${evt.message}</span>
+          `;
+          container.appendChild(div);
+        });
+
+        if (data.events.length > 0) {
+          document.getElementById('daemon-summary-text').innerText = data.events[0].message;
+        }
+      } catch (err) {
+        console.error("Failed loading telemetry:", err);
+      }
+    }
+
+    // Update Overall Stats
+    async function updateStats() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        document.getElementById('stat-total-pcs').innerText = data.total_computers || 60;
+        document.getElementById('stat-online-pcs').innerText = (data.status_breakdown && data.status_breakdown.Online) || 0;
+        document.getElementById('stat-offline-pcs').innerText = ((data.status_breakdown && data.status_breakdown.Offline) || 0) + ((data.status_breakdown && data.status_breakdown.Faulty) || 0);
+        document.getElementById('stat-pending-tickets').innerText = data.pending_tickets || 0;
+        document.getElementById('badge-pending-tickets').innerText = data.pending_tickets || 0;
+      } catch (e) {}
+    }
+
+    // Periodic live sync
+    setInterval(() => {
+      updateStats();
+      if (document.getElementById('tab-monitor').classList.contains('active')) {
+        loadComputers();
+      }
+      if (document.getElementById('tab-tickets').classList.contains('active')) {
+        loadTickets();
+      }
+    }, 4000);
+
+    // Initial load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLabs().then(() => {
+        loadComputers();
+        loadTickets();
+        loadTelemetry();
+        updateStats();
+      });
+    });
+  </script>
+</body>
+</html>
