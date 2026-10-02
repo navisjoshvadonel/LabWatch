@@ -1,9 +1,12 @@
-# College Lab PC Fault Reporting System (LabPulse)
+# LabWatch — Laboratory PC Fault Reporting & Monitoring System
 
-LabPulse is an end-to-end, network-aware PC fault reporting and monitoring platform built across three architectural tiers:
+**Mepco Schlenk Engineering College, Sivakasi — Department of Artificial Intelligence and Data Science (AIDS)**  
+*Developed by venki and navi*
+
+LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platform built across three architectural tiers:
 - **Data Tier (Step 1)**: Relational SQLite database (`labpulse.db`) with Write-Ahead Logging (WAL) and indexed inventory.
 - **Network Tier (Step 2)**: Core C protocols for **ICMP** fault detection, **UDP** Wake-on-LAN remote restarts, and **TCP** server alerts.
-- **Application Tier (Step 3)**: Unified Python Flask Core Server with Auth, Ticketing Engine (Data Validation & CRUD), Automated Ticket Handling, and a rich **Single-Page Application (SPA)** web portal.
+- **Application Tier (Step 3 & 4)**: Unified Python Flask Core Server with Role-Based Access Control (Student vs IT Admin), Ticketing Engine, Automated Resolution Workflows, and institutionally branded responsive portals.
 
 ---
 
