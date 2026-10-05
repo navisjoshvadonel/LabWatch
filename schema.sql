@@ -10,10 +10,10 @@ PRAGMA foreign_keys = ON;
 -- Stores information about physical computer laboratories in the institution
 CREATE TABLE IF NOT EXISTS LABS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    lab_name TEXT UNIQUE NOT NULL,             -- e.g., 'Lab A - Network Lab', 'Lab B - Systems Lab'
-    department TEXT NOT NULL,                  -- e.g., 'Computer Science & Engineering'
-    location TEXT NOT NULL,                    -- e.g., 'Building 2, 3rd Floor, Room 301'
-    total_pcs INTEGER NOT NULL DEFAULT 0,      -- Number of configured workstations
+    lab_name TEXT UNIQUE NOT NULL,
+    department TEXT NOT NULL,
+    location TEXT NOT NULL,
+    total_pcs INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -22,12 +22,12 @@ CREATE TABLE IF NOT EXISTS LABS (
 CREATE TABLE IF NOT EXISTS COMPUTERS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     lab_id INTEGER NOT NULL,
-    pc_number TEXT NOT NULL,                   -- e.g., 'PC-01', 'PC-30'
-    ip_address TEXT UNIQUE NOT NULL,           -- e.g., '192.168.1.130'
-    mac_address TEXT UNIQUE NOT NULL,          -- e.g., '00:1A:2B:3C:4D:1E'
-    status TEXT NOT NULL DEFAULT 'Online',     -- 'Online', 'Offline', 'Faulty', 'Maintenance'
-    specs TEXT,                                -- Hardware specs e.g. 'Core i5-12400, 16GB RAM, 512GB SSD'
-    last_heartbeat TIMESTAMP,                  -- Last UDP/ICMP heartbeat received by monitor
+    pc_number TEXT NOT NULL,
+    ip_address TEXT UNIQUE NOT NULL,
+    mac_address TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Online',
+    specs TEXT,
+    last_heartbeat TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE CASCADE,
     UNIQUE (lab_id, pc_number)
@@ -37,10 +37,10 @@ CREATE TABLE IF NOT EXISTS COMPUTERS (
 -- Stores portal users: Students, Staff, Lab Technicians, and System Administrators
 CREATE TABLE IF NOT EXISTS USERS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,             -- e.g., 'student1', 'tech_john', 'admin'
-    password_hash TEXT NOT NULL,               -- Hashed password for authentication
-    full_name TEXT NOT NULL,                   -- e.g., 'Alice Smith'
-    email TEXT UNIQUE NOT NULL,                -- For SMTP ticket notifications
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('student', 'staff', 'technician', 'admin')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -48,11 +48,11 @@ CREATE TABLE IF NOT EXISTS USERS (
 -- 4. TICKETS TABLE
 -- Stores fault reports submitted by users and managed by technicians
 CREATE TABLE IF NOT EXISTS TICKETS (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,      -- Unique Ticket ID (e.g. 101, 102)
-    ticket_number TEXT UNIQUE NOT NULL,        -- Human-readable format (e.g., 'TCK-101')
-    user_id INTEGER NOT NULL,                  -- Reporter ID
-    lab_id INTEGER NOT NULL,                   -- Lab where fault occurred
-    computer_id INTEGER NOT NULL,              -- Target computer ID
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_number TEXT UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL,
+    lab_id INTEGER NOT NULL,
+    computer_id INTEGER NOT NULL,
     issue_category TEXT NOT NULL CHECK(
         issue_category IN (
             'Network Connectivity',
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS TICKETS (
             'Other'
         )
     ),
-    description TEXT NOT NULL,                 -- Detailed fault description from user
+    description TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'Pending' CHECK(
         status IN ('Pending', 'In Progress', 'Resolved', 'Closed')
     ),
@@ -72,16 +72,16 @@ CREATE TABLE IF NOT EXISTS TICKETS (
         priority IN ('Low', 'Medium', 'High', 'Critical')
     ),
     reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP,                     -- Timestamp when technician resolves ticket
-    technician_id INTEGER,                     -- Technician who resolved the ticket
-    resolution_notes TEXT,                     -- Notes recorded upon resolution
+    resolved_at TIMESTAMP,
+    technician_id INTEGER,
+    resolution_notes TEXT,
     FOREIGN KEY (user_id) REFERENCES USERS (id) ON DELETE RESTRICT,
     FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE RESTRICT,
     FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE RESTRICT,
     FOREIGN KEY (technician_id) REFERENCES USERS (id) ON DELETE SET NULL
 );
 
--- Indices for performance (Query optimization for technicians and dashboard views)
+-- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_computers_lab_id ON COMPUTERS(lab_id);
 CREATE INDEX IF NOT EXISTS idx_computers_ip ON COMPUTERS(ip_address);
 CREATE INDEX IF NOT EXISTS idx_computers_status ON COMPUTERS(status);
