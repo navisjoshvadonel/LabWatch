@@ -529,7 +529,8 @@
 </head>
 <body>
 
-<div class="page-shell">
+<div id="tsparticles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+<div class="page-shell" style="position: relative; z-index: 1;">
 
   <!-- ── Institutional Header: Logo on Left, System Title on Right (No Duplicate College Name) ── -->
   <header class="inst-header">
@@ -696,17 +697,6 @@
 
         </div><!-- /.login-card -->
 
-        <!-- Developed by venki and navi -->
-        <div class="developer-credit-tag">
-          <div class="credit-pill">
-            <div class="credit-avatar">⚡</div>
-            <div class="credit-meta">
-              <div class="credit-line1">Developed by venki and navi</div>
-              <div class="credit-line2">Aids Department</div>
-            </div>
-          </div>
-        </div>
-
       </main>
 
     </div><!-- /.portal-layout -->
@@ -715,7 +705,10 @@
 
   <!-- ── Page Footer ── -->
   <footer class="page-footer">
-    Mepco Schlenk Engineering College, Sivakasi &mdash; Aids Department
+    <p>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      Developed by venki and navi &bull; LabWatch Sign In Portal
+    </p>
   </footer>
 
 </div><!-- /.page-shell -->
@@ -808,6 +801,80 @@
 
   handleLogin('student-login-form', 'student', 'student-error', 'student-success', 'student-spinner', 'student-btn-text', 'student-submit');
   handleLogin('admin-login-form',   'admin',   'admin-error',   'admin-success',   'admin-spinner',   'admin-btn-text',   'admin-submit');
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-engine@2.12.0/tsparticles.engine.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-basic@2.12.0/tsparticles.basic.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-interaction-particles-links@2.12.0/tsparticles.interaction.particles.links.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-move-base@2.12.0/tsparticles.move.base.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-shape-circle@2.12.0/tsparticles.shape.circle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-updater-color@2.12.0/tsparticles.updater.color.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-updater-opacity@2.12.0/tsparticles.updater.opacity.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-updater-size@2.12.0/tsparticles.updater.size.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-interaction-events@2.12.0/tsparticles.interaction.events.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-plugin-particles-links@2.12.0/tsparticles.plugin.particles.links.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+<script>
+  tsParticles.load("tsparticles", {
+    fpsLimit: 60,
+    interactivity: {
+      detectsOn: "window",
+      events: {
+        onHover: {
+          enable: true,
+          mode: "grab"
+        },
+        resize: true
+      },
+      modes: {
+        grab: {
+          distance: 140,
+          links: {
+            opacity: 0.5
+          }
+        }
+      }
+    },
+    particles: {
+      color: {
+        value: "#0066b3"
+      },
+      links: {
+        color: "#0099da",
+        distance: 150,
+        enable: true,
+        opacity: 0.3,
+        width: 1
+      },
+      move: {
+        enable: true,
+        speed: 1.5,
+        direction: "none",
+        random: false,
+        straight: false,
+        outModes: {
+          default: "bounce"
+        }
+      },
+      number: {
+        density: {
+          enable: true,
+          area: 800
+        },
+        value: 60
+      },
+      opacity: {
+        value: 0.4
+      },
+      shape: {
+        type: "circle"
+      },
+      size: {
+        value: { min: 1, max: 3 }
+      }
+    },
+    detectRetina: true
+  });
 </script>
 
 </body>

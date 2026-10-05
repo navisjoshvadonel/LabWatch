@@ -493,9 +493,6 @@
           <span>📊 Live Monitor</span>
         </a>
         {% endif %}
-        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">
-          <span>🚪 Logout</span>
-        </a>
       </nav>
     </div>
   </header>
@@ -503,14 +500,7 @@
   <!-- 3. Form Content Container -->
   <main class="page-container">
 
-    <div class="phase-badge-strip">
-      <span class="phase-pill">
-        <span>Phase 1 (Input)</span> • Client Tier
-      </span>
-      <span style="font-size: 0.75rem; color: var(--text-muted);">
-        Connected to Flask Application Tier & SQLite WAL Engine
-      </span>
-    </div>
+
 
     <!-- Error Alert Banner -->
     {% if error_message %}
@@ -536,9 +526,6 @@
           Initial status: <strong>Pending</strong> (queued oldest-first for IT triage).
         </p>
         <div class="success-actions">
-          <a href="/admin" class="btn-link-action btn-link-primary">
-            <span>🛠️ View on Admin Dashboard &rarr;</span>
-          </a>
           <a href="/report" class="btn-link-action btn-link-secondary">
             <span>➕ Submit Another Request</span>
           </a>
