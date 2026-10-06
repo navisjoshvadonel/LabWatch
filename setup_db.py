@@ -19,6 +19,7 @@ import os
 import sys
 import sqlite3
 import hashlib
+import secrets
 from datetime import datetime, timedelta
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "labpulse.db")
@@ -27,9 +28,12 @@ TXT_EXPORT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "comp
 CSV_EXPORT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "computers_monitor.csv")
 
 
-def hash_password(password: str) -> str:
-    """Hash password using SHA-256 for secure storage."""
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+def hash_password(password: str, salt: str = None) -> tuple:
+    """Hash password using SHA-256 with per-user cryptographic salt."""
+    if not salt:
+        salt = secrets.token_hex(16)
+    pwd_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    return pwd_hash, salt
 
 
 def get_db_connection(db_path: str = DB_FILE) -> sqlite3.Connection:
@@ -79,6 +83,7 @@ def initialize_schema(conn: sqlite3.Connection):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            salt TEXT NOT NULL DEFAULT '',
             full_name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             role TEXT NOT NULL CHECK(role IN ('student', 'staff', 'technician', 'admin')),
@@ -111,6 +116,12 @@ def initialize_schema(conn: sqlite3.Connection):
         CREATE INDEX IF NOT EXISTS idx_tickets_computer_id ON TICKETS(computer_id);
         """
         conn.executescript(fallback_sql)
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(USERS)")
+    cols = [col[1] for col in cursor.fetchall()]
+    if cols and "salt" not in cols:
+        print("[*] Migrating USERS table: Adding 'salt' column...")
+        cursor.execute("ALTER TABLE USERS ADD COLUMN salt TEXT NOT NULL DEFAULT ''")
     conn.commit()
     print("[+] Database schema successfully created.")
 
@@ -239,21 +250,28 @@ def populate_users(conn: sqlite3.Connection):
         ("prof_aids", "staff123", "Prof. AiDS Staff Advisor", "hod.aids@mepcoeng.ac.in", "staff"),
     ]
 
-    hashed_users = [
-        (username, hash_password(password), full_name, email, role)
-        for username, password, full_name, email, role in users_data
-    ]
+    hashed_users = []
+    for username, password, full_name, email, role in users_data:
+        pwd_hash, salt = hash_password(password)
+        hashed_users.append((username, pwd_hash, salt, full_name, email, role))
 
     cursor = conn.cursor()
     cursor.executemany(
         """
-        INSERT OR IGNORE INTO USERS (username, password_hash, full_name, email, role)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO USERS (username, password_hash, salt, full_name, email, role)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         hashed_users,
     )
+    # Update existing users that had an empty salt
+    for username, password, full_name, email, role in users_data:
+        cursor.execute("SELECT id, salt FROM USERS WHERE username = ?", (username,))
+        row = cursor.fetchone()
+        if row and (not row["salt"] or row["salt"] == ""):
+            pwd_hash, salt = hash_password(password)
+            cursor.execute("UPDATE USERS SET password_hash = ?, salt = ? WHERE id = ?", (pwd_hash, salt, row["id"]))
     conn.commit()
-    print(f"[+] Seeded {len(users_data)} users into USERS table.")
+    print(f"[+] Seeded {len(users_data)} users into USERS table with cryptographic salt.")
 
 
 def populate_tickets(conn: sqlite3.Connection):

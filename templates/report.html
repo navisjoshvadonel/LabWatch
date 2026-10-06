@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>User Issue Reporting Form | Mepco Schlenk Engineering College</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -545,6 +546,7 @@
 
       <!-- Step 4 Core: Form with POST request to Python Server -->
       <form action="/report" method="POST" id="issue-reporting-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card-body">
           <div class="form-grid">
 

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS USERS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL DEFAULT '',
     full_name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('student', 'staff', 'technician', 'admin')),

@@ -22,8 +22,11 @@ Features:
 
 import hashlib
 import json
+import logging
+from logging.handlers import RotatingFileHandler
 import os
 import re
+import secrets
 import smtplib
 import socket
 import sqlite3
@@ -32,7 +35,7 @@ import subprocess
 import sys
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
@@ -41,10 +44,142 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "labpulse.db")
 BIN_PATH = os.path.join(BASE_DIR, "bin", "labpulse_monitor.exe")
+LOG_PATH = os.path.join(BASE_DIR, "labpulse.log")
 
+# ==============================================================================
+# 1. STRUCTURED LOGGING ENGINE (CONSOLE + ROTATING FILE LOG)
+# ==============================================================================
+logger = logging.getLogger("LabPulse")
+logger.setLevel(logging.INFO)
+
+log_formatter = logging.Formatter(
+    "[%(asctime)s] [%(levelname)s] [%(threadName)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+if not logger.handlers:
+    # Console stdout stream handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(log_formatter)
+    logger.addHandler(console_handler)
+
+    # Rotating file log handler (max 5MB, 3 historical backups)
+    file_handler = RotatingFileHandler(LOG_PATH, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
+    file_handler.setFormatter(log_formatter)
+    logger.addHandler(file_handler)
+
+# ==============================================================================
+# 2. FLASK APPLICATION & SESSION SECURITY CONFIGURATION
+# ==============================================================================
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"), static_folder=os.path.join(BASE_DIR, "static"))
-app.secret_key = "labpulse_secret_key_college_mini_project_secure"
+app.secret_key = os.environ.get("LABPULSE_SECRET_KEY", "labpulse_secret_key_mepco_aids_secure_2026")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=2)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+# ==============================================================================
+# 3. CSRF PROTECTION ENGINE
+# ==============================================================================
+def get_csrf_token() -> str:
+    """Retrieve or generate cryptographically secure CSRF token for active session."""
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
+    return session["csrf_token"]
+
+@app.context_processor
+def inject_csrf_token():
+    """Exposes csrf_token() to all Jinja templates automatically."""
+    return dict(csrf_token=get_csrf_token)
+
+CSRF_EXEMPT_PATHS = {
+    "/api/pc-status",  # Dedicated machine-to-machine TCP bridge called by C daemon
+}
+
+@app.before_request
+def csrf_protect():
+    """Verify CSRF token on all state-changing HTTP methods (POST, PUT, DELETE, PATCH)."""
+    if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+        if request.path in CSRF_EXEMPT_PATHS:
+            return None
+
+        # Allow initial login/register if token not yet loaded from session
+        token = (
+            request.headers.get("X-CSRFToken") or
+            request.headers.get("X-CSRF-Token") or
+            request.form.get("csrf_token")
+        )
+        if not token and request.is_json:
+            token = (request.get_json(silent=True) or {}).get("csrf_token")
+
+        session_token = session.get("csrf_token")
+        if not session_token:
+            session_token = get_csrf_token()
+
+        # If it's a login attempt from a fresh browser session without existing session state, allow
+        if request.path in ("/api/auth/login", "/api/auth/register", "/login") and not token:
+            return None
+
+        if not token or not secrets.compare_digest(token, session_token):
+            logger.warning(f"[-] [CSRF Reject] Blocked unauthorized {request.method} to {request.path} from {request.remote_addr}")
+            if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": "Security validation failed: CSRF token missing or invalid. Please refresh the page."}), 403
+            return render_template("login.html", error="Security validation (CSRF) failed. Please refresh and try again.", portal="student"), 403
+
+# ==============================================================================
+# 4. BACKGROUND ICMP SWEEP THREAD (NO MANUAL C DAEMON START NEEDED)
+# ==============================================================================
+class BackgroundSweepThread(threading.Thread):
+    """
+    Periodically executes compiled C binary (bin/labpulse_monitor.exe --sweep).
+    Runs on a timer thread and automatically triggers the C layer monitoring.
+    """
+    def __init__(self, interval_seconds: int = 30):
+        super().__init__(name="LabPulse-ICMPSweep", daemon=True)
+        self.interval = interval_seconds
+        self._stop_event = threading.Event()
+        self.last_sweep_ts = None
+
+    def stop(self):
+        self._stop_event.set()
+
+    def run(self):
+        logger.info(f"[+] Background ICMP Sweep engine started (Interval: {self.interval}s)")
+        time.sleep(3)  # Brief delay to allow Flask server to bind first
+        while not self._stop_event.is_set():
+            if os.path.exists(BIN_PATH):
+                try:
+                    logger.info(f"[*] Running automated ICMP sweep via {BIN_PATH}...")
+                    proc = subprocess.run(
+                        [BIN_PATH, "--sweep"],
+                        capture_output=True,
+                        text=True,
+                        timeout=25,
+                        cwd=BASE_DIR
+                    )
+                    self.last_sweep_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    logger.info(f"[+] Automated ICMP sweep completed at {self.last_sweep_ts}")
+                except subprocess.TimeoutExpired:
+                    logger.warning("[-] Automated ICMP sweep subprocess timed out after 25s")
+                except Exception as exc:
+                    logger.error(f"[-] Automated ICMP sweep error: {exc}")
+            else:
+                logger.debug(f"[-] C binary {BIN_PATH} not yet available; sweep sleeping.")
+
+            for _ in range(self.interval):
+                if self._stop_event.is_set():
+                    break
+                time.sleep(1)
+
+sweep_thread = None
+
+def start_background_sweep():
+    global sweep_thread
+    auto_sweep_enabled = os.environ.get("LABPULSE_AUTO_SWEEP", "1") == "1"
+    if auto_sweep_enabled and (sweep_thread is None or not sweep_thread.is_alive()):
+        interval = int(os.environ.get("LABPULSE_SWEEP_INTERVAL", "30"))
+        sweep_thread = BackgroundSweepThread(interval_seconds=interval)
+        sweep_thread.start()
 
 # ==============================================================================
 # STEP 5: SMTP EMAIL NOTIFICATION CONFIGURATION
@@ -274,8 +409,7 @@ def send_resolution_email(
             "DEMO MODE: Email built successfully (HTML + plain-text MIME) but not "
             "transmitted. Set LABPULSE_SMTP_PASSWORD env var to enable live dispatch."
         )
-        print(f"[+] [EMAIL DEMO] 'PC Fixed' notification for {ticket_number} "
-              f"→ {to_email} (demo, not transmitted)")
+        logger.info(f"[+] [EMAIL DEMO] 'PC Fixed' notification for {ticket_number} → {to_email} (demo, not transmitted)")
     else:
         try:
             # Establish STARTTLS connection to Gmail SMTP
@@ -287,16 +421,16 @@ def send_resolution_email(
                 server.login(SMTP_SENDER_EMAIL, SMTP_APP_PASSWORD)
                 server.sendmail(SMTP_SENDER_EMAIL, [to_email], msg.as_string())
             result["sent"] = True
-            print(f"[+] [EMAIL SENT] Ticket {ticket_number} resolution email → {to_email}")
+            logger.info(f"[+] [EMAIL SENT] Ticket {ticket_number} resolution email → {to_email}")
         except smtplib.SMTPAuthenticationError:
             result["error"] = "SMTP authentication failed. Check app password."
-            print(f"[-] [EMAIL ERROR] Auth failed for {ticket_number}: {result['error']}")
+            logger.error(f"[-] [EMAIL ERROR] Auth failed for {ticket_number}: {result['error']}")
         except smtplib.SMTPException as e:
             result["error"] = f"SMTP error: {e}"
-            print(f"[-] [EMAIL ERROR] {ticket_number}: {result['error']}")
+            logger.error(f"[-] [EMAIL ERROR] {ticket_number}: {result['error']}")
         except Exception as e:
             result["error"] = f"Unexpected error: {e}"
-            print(f"[-] [EMAIL ERROR] {ticket_number}: {result['error']}")
+            logger.error(f"[-] [EMAIL ERROR] {ticket_number}: {result['error']}")
 
     # Archive in in-memory notification log (circular buffer, max 50)
     notification_log.insert(0, result)
@@ -316,7 +450,7 @@ def _send_email_async(to_email, reporter_name, ticket_number, pc_number,
             issue_category, description, resolution_notes, resolved_at
         )
     except Exception as exc:
-        print(f"[-] [EMAIL THREAD] Unhandled exception: {exc}")
+        logger.error(f"[-] [EMAIL THREAD] Unhandled exception: {exc}")
 
 
 def get_db_connection():
@@ -329,9 +463,52 @@ def get_db_connection():
     return conn
 
 
-def hash_password(password: str) -> str:
-    """Standard SHA-256 hashing to match setup_db.py."""
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+def ensure_schema_migrations():
+    """Ensure database schema has the 'salt' column in USERS and all required indices."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(USERS)")
+        cols = [c[1] for c in cursor.fetchall()]
+        if cols and "salt" not in cols:
+            logger.info("[*] Auto-migrating USERS table: adding 'salt' column...")
+            cursor.execute("ALTER TABLE USERS ADD COLUMN salt TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+
+        # Generate cryptographic salt for any existing users with empty salt
+        cursor.execute("SELECT id, username, password_hash, salt FROM USERS WHERE salt IS NULL OR salt = ''")
+        unmigrated = cursor.fetchall()
+        for u in unmigrated:
+            new_salt = secrets.token_hex(16)
+            cursor.execute("UPDATE USERS SET salt = ? WHERE id = ?", (new_salt, u["id"]))
+        if unmigrated:
+            conn.commit()
+            logger.info(f"[+] Migrated {len(unmigrated)} existing user records with unique cryptographic salts.")
+    except Exception as exc:
+        logger.error(f"[-] Schema migration check failed: {exc}")
+    finally:
+        conn.close()
+
+
+def hash_password(password: str, salt: str = None) -> tuple:
+    """Hash password using SHA-256 with per-user cryptographic salt."""
+    if not salt:
+        salt = secrets.token_hex(16)
+    pwd_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    return pwd_hash, salt
+
+
+def verify_password(password: str, stored_hash: str, salt: str = None) -> bool:
+    """Constant-time verification of password against stored hash with salt."""
+    if not stored_hash or not password:
+        return False
+    if salt:
+        computed_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+        if secrets.compare_digest(computed_hash, stored_hash):
+            return True
+    # Legacy unsalted check fallback
+    legacy_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return secrets.compare_digest(legacy_hash, stored_hash)
 
 
 def send_wol_packet(mac_address: str, broadcast_ip: str = "255.255.255.255", port: int = 9) -> bool:
@@ -348,7 +525,7 @@ def send_wol_packet(mac_address: str, broadcast_ip: str = "255.255.255.255", por
             sock.sendto(magic_payload, (broadcast_ip, port))
         return True
     except Exception as e:
-        print(f"[-] WoL Python dispatch error: {e}")
+        logger.error(f"[-] WoL Python dispatch error: {e}")
         return False
 
 
@@ -358,7 +535,7 @@ def send_wol_packet(mac_address: str, broadcast_ip: str = "255.255.255.255", por
 
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
-    """Authenticate student, staff, technician, or administrator."""
+    """Authenticate student, staff, technician, or administrator using salted SHA-256."""
     data = request.get_json() or {}
     username = data.get("username", "").strip()
     password = data.get("password", "").strip()
@@ -369,19 +546,20 @@ def auth_login():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, password_hash, full_name, email, role FROM USERS WHERE username = ?", (username,))
+        cursor.execute("SELECT id, username, password_hash, salt, full_name, email, role FROM USERS WHERE username = ?", (username,))
         user = cursor.fetchone()
-        is_valid = False
-        if user:
-            if user["password_hash"] == hash_password(password):
-                is_valid = True
-            elif password in ("student123", "navis123") and user["role"] == "student":
-                is_valid = True
-            elif password in ("admin123", "admin") and user["role"] in ("admin", "technician"):
-                is_valid = True
 
-        if not user or not is_valid:
+        user_salt = user["salt"] if (user and "salt" in user.keys()) else None
+        if not user or not verify_password(password, user["password_hash"], user_salt):
+            logger.warning(f"[-] Unauthorized login attempt for user '{username}' from {request.remote_addr}")
             return jsonify({"error": "Invalid username or password"}), 401
+
+        # Seamlessly upgrade legacy unsalted passwords on successful login
+        if user_salt is None or user_salt == "":
+            new_hash, new_salt = hash_password(password)
+            cursor.execute("UPDATE USERS SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user["id"]))
+            conn.commit()
+            logger.info(f"[+] Transparently upgraded legacy password for '{username}' to salted SHA-256.")
 
         user_data = {
             "id": user["id"],
@@ -391,6 +569,10 @@ def auth_login():
             "role": user["role"]
         }
         session["user"] = user_data
+        session.permanent = True  # Enforce session expiration policy
+        get_csrf_token()          # Seed session CSRF token
+
+        logger.info(f"[+] User '{username}' logged in successfully as [{user['role']}]")
         add_telemetry("AUTH_LOGIN", f"User '{username}' logged in successfully as [{user['role']}]", user_data)
 
         return jsonify({
@@ -404,7 +586,7 @@ def auth_login():
 
 @app.route("/api/auth/register", methods=["POST"])
 def auth_register():
-    """Register a new student, staff, or technician account."""
+    """Register a new student, staff, or technician account with salted SHA-256."""
     data = request.get_json() or {}
     username = data.get("username", "").strip()
     password = data.get("password", "").strip()
@@ -430,13 +612,13 @@ def auth_register():
         if cursor.fetchone():
             return jsonify({"error": "Username or email is already registered"}), 409
 
-        pwd_hash = hash_password(password)
+        pwd_hash, salt = hash_password(password)
         cursor.execute(
             """
-            INSERT INTO USERS (username, password_hash, full_name, email, role)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO USERS (username, password_hash, salt, full_name, email, role)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (username, pwd_hash, full_name, email, role)
+            (username, pwd_hash, salt, full_name, email, role)
         )
         conn.commit()
         new_id = cursor.lastrowid
@@ -449,6 +631,10 @@ def auth_register():
             "role": role
         }
         session["user"] = user_data
+        session.permanent = True
+        get_csrf_token()
+
+        logger.info(f"[+] User '{username}' registered successfully with cryptographic salt as [{role}]")
         add_telemetry("AUTH_REGISTER", f"New user '{username}' registered as [{role}]", user_data)
 
         return jsonify({
@@ -458,6 +644,7 @@ def auth_register():
         }), 201
     except sqlite3.Error as e:
         conn.rollback()
+        logger.error(f"[-] Registration error: {e}")
         return jsonify({"error": f"Database error: {str(e)}"}), 500
     finally:
         conn.close()
@@ -493,6 +680,7 @@ def get_tickets():
     status_filter = request.args.get("status")
     lab_filter = request.args.get("lab_id")
     user_filter = request.args.get("user_id")
+    priority_filter = request.args.get("priority")
     sort_order = request.args.get("sort", "ASC").upper()
 
     query = """
@@ -517,14 +705,23 @@ def get_tickets():
         params.append(status_filter)
 
     if lab_filter and lab_filter.lower() != "all":
-        query += " AND t.lab_id = ?"
-        params.append(int(lab_filter))
+        if str(lab_filter).isdigit():
+            query += " AND t.lab_id = ?"
+            params.append(int(lab_filter))
+        else:
+            query += " AND l.lab_name LIKE ?"
+            params.append(f"%{lab_filter}%")
+
+    if priority_filter and priority_filter.lower() != "all":
+        query += " AND t.priority = ?"
+        params.append(priority_filter.capitalize())
 
     if user_filter:
         query += " AND t.user_id = ?"
         params.append(int(user_filter))
 
-    query += f" ORDER BY t.reported_at {sort_order if sort_order in ('ASC', 'DESC') else 'ASC'}"
+    safe_sort = "DESC" if sort_order == "DESC" else "ASC"
+    query += f" ORDER BY t.reported_at {safe_sort}"
 
     conn = get_db_connection()
     try:
@@ -532,6 +729,42 @@ def get_tickets():
         cursor.execute(query, params)
         rows = [dict(r) for r in cursor.fetchall()]
         return jsonify({"count": len(rows), "tickets": rows})
+    finally:
+        conn.close()
+
+
+@app.route("/api/stats", methods=["GET"])
+def get_stats():
+    """
+    Returns real-time aggregated KPI statistics for dashboard live-updating:
+    {pending, resolved, offline, online, total_computers, timestamp}
+    """
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM TICKETS WHERE status = 'Pending'")
+        pending = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM TICKETS WHERE status IN ('Resolved', 'Closed')")
+        resolved = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM COMPUTERS WHERE status IN ('Offline', 'Faulty')")
+        offline = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM COMPUTERS WHERE status = 'Online'")
+        online = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM COMPUTERS")
+        total = cursor.fetchone()[0]
+
+        return jsonify({
+            "pending": pending,
+            "resolved": resolved,
+            "offline": offline,
+            "online": online,
+            "total_computers": total,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }), 200
     finally:
         conn.close()
 
@@ -778,12 +1011,17 @@ def receive_c_daemon_alert():
 
         # 2. AUTOMATED TICKET HANDLING FOR FROZEN/OFFLINE WORKSTATION (PC-30 Scenario)
         if canonical_status in ("Offline", "Faulty"):
-            # Check if an active (Pending or In Progress) ticket already exists to avoid spamming
+            # DEBOUNCE WINDOW (15-min): check active tickets OR tickets reported/resolved within the last 15 minutes
             cursor.execute(
                 """
-                SELECT id, ticket_number, status 
+                SELECT id, ticket_number, status, reported_at, resolved_at 
                 FROM TICKETS 
-                WHERE computer_id = ? AND status IN ('Pending', 'In Progress')
+                WHERE computer_id = ?
+                  AND (
+                    status IN ('Pending', 'In Progress')
+                    OR (status IN ('Resolved', 'Closed') AND datetime(resolved_at, '+15 minutes') > datetime('now'))
+                    OR (datetime(reported_at, '+15 minutes') > datetime('now'))
+                  )
                 ORDER BY id DESC LIMIT 1
                 """,
                 (comp_id,)
@@ -816,6 +1054,7 @@ def receive_c_daemon_alert():
                 created_ticket_number = ticket_number
                 action_msg = f"Offline detected! Automated 'Network Down' ticket {ticket_number} created on dashboard."
 
+                logger.info(f"[+] [AUTOMATED TICKET] Created {ticket_number} for {pc_number} ({comp['ip_address']})")
                 add_telemetry("AUTOMATED_TICKET", action_msg, {
                     "pc_id": pc_number,
                     "ticket_number": ticket_number,
@@ -823,7 +1062,12 @@ def receive_c_daemon_alert():
                     "priority": "Critical"
                 })
             else:
-                action_msg = f"Offline detected. Active ticket {existing_ticket['ticket_number']} already in progress."
+                action_msg = (
+                    f"Offline detected on {pc_number}. Suppressed duplicate ticket: "
+                    f"Ticket {existing_ticket['ticket_number']} ({existing_ticket['status']}) "
+                    f"is active or was updated within the 15-minute debounce window."
+                )
+                logger.info(f"[*] [Debounce Active] {action_msg}")
 
         add_telemetry("ICMP_ALERT", f"C Daemon reported {pc_number} as [{canonical_status}]", {
             "pc_id": pc_number,
@@ -900,7 +1144,7 @@ def trigger_remote_restart():
                     sent = True
                     c_executed = True
             except Exception as e:
-                print(f"[-] Subprocess C execution failed: {e}")
+                logger.error(f"[-] Subprocess C execution failed: {e}")
 
         # Fallback to Python socket if C binary was not run
         if not sent:
@@ -1032,9 +1276,13 @@ def login_required(roles=None):
         def decorated_function(*args, **kwargs):
             user = session.get("user")
             if not user:
+                if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Authentication required. Please sign in."}), 401
                 portal = "admin" if roles and all(r in ("admin", "technician") for r in roles) else "student"
                 return redirect(url_for("login_page", portal=portal, error="Authentication required. Please sign in first."))
             if roles and user.get("role") not in roles:
+                if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Access Denied: Insufficient administrative privileges."}), 403
                 if user.get("role") in ("student", "staff"):
                     return redirect(url_for("user_issue_reporting", error="Access Denied: IT Staff administrative privileges required."))
                 return redirect(url_for("login_page", error="Access Denied: Insufficient authorization."))
@@ -1637,7 +1885,7 @@ def update_pc_status_cli(pc_id: str, status: str, ip_address: str = None, mac_ad
             row = cursor.fetchone()
 
         if not row:
-            print(f"[-] [CLI Error] Workstation '{pc_id}' not found.")
+            logger.error(f"[-] [CLI Error] Workstation '{pc_id}' not found.")
             return False
 
         old_status = row["status"]
@@ -1661,10 +1909,10 @@ def update_pc_status_cli(pc_id: str, status: str, ip_address: str = None, mac_ad
                     (tck_num, lab_id, comp_id, desc)
                 )
                 conn.commit()
-                print(f"[+] [AUTOMATED TICKET] Created {tck_num} for {pc_num}")
+                logger.info(f"[+] [AUTOMATED TICKET] Created {tck_num} for {pc_num}")
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
-        print(f"[+] [DB UPDATE] Workstation '{pc_num}': '{old_status}' -> '{canonical_status}' (in {elapsed_ms:.2f} ms)")
+        logger.info(f"[+] [DB UPDATE] Workstation '{pc_num}': '{old_status}' -> '{canonical_status}' (in {elapsed_ms:.2f} ms)")
         return True
     finally:
         conn.close()
@@ -1679,6 +1927,8 @@ if __name__ == "__main__":
         success = update_pc_status_cli(pc, st, ip, mac)
         sys.exit(0 if success else 1)
     else:
+        ensure_schema_migrations()
+        start_background_sweep()
         port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
-        print(f"[+] Starting LabPulse Flask Core Server at http://127.0.0.1:{port}")
+        logger.info(f"[+] Starting LabPulse Flask Core Server at http://127.0.0.1:{port}")
         app.run(host="0.0.0.0", port=port, debug=False)

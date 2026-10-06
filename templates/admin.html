@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Admin Dashboard & IT Staff Triage | Mepco Schlenk Engineering College</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -629,6 +630,57 @@
       padding-top: 1.5rem;
     }
 
+    /* Live Filter Controls */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .filter-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .filter-select {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78125rem;
+      font-family: inherit;
+      color: var(--text-main);
+      outline: none;
+      transition: var(--transition);
+    }
+    .filter-select:focus {
+      border-color: var(--mepco-blue);
+      box-shadow: 0 0 0 2px rgba(0, 102, 179, 0.15);
+    }
+    .btn-filter-reset {
+      background: #e2e8f0;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-filter-reset:hover {
+      background: #cbd5e1;
+      color: var(--text-main);
+    }
+
     @media (max-width: 900px) {
       .kpi-cards-grid {
         grid-template-columns: 1fr 1fr;
@@ -734,7 +786,7 @@
           <span>Pending Tickets</span>
           <span>Queue</span>
         </div>
-        <div class="kpi-value">{{ stats.pending_count }}</div>
+        <div class="kpi-value" id="kpi-pending-val">{{ stats.pending_count }}</div>
         <div class="kpi-desc">Sorted strictly oldest-first for priority triage</div>
       </div>
 
@@ -743,7 +795,7 @@
           <span>Offline PCs</span>
           <span>Action Required</span>
         </div>
-        <div class="kpi-value">{{ stats.offline_count }}</div>
+        <div class="kpi-value" id="kpi-offline-val">{{ stats.offline_count }}</div>
         <div class="kpi-desc">Workstations currently offline and unresponsive</div>
       </div>
 
@@ -752,7 +804,7 @@
           <span>Total Monitored PCs</span>
           <span>6 AI/Data Labs</span>
         </div>
-        <div class="kpi-value">{{ stats.total_computers }}</div>
+        <div class="kpi-value" id="kpi-total-val">{{ stats.total_computers }}</div>
         <div class="kpi-desc">Workstations across AI & Data Labs</div>
       </div>
 
@@ -761,7 +813,7 @@
           <span>Resolved Tickets</span>
           <span>Closed</span>
         </div>
-        <div class="kpi-value">{{ stats.resolved_count }}</div>
+        <div class="kpi-value" id="kpi-resolved-val">{{ stats.resolved_count }}</div>
         <div class="kpi-desc">Verified operational by IT staff</div>
       </div>
     </div>
@@ -774,7 +826,7 @@
         <div>
           <h2 class="section-title">
             <span>Pending Fault Tickets Queue</span>
-            <span class="badge-counter-warning">{{ pending_tickets|length }} Pending</span>
+            <span class="badge-counter-warning" id="pending-counter-badge">{{ pending_tickets|length }} Pending</span>
           </h2>
           <p class="section-subtitle">
             Oldest tickets are shown first to ensure timely service.
@@ -785,9 +837,40 @@
         </div>
       </div>
 
+      <!-- Live Filter Bar: Lab ID & Priority Query Params -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="filter-lab" class="filter-label">🏛️ Laboratory:</label>
+          <select id="filter-lab" class="filter-select" onchange="applyTicketFilters()">
+            <option value="all">All Department Labs</option>
+            <option value="1">Lab 1 - AI Foundations Lab</option>
+            <option value="2">Lab 2 - Deep Learning Lab</option>
+            <option value="3">Lab 3 - Computer Vision Lab</option>
+            <option value="4">Lab 4 - NLP & LLM Lab</option>
+            <option value="5">Lab 5 - Data Engineering Lab</option>
+            <option value="6">Lab 6 - Edge AI & Robotics Lab</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filter-priority" class="filter-label">⚡ Priority:</label>
+          <select id="filter-priority" class="filter-select" onchange="applyTicketFilters()">
+            <option value="all">All Priorities</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-filter-reset" onclick="resetTicketFilters()">Reset</button>
+        <span id="filter-indicator" style="font-size: 0.72rem; color: var(--text-muted); margin-left: auto;">
+          Live queue &bull; Auto-syncing
+        </span>
+      </div>
+
       <div class="table-responsive">
-        {% if pending_tickets %}
-        <table class="admin-table">
+        <table class="admin-table" id="pending-tickets-table" {% if not pending_tickets %}style="display:none;"{% endif %}>
           <thead>
             <tr>
               <th>Ticket #</th>
@@ -801,7 +884,7 @@
               <th style="text-align: right;">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="pending-tickets-tbody">
             {% for ticket in pending_tickets %}
             <tr {% if loop.first %}class="highlight-oldest"{% endif %}>
               <td>
@@ -848,6 +931,7 @@
                 <div class="actions-cell" style="justify-content: flex-end;">
                   <!-- Mark as Resolved Button (Step 4 Requirement) -->
                   <form method="POST" action="/admin/resolve/{{ ticket.id }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn-resolve" title="Verify fault resolved and update database">
                       <span>✓ Mark as Resolved</span>
                     </button>
@@ -856,6 +940,7 @@
                   <!-- Remote Restart Button if PC is offline -->
                   {% if ticket.pc_status == 'Offline' or ticket.pc_status == 'Faulty' %}
                   <form method="POST" action="/admin/restart/{{ ticket.pc_number }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn-restart-sm" title="Execute C WoL program to reboot PC">
                       <span>⚡ Restart</span>
                     </button>
@@ -867,13 +952,11 @@
             {% endfor %}
           </tbody>
         </table>
-        {% else %}
-        <div class="empty-state">
+        <div id="pending-empty-state" class="empty-state" {% if pending_tickets %}style="display:none;"{% endif %}>
           <div class="empty-state-icon">🎉</div>
           <h3>All Caught Up! No Pending Tickets</h3>
           <p>Every reported laboratory PC fault has been resolved.</p>
         </div>
-        {% endif %}
       </div>
     </section>
 
@@ -885,7 +968,7 @@
         <div>
           <h2 class="section-title">
             <span>Offline Workstations & Remote Action Center</span>
-            <span class="badge-counter" style="background-color: #e11d48;">{{ offline_pcs|length }} Offline</span>
+            <span class="badge-counter" id="offline-counter-badge" style="background-color: #e11d48;">{{ offline_pcs|length }} Offline</span>
           </h2>
           <p class="section-subtitle">
             Click "Remote Restart" to attempt to remotely boot the workstation.
@@ -914,6 +997,7 @@
 
           <!-- Step 4 Core: The "Remote Restart" Button executing C program -->
           <form method="POST" action="/admin/restart/{{ pc.pc_number }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn-remote-restart" style="width: 100%; justify-content: center;"
                     id="btn-restart-{{ pc.pc_number }}">
               <span>Remote Restart</span>
@@ -1098,8 +1182,175 @@
         });
     }
 
+    function getCsrfToken() {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      return meta ? meta.content : '';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function applyTicketFilters() {
+      const labVal = document.getElementById('filter-lab')?.value || 'all';
+      const prioVal = document.getElementById('filter-priority')?.value || 'all';
+      const indicator = document.getElementById('filter-indicator');
+      if (indicator) indicator.textContent = 'Filtering live queue…';
+
+      let url = '/api/tickets?status=Pending';
+      if (labVal !== 'all') url += `&lab_id=${encodeURIComponent(labVal)}`;
+      if (prioVal !== 'all') url += `&priority=${encodeURIComponent(prioVal)}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const tickets = data.tickets || [];
+        renderPendingTickets(tickets);
+        if (indicator) {
+          indicator.textContent = `Showing ${tickets.length} matching ticket(s)`;
+        }
+      } catch (err) {
+        if (indicator) indicator.textContent = 'Filter sync error';
+        console.error('Failed to filter tickets:', err);
+      }
+    }
+
+    function resetTicketFilters() {
+      const labSelect = document.getElementById('filter-lab');
+      const prioSelect = document.getElementById('filter-priority');
+      if (labSelect) labSelect.value = 'all';
+      if (prioSelect) prioSelect.value = 'all';
+      applyTicketFilters();
+    }
+
+    function renderPendingTickets(tickets) {
+      const tbody = document.getElementById('pending-tickets-tbody');
+      const table = document.getElementById('pending-tickets-table');
+      const emptyState = document.getElementById('pending-empty-state');
+      const badge = document.getElementById('pending-counter-badge');
+
+      if (badge) badge.textContent = `${tickets.length} Pending`;
+
+      if (!tickets || tickets.length === 0) {
+        if (table) table.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+        if (tbody) tbody.innerHTML = '';
+        return;
+      }
+
+      if (table) table.style.display = 'table';
+      if (emptyState) emptyState.style.display = 'none';
+
+      const csrfToken = getCsrfToken();
+
+      tbody.innerHTML = tickets.map((t, index) => {
+        const isFirst = index === 0;
+        const isOffline = t.pc_status === 'Offline' || t.pc_status === 'Faulty';
+        const statusPill = isOffline
+          ? `<span class="status-badge status-offline" style="margin-top: 2px;">Offline</span>`
+          : `<span class="status-badge status-online" style="margin-top: 2px;">Online</span>`;
+
+        let priorityBadge = `<span class="priority-badge priority-medium">${escapeHtml(t.priority || 'Medium')}</span>`;
+        if (t.priority === 'Critical') {
+          priorityBadge = `<span class="priority-badge priority-critical">Critical</span>`;
+        } else if (t.priority === 'High') {
+          priorityBadge = `<span class="priority-badge priority-high">High</span>`;
+        }
+
+        const restartBtn = isOffline
+          ? `<form method="POST" action="/admin/restart/${encodeURIComponent(t.pc_number)}" style="display: inline;">
+               <input type="hidden" name="csrf_token" value="${csrfToken}">
+               <button type="submit" class="btn-restart-sm" title="Execute C WoL program to reboot PC">
+                 <span>⚡ Restart</span>
+               </button>
+             </form>`
+          : '';
+
+        return `
+          <tr class="${isFirst ? 'highlight-oldest' : ''}">
+            <td>
+              <span class="ticket-code">${escapeHtml(t.ticket_number)}</span>
+              ${isFirst ? '<div style="font-size: 0.65rem; color: #b45309; font-weight: 700; margin-top: 2px;">⚡ HIGHEST AGE PRIORITY</div>' : ''}
+            </td>
+            <td>
+              <div style="font-weight: 600;">${escapeHtml(t.reported_at)}</div>
+              <span class="age-badge">Position #${index + 1}</span>
+            </td>
+            <td>
+              <div style="font-weight: 600;">${escapeHtml(t.lab_name)}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(t.lab_location || '')}</div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: var(--mepco-navy);">${escapeHtml(t.pc_number)}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(t.ip_address)}</div>
+              ${statusPill}
+            </td>
+            <td>${escapeHtml(t.issue_category)}</td>
+            <td>${priorityBadge}</td>
+            <td>
+              <div style="font-weight: 600;">${escapeHtml(t.reporter_name)}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(t.reporter_email || '')}</div>
+            </td>
+            <td style="max-width: 240px; font-size: 0.78125rem;">
+              ${escapeHtml(t.description || '')}
+            </td>
+            <td style="text-align: right;">
+              <div class="actions-cell" style="justify-content: flex-end;">
+                <form method="POST" action="/admin/resolve/${t.id}" style="display: inline;">
+                  <input type="hidden" name="csrf_token" value="${csrfToken}">
+                  <button type="submit" class="btn-resolve" title="Verify fault resolved and update database">
+                    <span>✓ Mark as Resolved</span>
+                  </button>
+                </form>
+                ${restartBtn}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function pollDashboardStats() {
+      try {
+        const res = await fetch('/api/stats');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const pendingEl = document.getElementById('kpi-pending-val');
+        const offlineEl = document.getElementById('kpi-offline-val');
+        const totalEl = document.getElementById('kpi-total-val');
+        const resolvedEl = document.getElementById('kpi-resolved-val');
+
+        if (pendingEl) pendingEl.textContent = data.pending;
+        if (offlineEl) offlineEl.textContent = data.offline;
+        if (totalEl) totalEl.textContent = data.total_computers;
+        if (resolvedEl) resolvedEl.textContent = data.resolved;
+
+        const offlineBadge = document.getElementById('offline-counter-badge');
+        if (offlineBadge) offlineBadge.textContent = `${data.offline} Offline`;
+
+        const labVal = document.getElementById('filter-lab')?.value || 'all';
+        const prioVal = document.getElementById('filter-priority')?.value || 'all';
+        if (labVal === 'all' && prioVal === 'all') {
+          const pendingBadge = document.getElementById('pending-counter-badge');
+          if (pendingBadge) pendingBadge.textContent = `${data.pending} Pending`;
+        }
+      } catch (err) {
+        console.error('Stats poll error:', err);
+      }
+    }
+
     refreshNotifications();
     setInterval(refreshNotifications, 10000);
+
+    pollDashboardStats();
+    setInterval(pollDashboardStats, 6000);
   </script>
 
 </body>

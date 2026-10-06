@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>LabWatch Sign In | Mepco Schlenk Engineering College</title>
   <meta name="description" content="LabWatch — Laboratory PC Fault Reporting & Monitoring System login portal for students and IT staff of Mepco Schlenk Engineering College, Sivakasi.">
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -624,6 +625,7 @@
             <div class="success-banner" id="student-success"></div>
 
             <form id="student-login-form" autocomplete="on" novalidate>
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="field-group">
                 <label class="field-label" for="s-username">Student / Staff Username</label>
                 <div class="field-input-wrap">
@@ -667,6 +669,7 @@
             <div class="success-banner" id="admin-success"></div>
 
             <form id="admin-login-form" autocomplete="off" novalidate>
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="field-group">
                 <label class="field-label" for="a-username">IT Staff Username</label>
                 <div class="field-input-wrap">
@@ -765,10 +768,15 @@
       btnTxt.textContent = 'Signing in…';
 
       try {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.content : '';
         const resp = await fetch('/api/auth/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ username, password, csrf_token: csrfToken })
         });
         const data = await resp.json();
 

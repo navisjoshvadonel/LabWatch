@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>LabWatch | Mepco Schlenk Engineering College - PC Fault Reporting & Monitoring System</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1213,6 +1214,7 @@
         </div>
 
         <form id="fault-report-form" onsubmit="handleTicketSubmit(event)">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="form-grid">
             <div class="form-field">
               <label class="field-label" for="form-lab-select">1. Department Laboratory <span class="req">*</span></label>
@@ -1299,6 +1301,7 @@
       </div>
 
       <form id="resolve-form" onsubmit="submitTicketResolution(event)">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" id="modal-ticket-id">
         <div class="form-field" style="margin-bottom: 1rem;">
           <label class="field-label">Status Action <span class="req">*</span></label>
@@ -1638,9 +1641,13 @@
       };
 
       try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const res = await fetch('/api/tickets', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -1685,9 +1692,13 @@
       const notes = document.getElementById('modal-notes').value.trim();
 
       try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const res = await fetch(`/api/tickets/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
           body: JSON.stringify({
             status: status,
             technician_id: currentUser.id,
@@ -1711,9 +1722,13 @@
     async function triggerWolRestart(pcId) {
       showToast(`Broadcasting WoL Magic Packet to ${pcId}...`, 'warning');
       try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const res = await fetch('/api/restart', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
           body: JSON.stringify({ pc_id: pcId })
         });
         const data = await res.json();
