@@ -28,11 +28,20 @@ TXT_EXPORT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "comp
 CSV_EXPORT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "computers_monitor.csv")
 
 
+PBKDF2_ITERATIONS = 100_000
+
+
 def hash_password(password: str, salt: str = None) -> tuple:
-    """Hash password using SHA-256 with per-user cryptographic salt."""
+    """Hash password using PBKDF2-HMAC-SHA256 with 100,000 iterations and per-user cryptographic salt."""
     if not salt:
         salt = secrets.token_hex(16)
-    pwd_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    key_bytes = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PBKDF2_ITERATIONS
+    )
+    pwd_hash = f"pbkdf2:sha256:{PBKDF2_ITERATIONS}${salt}${key_bytes.hex()}"
     return pwd_hash, salt
 
 
@@ -272,15 +281,15 @@ def populate_users(conn: sqlite3.Connection):
         """,
         hashed_users,
     )
-    # Update existing users that had an empty salt
+    # Ensure all users have updated PBKDF2 hashes
     for username, password, full_name, email, role in users_data:
-        cursor.execute("SELECT id, salt FROM USERS WHERE username = ?", (username,))
+        cursor.execute("SELECT id, password_hash, salt FROM USERS WHERE username = ?", (username,))
         row = cursor.fetchone()
-        if row and (not row["salt"] or row["salt"] == ""):
+        if row and (not row["password_hash"].startswith("pbkdf2:sha256:") or not row["salt"]):
             pwd_hash, salt = hash_password(password)
             cursor.execute("UPDATE USERS SET password_hash = ?, salt = ? WHERE id = ?", (pwd_hash, salt, row["id"]))
     conn.commit()
-    print(f"[+] Seeded {len(users_data)} users into USERS table with cryptographic salt.")
+    print(f"[+] Seeded and verified {len(users_data)} users in USERS table with PBKDF2-HMAC-SHA256 (100k rounds).")
 
 
 def populate_tickets(conn: sqlite3.Connection):

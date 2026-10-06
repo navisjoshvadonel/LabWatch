@@ -21,6 +21,7 @@ Features:
 """
 
 import hashlib
+import html
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -45,9 +46,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "labpulse.db")
 BIN_PATH = os.path.join(BASE_DIR, "bin", "labpulse_monitor.exe")
 LOG_PATH = os.path.join(BASE_DIR, "labpulse.log")
+AUDIT_LOG_PATH = os.path.join(BASE_DIR, "security_audit.log")
 
 # ==============================================================================
-# 1. STRUCTURED LOGGING ENGINE (CONSOLE + ROTATING FILE LOG)
+# 1. STRUCTURED LOGGING & SECURITY AUDIT ENGINES
 # ==============================================================================
 logger = logging.getLogger("LabPulse")
 logger.setLevel(logging.INFO)
@@ -68,18 +70,136 @@ if not logger.handlers:
     file_handler.setFormatter(log_formatter)
     logger.addHandler(file_handler)
 
+# Dedicated Security Audit Logger (OWASP compliance, tracks auth, RBAC & WoL dispatches)
+audit_logger = logging.getLogger("LabPulse.SecurityAudit")
+audit_logger.setLevel(logging.INFO)
+if not audit_logger.handlers:
+    audit_handler = RotatingFileHandler(AUDIT_LOG_PATH, maxBytes=5 * 1024 * 1024, backupCount=5, encoding="utf-8")
+    audit_formatter = logging.Formatter(
+        "[%(asctime)s] [SECURITY_AUDIT] [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    audit_handler.setFormatter(audit_formatter)
+    audit_logger.addHandler(audit_handler)
+
 # ==============================================================================
 # 2. FLASK APPLICATION & SESSION SECURITY CONFIGURATION
 # ==============================================================================
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"), static_folder=os.path.join(BASE_DIR, "static"))
-app.secret_key = os.environ.get("LABPULSE_SECRET_KEY", "labpulse_secret_key_mepco_aids_secure_2026")
+app.secret_key = os.environ.get("LABPULSE_SECRET_KEY", "mepco_aids_enterprise_security_salt_token_2026_x89f")
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=2)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # ==============================================================================
-# 3. CSRF PROTECTION ENGINE
+# 3. DEFENSE-IN-DEPTH: RATE LIMITING & INPUT SANITIZATION
+# ==============================================================================
+class AuthenticationRateLimiter:
+    """
+    In-memory, sliding-window rate limiter and brute-force protection engine.
+    - Tracks failed authentication attempts per IP address and per username.
+    - Triggers temporary account lockout upon exceeding failure threshold (5 attempts in 10 min).
+    - Thread-safe synchronization via threading.Lock.
+    """
+    def __init__(self, max_attempts: int = 5, window_seconds: int = 600, lockout_seconds: int = 900):
+        self.max_attempts = max_attempts
+        self.window_seconds = window_seconds
+        self.lockout_seconds = lockout_seconds
+        self._lock = threading.Lock()
+        self._failures: dict[str, list[float]] = {}
+        self._lockouts: dict[str, float] = {}
+
+    def is_locked(self, identifier: str) -> tuple[bool, int]:
+        """Check if an IP or username is currently under security lockout."""
+        now = time.time()
+        with self._lock:
+            expiry = self._lockouts.get(identifier, 0)
+            if expiry > now:
+                remaining = int(expiry - now)
+                return True, remaining
+            elif identifier in self._lockouts:
+                del self._lockouts[identifier]
+            return False, 0
+
+    def record_failure(self, ip: str, username: str) -> tuple[bool, int]:
+        """
+        Record a failed authentication attempt.
+        Returns (is_locked_now, lockout_duration_seconds).
+        """
+        now = time.time()
+        with self._lock:
+            for key in (f"ip:{ip}", f"user:{username.lower()}"):
+                attempts = self._failures.get(key, [])
+                attempts = [t for t in attempts if (now - t) < self.window_seconds]
+                attempts.append(now)
+                self._failures[key] = attempts
+
+                if len(attempts) >= self.max_attempts:
+                    lockout_expiry = now + self.lockout_seconds
+                    self._lockouts[key] = lockout_expiry
+                    self._failures[key] = []
+                    return True, self.lockout_seconds
+
+            return False, 0
+
+    def record_success(self, ip: str, username: str):
+        """Clear failed attempts upon verified legitimate authentication."""
+        with self._lock:
+            self._failures.pop(f"ip:{ip}", None)
+            self._failures.pop(f"user:{username.lower()}", None)
+            self._lockouts.pop(f"ip:{ip}", None)
+            self._lockouts.pop(f"user:{username.lower()}", None)
+
+    def get_remaining_attempts(self, ip: str, username: str) -> int:
+        now = time.time()
+        with self._lock:
+            ip_fails = len([t for t in self._failures.get(f"ip:{ip}", []) if (now - t) < self.window_seconds])
+            user_fails = len([t for t in self._failures.get(f"user:{username.lower()}", []) if (now - t) < self.window_seconds])
+            highest_fail = max(ip_fails, user_fails)
+            return max(0, self.max_attempts - highest_fail)
+
+rate_limiter = AuthenticationRateLimiter(max_attempts=5, window_seconds=600, lockout_seconds=900)
+
+
+def sanitize_text(text: str, max_length: int = 1000) -> str:
+    """
+    Sanitize text input against Stored XSS, HTML injection, and control byte attacks.
+    Preserves readable alphanumeric text, punctuation, and safe whitespace.
+    """
+    if not text:
+        return ""
+    filtered = "".join(ch for ch in str(text) if ord(ch) >= 32 or ch in ("\n", "\r", "\t"))
+    truncated = filtered.strip()[:max_length]
+    return html.escape(truncated, quote=True)
+
+
+@app.after_request
+def apply_security_headers(response):
+    """
+    Enforce institutional HTTP security headers (OWASP Top 10 compliance).
+    Protects against MIME sniffing, clickjacking, inline script execution, and frame injection.
+    """
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+    csp_policy = (
+        "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data:; "
+        "connect-src 'self';"
+    )
+    response.headers["Content-Security-Policy"] = csp_policy
+    return response
+
+
+# ==============================================================================
+# 4. CSRF PROTECTION ENGINE
 # ==============================================================================
 def get_csrf_token() -> str:
     """Retrieve or generate cryptographically secure CSRF token for active session."""
@@ -121,13 +241,55 @@ def csrf_protect():
             return None
 
         if not token or not secrets.compare_digest(token, session_token):
-            logger.warning(f"[-] [CSRF Reject] Blocked unauthorized {request.method} to {request.path} from {request.remote_addr}")
+            client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+            audit_logger.warning(f"[CSRF_REJECT] Blocked unauthorized {request.method} to {request.path} from {client_ip}")
+            logger.warning(f"[-] [CSRF Reject] Blocked unauthorized {request.method} to {request.path} from {client_ip}")
             if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return jsonify({"error": "Security validation failed: CSRF token missing or invalid. Please refresh the page."}), 403
             return render_template("login.html", error="Security validation (CSRF) failed. Please refresh and try again.", portal="student"), 403
 
+
 # ==============================================================================
-# 4. BACKGROUND ICMP SWEEP THREAD (NO MANUAL C DAEMON START NEEDED)
+# 5. ROLE-BASED ACCESS CONTROL (RBAC) ENFORCEMENT DECORATOR
+# ==============================================================================
+def login_required(roles=None):
+    """
+    Role-based authentication & privilege verification decorator:
+    - Verifies legitimate authenticated session.
+    - Audits and blocks unauthorized access attempts (HTTP 401 / HTTP 403).
+    - If roles specified and user role not in roles:
+      - Student/Staff attempting /admin -> redirects to /report with warning
+      - API calls -> returns JSON 403 Forbidden with security audit log
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = session.get("user")
+            client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+            if not user:
+                if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Authentication required. Please sign in."}), 401
+                portal = "admin" if roles and all(r in ("admin", "technician") for r in roles) else "student"
+                return redirect(url_for("login_page", portal=portal, error="Authentication required. Please sign in first."))
+
+            if roles and user.get("role") not in roles:
+                audit_logger.warning(
+                    f"[RBAC_VIOLATION] User '{user.get('username')}' [{user.get('role')}] "
+                    f"denied access to {request.method} {request.path} (Required: {roles}) from {client_ip}"
+                )
+                if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": "Access Denied: Insufficient administrative privileges."}), 403
+                if user.get("role") in ("student", "staff"):
+                    return redirect(url_for("user_issue_reporting", error="Access Denied: IT Staff administrative privileges required."))
+                return redirect(url_for("login_page", error="Access Denied: Insufficient authorization."))
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+# ==============================================================================
+# 6. BACKGROUND ICMP SWEEP THREAD (NO MANUAL C DAEMON START NEEDED)
 # ==============================================================================
 class BackgroundSweepThread(threading.Thread):
     """
@@ -464,7 +626,7 @@ def get_db_connection():
 
 
 def ensure_schema_migrations():
-    """Ensure database schema has the 'salt' column in USERS and all required indices."""
+    """Ensure database schema has required columns and migrate users to PBKDF2-HMAC-SHA256."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -484,38 +646,100 @@ def ensure_schema_migrations():
             cursor.execute("UPDATE COMPUTERS SET ping_history = '[1,1,1,1,1,1,0,0,0,0]' WHERE status IN ('Offline', 'Faulty')")
             conn.commit()
 
-        # Generate cryptographic salt for any existing users with empty salt
-        cursor.execute("SELECT id, username, password_hash, salt FROM USERS WHERE salt IS NULL OR salt = ''")
-        unmigrated = cursor.fetchall()
-        for u in unmigrated:
-            new_salt = secrets.token_hex(16)
-            cursor.execute("UPDATE USERS SET salt = ? WHERE id = ?", (new_salt, u["id"]))
-        if unmigrated:
+        # Batch upgrade known default accounts to PBKDF2-HMAC-SHA256 (100,000 iterations)
+        default_account_passwords = {
+            "admin": "admin123",
+            "navis": "navis123",
+            "venkatraman": "venkat123",
+            "gowtham": "gowtham123",
+            "keerthana": "keerthana123",
+            "nidhes": "nidhes123",
+            "tech_rajesh": "tech123",
+            "tech_priya": "tech123",
+            "prof_aids": "staff123",
+        }
+        cursor.execute("SELECT id, username, password_hash, salt FROM USERS")
+        all_users = cursor.fetchall()
+        migrated_count = 0
+        for u in all_users:
+            uname = u["username"]
+            phash = u["password_hash"]
+            if not phash.startswith("pbkdf2:sha256:"):
+                known_pwd = default_account_passwords.get(uname)
+                if not known_pwd and uname.startswith("24bad"):
+                    known_pwd = "student123"
+                if known_pwd:
+                    new_hash, new_salt = hash_password(known_pwd)
+                    cursor.execute("UPDATE USERS SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, u["id"]))
+                    migrated_count += 1
+                elif not u["salt"]:
+                    new_salt = secrets.token_hex(16)
+                    cursor.execute("UPDATE USERS SET salt = ? WHERE id = ?", (new_salt, u["id"]))
+        if migrated_count > 0:
             conn.commit()
-            logger.info(f"[+] Migrated {len(unmigrated)} existing user records with unique cryptographic salts.")
+            logger.info(f"[+] Security Migration: Upgraded {migrated_count} user accounts to PBKDF2-HMAC-SHA256 (100k rounds).")
+            audit_logger.info(f"[CRYPTO_MIGRATION] Batch upgraded {migrated_count} accounts to NIST PBKDF2-HMAC-SHA256 standard.")
     except Exception as exc:
         logger.error(f"[-] Schema migration check failed: {exc}")
     finally:
         conn.close()
 
 
+PBKDF2_ITERATIONS = 100_000
+
+
 def hash_password(password: str, salt: str = None) -> tuple:
-    """Hash password using SHA-256 with per-user cryptographic salt."""
+    """
+    Hash password using PBKDF2-HMAC-SHA256 with 100,000 iterations and per-user cryptographic salt.
+    Complies with NIST SP 800-132 standards (resilient against offline GPU rainbow-table attacks).
+    """
     if not salt:
         salt = secrets.token_hex(16)
-    pwd_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    key_bytes = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PBKDF2_ITERATIONS
+    )
+    pwd_hash = f"pbkdf2:sha256:{PBKDF2_ITERATIONS}${salt}${key_bytes.hex()}"
     return pwd_hash, salt
 
 
 def verify_password(password: str, stored_hash: str, salt: str = None) -> bool:
-    """Constant-time verification of password against stored hash with salt."""
+    """
+    Constant-time password verification supporting:
+    1. PBKDF2-HMAC-SHA256 (100,000 rounds) - Current Standard
+    2. Salted Single-Round SHA-256 - Legacy V2 fallback
+    3. Unsalted Single-Round SHA-256 - Legacy V1 fallback
+    """
     if not stored_hash or not password:
         return False
+
+    # Check 1: PBKDF2 format: pbkdf2:sha256:<rounds>$<salt>$<hex>
+    if stored_hash.startswith("pbkdf2:sha256:"):
+        try:
+            parts = stored_hash.split("$")
+            if len(parts) == 3:
+                rounds_meta, p_salt, p_key = parts
+                rounds = int(rounds_meta.split(":")[2])
+                test_key = hashlib.pbkdf2_hmac(
+                    "sha256",
+                    password.encode("utf-8"),
+                    p_salt.encode("utf-8"),
+                    rounds
+                ).hex()
+                return secrets.compare_digest(test_key, p_key)
+        except Exception as e:
+            logger.error(f"[-] PBKDF2 verification exception: {e}")
+            return False
+
+    # Check 2: Salted SHA-256 (Legacy V2)
     if salt:
         computed_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
         if secrets.compare_digest(computed_hash, stored_hash):
             return True
-    # Legacy unsalted check fallback
+
+    # Check 3: Legacy Unsalted SHA-256 (Legacy V1)
     legacy_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
     return secrets.compare_digest(legacy_hash, stored_hash)
 
@@ -539,18 +763,34 @@ def send_wol_packet(mac_address: str, broadcast_ip: str = "255.255.255.255", por
 
 
 # ==============================================================================
-# 1. AUTHENTICATION SERVICE
+# 1. AUTHENTICATION SERVICE (PBKDF2-HMAC-SHA256 + RATE LIMITING + AUDIT TRAIL)
 # ==============================================================================
 
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
-    """Authenticate student, staff, technician, or administrator using salted SHA-256."""
-    data = request.get_json() or {}
-    username = data.get("username", "").strip()
-    password = data.get("password", "").strip()
+    """Authenticate student, staff, technician, or administrator using salted PBKDF2-HMAC-SHA256."""
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
 
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
+
+    # 1. Rate Limiting & Account Lockout Check
+    is_ip_locked, ip_remain = rate_limiter.is_locked(f"ip:{client_ip}")
+    is_user_locked, user_remain = rate_limiter.is_locked(f"user:{username.lower()}")
+
+    if is_ip_locked or is_user_locked:
+        wait_seconds = max(ip_remain, user_remain)
+        minutes = max(1, (wait_seconds + 59) // 60)
+        audit_logger.warning(
+            f"[AUTH_LOCKOUT] Blocked login attempt for '{username}' from {client_ip} "
+            f"(Lockout active: {wait_seconds}s remaining)"
+        )
+        return jsonify({
+            "error": f"Security Lockout: Too many failed login attempts. Please retry in {minutes} minute(s)."
+        }), 429
 
     conn = get_db_connection()
     try:
@@ -559,16 +799,41 @@ def auth_login():
         user = cursor.fetchone()
 
         user_salt = user["salt"] if (user and "salt" in user.keys()) else None
-        if not user or not verify_password(password, user["password_hash"], user_salt):
-            logger.warning(f"[-] Unauthorized login attempt for user '{username}' from {request.remote_addr}")
-            return jsonify({"error": "Invalid username or password"}), 401
+        is_valid_pw = user and verify_password(password, user["password_hash"], user_salt)
 
-        # Seamlessly upgrade legacy unsalted passwords on successful login
-        if user_salt is None or user_salt == "":
+        if not is_valid_pw:
+            is_newly_locked, lockout_secs = rate_limiter.record_failure(client_ip, username)
+            attempts_left = rate_limiter.get_remaining_attempts(client_ip, username)
+
+            if is_newly_locked:
+                audit_logger.warning(
+                    f"[AUTH_LOCKOUT_TRIGGERED] User '{username}' / IP {client_ip} locked out for {lockout_secs}s "
+                    f"after 5 consecutive failed attempts."
+                )
+                return jsonify({
+                    "error": "Account temporarily locked for 15 minutes due to 5 consecutive failed login attempts."
+                }), 429
+
+            audit_logger.warning(
+                f"[AUTH_FAILED] Invalid credentials for '{username}' from {client_ip} "
+                f"(Attempts remaining before lockout: {attempts_left})"
+            )
+            return jsonify({
+                "error": f"Invalid username or password. ({attempts_left} attempt(s) remaining)"
+            }), 401
+
+        # Legitimate login -> clear rate limit trackers
+        rate_limiter.record_success(client_ip, username)
+
+        # 2. Transparently upgrade legacy SHA-256 passwords to PBKDF2-HMAC-SHA256 (100k rounds)
+        if not user["password_hash"].startswith("pbkdf2:sha256:"):
             new_hash, new_salt = hash_password(password)
             cursor.execute("UPDATE USERS SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user["id"]))
             conn.commit()
-            logger.info(f"[+] Transparently upgraded legacy password for '{username}' to salted SHA-256.")
+            audit_logger.info(f"[CRYPTO_UPGRADE] Transparently upgraded password hash for '{username}' to PBKDF2-HMAC-SHA256.")
+
+        # 3. Session Fixation Mitigation: Clear pre-auth session and regenerate tokens
+        session.clear()
 
         user_data = {
             "id": user["id"],
@@ -578,9 +843,10 @@ def auth_login():
             "role": user["role"]
         }
         session["user"] = user_data
-        session.permanent = True  # Enforce session expiration policy
-        get_csrf_token()          # Seed session CSRF token
+        session["csrf_token"] = secrets.token_hex(32)
+        session.permanent = True
 
+        audit_logger.info(f"[AUTH_SUCCESS] User '{username}' authenticated as [{user['role']}] from {client_ip}")
         logger.info(f"[+] User '{username}' logged in successfully as [{user['role']}]")
         add_telemetry("AUTH_LOGIN", f"User '{username}' logged in successfully as [{user['role']}]", user_data)
 
@@ -595,28 +861,27 @@ def auth_login():
 
 @app.route("/api/auth/register", methods=["POST"])
 def auth_register():
-    """Register a new student, staff, or technician account with salted SHA-256."""
-    data = request.get_json() or {}
-    username = data.get("username", "").strip()
-    password = data.get("password", "").strip()
-    full_name = data.get("full_name", "").strip()
-    email = data.get("email", "").strip()
-    role = data.get("role", "student").strip().lower()
+    """Register a new student, staff, or technician account with salted PBKDF2-HMAC-SHA256."""
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    username = sanitize_text(data.get("username", ""), 32).lower()
+    password = (data.get("password") or "").strip()
+    full_name = sanitize_text(data.get("full_name", ""), 64)
+    email = sanitize_text(data.get("email", ""), 64).lower()
+    role = (data.get("role") or "student").strip().lower()
 
-    # Validation
     if not username or not password or not full_name or not email:
         return jsonify({"error": "All fields (username, password, full_name, email) are required"}), 400
 
     if role not in ("student", "staff", "technician", "admin"):
         return jsonify({"error": "Invalid role selected"}), 400
 
-    if len(password) < 4:
-        return jsonify({"error": "Password must be at least 4 characters"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters for institutional security compliance"}), 400
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        # Check if username or email already exists
         cursor.execute("SELECT id FROM USERS WHERE username = ? OR email = ?", (username, email))
         if cursor.fetchone():
             return jsonify({"error": "Username or email is already registered"}), 409
@@ -632,6 +897,7 @@ def auth_register():
         conn.commit()
         new_id = cursor.lastrowid
 
+        session.clear()
         user_data = {
             "id": new_id,
             "username": username,
@@ -640,10 +906,11 @@ def auth_register():
             "role": role
         }
         session["user"] = user_data
+        session["csrf_token"] = secrets.token_hex(32)
         session.permanent = True
-        get_csrf_token()
 
-        logger.info(f"[+] User '{username}' registered successfully with cryptographic salt as [{role}]")
+        audit_logger.info(f"[AUTH_REGISTER] New account '{username}' registered with role [{role}] from {client_ip}")
+        logger.info(f"[+] User '{username}' registered successfully with PBKDF2-HMAC-SHA256 as [{role}]")
         add_telemetry("AUTH_REGISTER", f"New user '{username}' registered as [{role}]", user_data)
 
         return jsonify({
@@ -670,8 +937,11 @@ def auth_me():
 @app.route("/api/auth/logout", methods=["POST"])
 def auth_logout():
     """End active user session."""
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
     user = session.pop("user", None)
+    session.clear()
     if user:
+        audit_logger.info(f"[AUTH_LOGOUT] User '{user['username']}' logged out from {client_ip}")
         add_telemetry("AUTH_LOGOUT", f"User '{user['username']}' logged out")
     return jsonify({"success": True, "message": "Logged out successfully"})
 
@@ -781,19 +1051,20 @@ def get_stats():
 @app.route("/api/tickets", methods=["POST"])
 def create_ticket():
     """
-    Create a new fault ticket with Data Validation:
+    Create a new fault ticket with Data Validation & Input Sanitization:
       1. Checking empty fields (user_id, lab_id, computer_id, issue_category, description).
-      2. Verifying that the chosen computer actually belongs to the selected lab.
-      3. Database insertion with unique Ticket ID (TCK-xxx), 'Pending' status, timestamp.
+      2. Neutralizing XSS via sanitize_text().
+      3. Verifying that the chosen computer actually belongs to the selected lab.
+      4. Database insertion with unique Ticket ID (TCK-xxx), 'Pending' status, timestamp.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
 
     user_id = data.get("user_id") or (session.get("user", {}).get("id") if "user" in session else 2) # Default Navis Joshva (id=2)
     lab_id = data.get("lab_id")
     computer_id = data.get("computer_id")
-    issue_category = data.get("issue_category", "").strip()
-    description = data.get("description", "").strip()
-    priority = data.get("priority", "Medium").strip().capitalize()
+    issue_category = sanitize_text(data.get("issue_category", ""), 100)
+    description = sanitize_text(data.get("description", ""), 1000)
+    priority = sanitize_text(data.get("priority", "Medium"), 20).capitalize()
 
     # 1. Validate empty fields
     if not lab_id:
@@ -885,14 +1156,18 @@ def create_ticket():
 
 
 @app.route("/api/tickets/<int:ticket_id>", methods=["PUT"])
+@login_required(roles=["admin", "technician"])
 def update_ticket(ticket_id: int):
     """
     Update ticket status, assign technician, and record resolution notes.
+    Restricted to Admin & Technician roles (RBAC enforced).
     """
-    data = request.get_json() or {}
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+    current_user = session.get("user", {})
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
     status = data.get("status")
     technician_id = data.get("technician_id")
-    resolution_notes = data.get("resolution_notes")
+    resolution_notes = sanitize_text(data.get("resolution_notes", ""), 1000)
 
     conn = get_db_connection()
     try:
@@ -918,7 +1193,7 @@ def update_ticket(ticket_id: int):
             updates.append("technician_id = ?")
             params.append(technician_id if technician_id > 0 else None)
 
-        if resolution_notes is not None:
+        if resolution_notes:
             updates.append("resolution_notes = ?")
             params.append(resolution_notes)
 
@@ -930,6 +1205,10 @@ def update_ticket(ticket_id: int):
         cursor.execute(query, params)
         conn.commit()
 
+        audit_logger.info(
+            f"[TICKET_UPDATED] User '{current_user.get('username')}' updated Ticket {ticket['ticket_number']} "
+            f"to status [{status or ticket['status']}] from {client_ip}"
+        )
         add_telemetry("TICKET_UPDATED", f"Ticket '{ticket['ticket_number']}' status updated to [{status or ticket['status']}]", {
             "ticket_id": ticket_id,
             "status": status,
@@ -942,15 +1221,26 @@ def update_ticket(ticket_id: int):
 
 
 @app.route("/api/tickets/<int:ticket_id>", methods=["DELETE"])
+@login_required(roles=["admin", "technician"])
 def delete_ticket(ticket_id: int):
-    """Delete a ticket."""
+    """Delete a ticket. Restricted to Admin & Technician roles."""
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+    current_user = session.get("user", {})
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        cursor.execute("SELECT ticket_number FROM TICKETS WHERE id = ?", (ticket_id,))
+        row = cursor.fetchone()
+        tck_num = row["ticket_number"] if row else f"#{ticket_id}"
+
         cursor.execute("DELETE FROM TICKETS WHERE id = ?", (ticket_id,))
         conn.commit()
-        add_telemetry("TICKET_DELETED", f"Ticket #{ticket_id} removed")
-        return jsonify({"success": True, "message": f"Ticket #{ticket_id} deleted"})
+
+        audit_logger.warning(
+            f"[TICKET_DELETED] User '{current_user.get('username')}' deleted Ticket {tck_num} from {client_ip}"
+        )
+        add_telemetry("TICKET_DELETED", f"Ticket {tck_num} removed by admin")
+        return jsonify({"success": True, "message": f"Ticket {tck_num} deleted successfully"})
     finally:
         conn.close()
 
@@ -1312,39 +1602,6 @@ def get_health():
         })
     finally:
         conn.close()
-
-
-# ==============================================================================
-# AUTHENTICATION & ROLE-BASED ACCESS CONTROL MIDDLEWARE
-# ==============================================================================
-
-def login_required(roles=None):
-    """
-    Role-based authentication decorator:
-    - Verifies 'user' in session.
-    - If unauthenticated, redirects to /login with error and appropriate portal tab.
-    - If roles specified and user role not in roles:
-      - Student/Staff attempting /admin -> redirects to /report with warning
-      - Otherwise -> redirects to /login with error
-    """
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            user = session.get("user")
-            if not user:
-                if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                    return jsonify({"error": "Authentication required. Please sign in."}), 401
-                portal = "admin" if roles and all(r in ("admin", "technician") for r in roles) else "student"
-                return redirect(url_for("login_page", portal=portal, error="Authentication required. Please sign in first."))
-            if roles and user.get("role") not in roles:
-                if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                    return jsonify({"error": "Access Denied: Insufficient administrative privileges."}), 403
-                if user.get("role") in ("student", "staff"):
-                    return redirect(url_for("user_issue_reporting", error="Access Denied: IT Staff administrative privileges required."))
-                return redirect(url_for("login_page", error="Access Denied: Insufficient authorization."))
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
 
 
 @app.route("/login", methods=["GET"])
@@ -1727,6 +1984,12 @@ def admin_resolve_ticket(ticket_id: int):
         email_thread.start()
 
         # ─── 3. TELEMETRY & NOTIFICATION LOG ─────────────────────────────────
+        client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+        logged_admin = session.get("user", {}).get("username", "admin")
+        audit_logger.info(
+            f"[TICKET_RESOLVE] Admin '{logged_admin}' resolved Ticket {tck_num} on PC {pc_number} "
+            f"in {lab_name} from {client_ip}"
+        )
         add_telemetry(
             "TICKET_RESOLVED",
             f"[Step 5] IT Staff resolved {tck_num} | 'PC Fixed' email dispatched to {reporter_email}",
@@ -1803,6 +2066,13 @@ def admin_remote_restart(pc_id: str):
             if py_sent:
                 c_output += "\n[Python WoL fallback dispatched 102-byte UDP packet]"
                 c_success = True
+
+        client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+        logged_admin = session.get("user", {}).get("username", "admin")
+        audit_logger.info(
+            f"[WOL_DISPATCH] Admin '{logged_admin}' executed Remote Restart for {pc_id} "
+            f"(MAC: {mac_address}, IP: {comp['ip_address']}) from {client_ip}"
+        )
 
         add_telemetry("WOL_RESTART", f"[Admin Dashboard] Remote Restart triggered for {pc_id} (MAC: {mac_address}) via C protocol", {
             "pc_id": pc_id,
