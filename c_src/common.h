@@ -26,6 +26,7 @@
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/socket.h>
+    #include <sys/wait.h>
     #include <netinet/in.h>
     #include <netinet/ip.h>
     #include <netinet/ip_icmp.h>
@@ -64,6 +65,14 @@ static inline int net_init(void) {
         fprintf(stderr, "[!] WSAStartup failed with error: %d\n", WSAGetLastError());
         return -1;
     }
+    /* Enable virtual terminal processing on modern Windows consoles */
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE) {
+        DWORD dwMode = 0;
+        if (GetConsoleMode(hOut, &dwMode)) {
+            SetConsoleMode(hOut, dwMode | 0x0004);
+        }
+    }
 #endif
     return 0;
 }
@@ -75,6 +84,7 @@ static inline void net_cleanup(void) {
 }
 
 static inline int parse_mac_address(const char *mac_str, unsigned char mac_bytes[6]) {
+    if (!mac_str || !mac_bytes) return -1;
     unsigned int bytes[6];
     int parsed = sscanf(mac_str, "%x:%x:%x:%x:%x:%x",
                         &bytes[0], &bytes[1], &bytes[2],
@@ -86,6 +96,7 @@ static inline int parse_mac_address(const char *mac_str, unsigned char mac_bytes
     }
     if (parsed == 6) {
         for (int i = 0; i < 6; i++) {
+            if (bytes[i] > 0xFF) return -1; /* Prevent integer overflow / undefined byte value */
             mac_bytes[i] = (unsigned char)bytes[i];
         }
         return 0;
@@ -94,9 +105,30 @@ static inline int parse_mac_address(const char *mac_str, unsigned char mac_bytes
 }
 
 static inline void get_timestamp(char *buffer, size_t buf_size) {
+    if (!buffer || buf_size == 0) return;
     time_t now = time(NULL);
+#if defined(_WIN32)
+    struct tm tm_info;
+    if (localtime_s(&tm_info, &now) == 0) {
+        strftime(buffer, buf_size, "%Y-%m-%d %H:%M:%S", &tm_info);
+    } else {
+        buffer[0] = '\0';
+    }
+#elif defined(_POSIX_C_SOURCE) || defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(__unix__) || defined(__linux__) || defined(__APPLE__)
+    struct tm tm_info;
+    if (localtime_r(&now, &tm_info) != NULL) {
+        strftime(buffer, buf_size, "%Y-%m-%d %H:%M:%S", &tm_info);
+    } else {
+        buffer[0] = '\0';
+    }
+#else
     struct tm *tm_info = localtime(&now);
-    strftime(buffer, buf_size, "%Y-%m-%d %H:%M:%S", tm_info);
+    if (tm_info) {
+        strftime(buffer, buf_size, "%Y-%m-%d %H:%M:%S", tm_info);
+    } else {
+        buffer[0] = '\0';
+    }
+#endif
 }
 
 #endif

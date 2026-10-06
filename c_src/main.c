@@ -2,6 +2,47 @@
 #include "icmp.h"
 #include "udp.h"
 #include "tcp.h"
+#include <signal.h>
+
+static volatile int g_running = 1;
+
+#ifdef _WIN32
+static BOOL WINAPI console_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT || ctrl_type == CTRL_CLOSE_EVENT) {
+        printf("\n[*] Graceful shutdown signal received. Stopping daemon...\n");
+        g_running = 0;
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif
+
+static void signal_handler(int sig) {
+    (void)sig;
+    printf("\n[*] Signal received. Stopping daemon gracefully...\n");
+    g_running = 0;
+}
+
+static void print_colored_status(const char *status, int is_online) {
+#ifdef _WIN32
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(hConsole, &csbi)) {
+        WORD orig_attr = csbi.wAttributes;
+        WORD color_attr = is_online ? (FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+                                    : (FOREGROUND_RED | FOREGROUND_INTENSITY);
+        SetConsoleTextAttribute(hConsole, color_attr);
+        printf("%-10s", status);
+        SetConsoleTextAttribute(hConsole, orig_attr);
+        return;
+    }
+#endif
+    if (is_online) {
+        printf("\033[32m%-10s\033[0m", status);
+    } else {
+        printf("\033[31m%-10s\033[0m", status);
+    }
+}
 
 int load_computers_inventory(const char *filepath, LabComputer computers[], int max_count) {
     FILE *fp = fopen(filepath, "r");
@@ -15,11 +56,17 @@ int load_computers_inventory(const char *filepath, LabComputer computers[], int 
 
     char line[MAX_LINE_LEN];
     int count = 0;
+    int overflow = 0;
 
-    while (fgets(line, sizeof(line), fp) && count < max_count) {
+    while (fgets(line, sizeof(line), fp)) {
         char *p = line;
         while (*p == ' ' || *p == '\t') p++;
         if (*p == '#' || *p == '\0' || *p == '\r' || *p == '\n') continue;
+
+        if (count >= max_count) {
+            overflow++;
+            continue;
+        }
 
         LabComputer *c = &computers[count];
         memset(c, 0, sizeof(LabComputer));
@@ -38,6 +85,12 @@ int load_computers_inventory(const char *filepath, LabComputer computers[], int 
     }
 
     fclose(fp);
+
+    if (overflow > 0) {
+        fprintf(stderr, "[!] Warning: Inventory reached MAX_COMPUTERS limit (%d). %d workstations were skipped.\n",
+                max_count, overflow);
+    }
+
     return count;
 }
 
@@ -64,21 +117,23 @@ void run_monitoring_sweep(LabComputer computers[], int count, int auto_wol) {
             pc->is_offline = 0;
             pc->last_rtt_ms = rtt;
             online_count++;
-            printf("%-8s | %-15s | %-17s | \033[32mONLINE\033[0m     | %.2f ms\n",
-                   pc->pc_number, pc->ip_address, pc->mac_address, rtt);
+            printf("%-8s | %-15s | %-17s | ", pc->pc_number, pc->ip_address, pc->mac_address);
+            print_colored_status("ONLINE", 1);
+            printf(" | %.2f ms\n", rtt);
         } else {
             pc->consecutive_failures++;
             pc->is_offline = 1;
             offline_count++;
-            printf("%-8s | %-15s | %-17s | \033[31mOFFLINE\033[0m    | Timeout (Fail #%d)\n",
-                   pc->pc_number, pc->ip_address, pc->mac_address, pc->consecutive_failures);
+            printf("%-8s | %-15s | %-17s | ", pc->pc_number, pc->ip_address, pc->mac_address);
+            print_colored_status("OFFLINE", 0);
+            printf(" | Timeout (Fail #%d)\n", pc->consecutive_failures);
 
             tcp_dispatch_alert(pc->pc_number, "offline", pc->ip_address, pc->mac_address);
 
             if (auto_wol) {
-                printf("[*] [Auto-Restart] Sending WoL Magic Packet to %s (MAC: %s)...\n",
+                printf("[*] [Auto-Restart] Sending Reliable WoL Magic Packet to %s (MAC: %s)...\n",
                        pc->pc_number, pc->mac_address);
-                udp_send_wol(pc->mac_address, "255.255.255.255", DEFAULT_WOL_PORT);
+                udp_send_wol_reliable(pc->mac_address, DEFAULT_WOL_PORT);
             }
         }
     }
@@ -88,28 +143,35 @@ void run_monitoring_sweep(LabComputer computers[], int count, int auto_wol) {
            count, online_count, offline_count);
 }
 
-void print_usage(const char *prog_name) {
-    printf("LabPulse Core Network Protocols (C Daemon)\n");
-    printf("Protocols used: ICMP (Fault Detection), UDP (Remote Restart/WoL), TCP (Python API Bridge)\n");
-    printf("Campus Network : Mepco Schlenk 192.16.16.0/24  (gateway 192.16.16.200)\n\n");
-    printf("Usage:\n");
-    printf("  %s --sweep                     : Run ICMP sweep across all lab computers\n", prog_name);
-    printf("  %s --daemon [interval_sec]     : Run background ICMP monitoring daemon\n", prog_name);
-    printf("  %s --ping-pc <PC_ID>           : Ping workstation dynamically using ICMP\n", prog_name);
-    printf("  %s --ping-ip <IP>              : Ping specific IPv4 address using ICMP\n", prog_name);
-    printf("  %s --wol <MAC_ADDRESS>         : Dual-broadcast WoL (192.16.16.255 + 255.255.255.255, 3x each)\n", prog_name);
-    printf("  %s --restart <PC_ID>           : Lookup PC MAC and trigger reliable dual-broadcast WoL\n", prog_name);
-    printf("  %s --notify <PC_ID> <STATUS>   : Send HTTP POST status alert via TCP to Python\n", prog_name);
-    printf("\nWoL broadcast targets per --wol / --restart call:\n");
-    printf("  1. %s  (Mepco Schlenk directed subnet broadcast, primary path)\n", COLLEGE_BROADCAST_IP);
-    printf("  2. %s     (Limited broadcast fallback)\n", DEFAULT_BROADCAST_IP);
-    printf("  Each target: %d transmissions × %d ms gap = %d total magic packets\n",
-           WOL_TRANSMIT_COUNT, WOL_INTER_TX_DELAY_MS, WOL_TRANSMIT_COUNT * 2);
-    printf("\n");
+void print_usage(FILE *stream, const char *prog_name) {
+    if (!stream) stream = stderr;
+    fprintf(stream, "LabPulse Core Network Protocols (C Daemon)\n");
+    fprintf(stream, "Protocols used: ICMP (Fault Detection), UDP (Remote Restart/WoL), TCP (Python API Bridge)\n");
+    fprintf(stream, "Campus Network : Mepco Schlenk 192.16.16.0/24  (gateway 192.16.16.200)\n\n");
+    fprintf(stream, "Usage:\n");
+    fprintf(stream, "  %s --sweep                     : Run ICMP sweep across all lab computers\n", prog_name);
+    fprintf(stream, "  %s --daemon [interval_sec]     : Run background ICMP monitoring daemon\n", prog_name);
+    fprintf(stream, "  %s --ping-pc <PC_ID>           : Ping workstation dynamically using ICMP\n", prog_name);
+    fprintf(stream, "  %s --ping-ip <IP>              : Ping specific IPv4 address using ICMP\n", prog_name);
+    fprintf(stream, "  %s --wol <MAC_ADDRESS>         : Dual-broadcast WoL (192.16.16.255 + 255.255.255.255, 3x each)\n", prog_name);
+    fprintf(stream, "  %s --restart <PC_ID>           : Lookup PC MAC and trigger reliable dual-broadcast WoL\n", prog_name);
+    fprintf(stream, "  %s --notify <PC_ID> <STATUS>   : Send HTTP POST status alert via TCP to Python\n", prog_name);
+    fprintf(stream, "\nWoL broadcast targets per --wol / --restart call:\n");
+    fprintf(stream, "  1. %s  (Mepco Schlenk directed subnet broadcast, primary path)\n", COLLEGE_BROADCAST_IP);
+    fprintf(stream, "  2. %s     (Limited broadcast fallback)\n", DEFAULT_BROADCAST_IP);
+    fprintf(stream, "  Each target: %d transmissions × %d ms gap = %d total magic packets\n",
+            WOL_TRANSMIT_COUNT, WOL_INTER_TX_DELAY_MS, WOL_TRANSMIT_COUNT * 2);
+    fprintf(stream, "\n");
 }
 
 int main(int argc, char *argv[]) {
     if (net_init() != 0) return 1;
+
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+#ifdef _WIN32
+    SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
+#endif
 
     const char *inventory_path = "computers_monitor.txt";
     LabComputer computers[MAX_COMPUTERS];
@@ -123,7 +185,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (argc < 2) {
-        print_usage(argv[0]);
+        print_usage(stderr, argv[0]);
+        net_cleanup();
+        return 1;
+    }
+
+    if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
+        print_usage(stdout, argv[0]);
         net_cleanup();
         return 0;
     }
@@ -137,10 +205,13 @@ int main(int argc, char *argv[]) {
         int auto_wol = (argc >= 4 && strcmp(argv[3], "--auto-wol") == 0);
 
         printf("[*] Starting Background ICMP Daemon. Interval = %d sec. (Ctrl+C to terminate)\n", interval_sec);
-        while (1) {
+        while (g_running) {
             run_monitoring_sweep(computers, comp_count, auto_wol);
-            SLEEP_MS(interval_sec * 1000);
+            for (int s = 0; s < interval_sec * 10 && g_running; s++) {
+                SLEEP_MS(100);
+            }
         }
+        printf("[+] Background ICMP Daemon shut down cleanly.\n");
     } else if (strcmp(argv[1], "--ping-pc") == 0 && argc >= 3) {
         const char *target_pc = argv[2];
         int found = 0;
@@ -214,7 +285,9 @@ int main(int argc, char *argv[]) {
         printf("[*] [TCP] Dispatching notification for %s with status '%s'...\n", pc_id, status);
         tcp_dispatch_alert(pc_id, status, "127.0.0.1", "00:00:00:00:00:00");
     } else {
-        print_usage(argv[0]);
+        print_usage(stderr, argv[0]);
+        net_cleanup();
+        return 1;
     }
 
     net_cleanup();

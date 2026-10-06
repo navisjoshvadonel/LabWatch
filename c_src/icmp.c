@@ -75,10 +75,19 @@ static int icmp_ping_windows_api(const char *ip_address, int timeout_ms, double 
 }
 #endif
 
-int icmp_ping(const char *ip_address, int timeout_ms, double *rtt_ms) {
+static uint16_t get_next_sequence(void) {
+    static uint16_t seq = 0;
+    static int initialized = 0;
+    if (!initialized) {
+        seq = (uint16_t)(time(NULL) & 0xFFFF);
+        initialized = 1;
+    }
+    return ++seq;
+}
+
+int icmp_ping_single(const char *ip_address, int timeout_ms, double *rtt_ms) {
     if (!ip_address || timeout_ms <= 0) return -2;
 
-    static uint16_t global_seq = 0;
     uint16_t pid = (uint16_t)(
 #ifdef _WIN32
         GetCurrentProcessId()
@@ -125,7 +134,7 @@ int icmp_ping(const char *ip_address, int timeout_ms, double *rtt_ms) {
     }
 
     IcmpPacket packet;
-    icmp_craft_packet(&packet, pid, ++global_seq);
+    icmp_craft_packet(&packet, pid, get_next_sequence());
 
 #ifdef _WIN32
     LARGE_INTEGER freq, t_start, t_end;
@@ -143,7 +152,7 @@ int icmp_ping(const char *ip_address, int timeout_ms, double *rtt_ms) {
         return -1;
     }
 
-    char recv_buf[512];
+    char recv_buf[ICMP_RECV_BUF_SIZE];
     struct sockaddr_in from_addr;
 #ifdef _WIN32
     int from_len = sizeof(from_addr);
@@ -187,4 +196,27 @@ int icmp_ping(const char *ip_address, int timeout_ms, double *rtt_ms) {
             return -1;
         }
     }
+}
+
+int icmp_ping(const char *ip_address, int timeout_ms, double *rtt_ms) {
+    if (!ip_address || timeout_ms <= 0) return -2;
+
+    int total_attempts = 1 + ICMP_DEFAULT_RETRIES;
+    int res = -1;
+
+    for (int attempt = 0; attempt < total_attempts; attempt++) {
+        res = icmp_ping_single(ip_address, timeout_ms, rtt_ms);
+        if (res == 0) {
+            return 0; /* Ping success */
+        }
+        if (res == -2) {
+            /* Unrecoverable error (bad IP, failed socket handle) */
+            return -2;
+        }
+        if (attempt < total_attempts - 1) {
+            SLEEP_MS(50); /* Short backoff between retries */
+        }
+    }
+
+    return res;
 }

@@ -7,6 +7,8 @@
 #define ICMP_ECHO_REPLY   0
 #define ICMP_PAYLOAD_SIZE 32
 #define DEFAULT_PING_TIMEOUT_MS 1000
+#define ICMP_DEFAULT_RETRIES 2
+#define ICMP_RECV_BUF_SIZE 1024
 
 #pragma pack(push, 1)
 typedef struct {
@@ -39,6 +41,7 @@ typedef struct {
 
 uint16_t icmp_calculate_checksum(const void *buffer, size_t length);
 void icmp_craft_packet(IcmpPacket *packet, uint16_t id, uint16_t seq);
+int icmp_ping_single(const char *ip_address, int timeout_ms, double *rtt_ms);
 int icmp_ping(const char *ip_address, int timeout_ms, double *rtt_ms);
 
 #endif
