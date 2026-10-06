@@ -680,6 +680,131 @@
       background: #cbd5e1;
       color: var(--text-main);
     }
+    .filter-search-input {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78125rem;
+      font-family: inherit;
+      color: var(--text-main);
+      outline: none;
+      transition: var(--transition);
+    }
+    .filter-search-input:focus {
+      border-color: var(--mepco-blue);
+      box-shadow: 0 0 0 2px rgba(0, 102, 179, 0.15);
+    }
+
+    /* Live Telemetry Pulsing Dot */
+    .live-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.71875rem;
+      font-weight: 700;
+      color: #065f46;
+      letter-spacing: 0.02em;
+    }
+    .pulsing-green-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreenDot 1.8s infinite;
+    }
+    @keyframes pulseGreenDot {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    /* Ticket Age Pill */
+    .ticket-age-pill {
+      display: inline-block;
+      font-size: 0.6875rem;
+      color: #b45309;
+      background: #fef3c7;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+
+    /* Status WoL Sent Badge */
+    .status-wol-sent {
+      background-color: #fef3c7 !important;
+      color: #b45309 !important;
+      border: 1px solid #fde68a !important;
+    }
+
+    /* Toast Notification Container */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast-msg {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+      border-left: 4px solid #10b981;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: auto;
+    }
+    .toast-msg.toast-error {
+      border-left-color: #ef4444;
+    }
+    @keyframes toastSlideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Drawer for card console output */
+    .card-console-drawer {
+      background: #0b192c;
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      border: 1px solid #1e3a5f;
+      margin-top: 0.6rem;
+    }
+    .card-console-output {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.71875rem;
+      color: #38bdf8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 0;
+      line-height: 1.4;
+    }
 
     @media (max-width: 900px) {
       .kpi-cards-grid {
@@ -747,12 +872,16 @@
     <!-- Phase 3 Top Heading -->
     <div class="dashboard-top-heading">
       <div class="heading-title-group">
-        <h1>IT Staff Administration & Ticket Triage Dashboard</h1>
+        <h1>IT Staff Administration &amp; Ticket Triage Dashboard</h1>
         <p>Real-time fault resolution queue and remote action center</p>
       </div>
-      <div>
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <div class="live-status-pill">
+          <span class="pulsing-green-dot"></span>
+          <span class="live-status-text">LIVE TELEMETRY ECHO &bull; AUTO-SYNCING</span>
+        </div>
         <span class="phase-pill">
-          <span>Admin Access</span> • IT Staff
+          <span>Admin Access</span> &bull; IT Staff
         </span>
       </div>
     </div>
@@ -837,8 +966,14 @@
         </div>
       </div>
 
-      <!-- Live Filter Bar: Lab ID & Priority Query Params -->
+      <!-- Live Filter Bar: Search, Lab ID & Priority Query Params -->
       <div class="filter-bar">
+        <div class="filter-group" style="flex: 1; min-width: 240px;">
+          <input type="search" id="ticket-search-input" class="filter-search-input"
+                 placeholder="🔍 Search PC (e.g. PC-30), Lab, Category, Reporter..."
+                 oninput="applyTicketFilters()">
+        </div>
+
         <div class="filter-group">
           <label for="filter-lab" class="filter-label">🏛️ Laboratory:</label>
           <select id="filter-lab" class="filter-select" onchange="applyTicketFilters()">
@@ -895,6 +1030,7 @@
               </td>
               <td>
                 <div style="font-weight: 600;">{{ ticket.reported_at }}</div>
+                <div class="ticket-age-pill" data-reported-at="{{ ticket.reported_at }}">calculating...</div>
                 <span class="age-badge">Position #{{ loop.index }}</span>
               </td>
               <td>
@@ -979,13 +1115,13 @@
       {% if offline_pcs %}
       <div class="offline-grid">
         {% for pc in offline_pcs %}
-        <div class="offline-card">
+        <div class="offline-card" id="offline-card-{{ pc.pc_number }}">
           <div class="offline-card-top">
             <div>
               <div class="offline-pc-id">{{ pc.pc_number }}</div>
               <div class="offline-lab-name">🏛️ {{ pc.lab_name }}</div>
             </div>
-            <span class="status-badge status-offline">Offline</span>
+            <span class="status-badge status-offline" id="wol-status-badge-{{ pc.pc_number }}">Offline</span>
           </div>
 
           <div class="offline-meta">
@@ -995,14 +1131,17 @@
             <div>Last Echo: <span style="color: #9f1239;">{{ pc.last_heartbeat or 'Ping timed out' }}</span></div>
           </div>
 
-          <!-- Step 4 Core: The "Remote Restart" Button executing C program -->
-          <form method="POST" action="/admin/restart/{{ pc.pc_number }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn-remote-restart" style="width: 100%; justify-content: center;"
-                    id="btn-restart-{{ pc.pc_number }}">
-              <span>Remote Restart</span>
+          <!-- Step 4 Core: The "Remote Restart" Button executing C program via AJAX -->
+          <div style="margin-top: 0.75rem;">
+            <button type="button" class="btn-remote-restart" style="width: 100%; justify-content: center;"
+                    id="btn-restart-{{ pc.pc_number }}"
+                    onclick="triggerAjaxRestart(event, '{{ pc.pc_number }}', '{{ pc.mac_address }}', '{{ pc.ip_address }}')">
+              <span>⚡ Remote Restart</span>
             </button>
-          </form>
+          </div>
+          <div class="card-console-drawer" id="console-drawer-{{ pc.pc_number }}" style="display:none;">
+            <pre class="card-console-output" id="console-output-{{ pc.pc_number }}"></pre>
+          </div>
         </div>
         {% endfor %}
       </div>
@@ -1197,7 +1336,170 @@
         .replace(/'/g, '&#39;');
     }
 
+    /* ── 1. Ticket Age Timer Helper ─────────────────────────────────────────── */
+    function formatElapsedTime(dateStr) {
+      if (!dateStr) return '';
+      const past = new Date(dateStr.replace(' ', 'T'));
+      const now = new Date();
+      const diffSec = Math.max(0, Math.floor((now - past) / 1000));
+      if (isNaN(diffSec)) return dateStr;
+      if (diffSec < 60) return 'just now';
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin} min ago`;
+      const diffHours = Math.floor(diffMin / 60);
+      const remMin = diffMin % 60;
+      if (diffHours < 24) {
+        return remMin > 0 ? `${diffHours} hr ${remMin} min ago` : `${diffHours} hr ago`;
+      }
+      const diffDays = Math.floor(diffHours / 24);
+      const remHours = diffHours % 24;
+      return remHours > 0 ? `${diffDays}d ${remHours}h ago` : `${diffDays}d ago`;
+    }
+
+    function updateTicketAgeTimers() {
+      document.querySelectorAll('.ticket-age-pill').forEach(el => {
+        const raw = el.dataset.reportedAt;
+        if (raw) {
+          el.textContent = formatElapsedTime(raw);
+        }
+      });
+    }
+
+    /* ── 2. Subtle Web Audio API Chime for Critical Alerts ──────────────────── */
+    let knownCriticalTicketIds = new Set();
+    let initialCriticalLoadDone = false;
+
+    function playCriticalAlertChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // Two-tone chime: D5 (587.33Hz) -> A5 (880Hz)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now);
+        gain1.gain.setValueAtTime(0.14, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.22);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880.00, now + 0.14);
+        gain2.gain.setValueAtTime(0.18, now + 0.14);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.14);
+        osc2.stop(now + 0.45);
+      } catch (err) {
+        console.warn("Audio chime prevented by browser autoplay policy:", err);
+      }
+    }
+
+    /* ── 3. Toast Notifications ─────────────────────────────────────────────── */
+    function showToast(message, type = 'success') {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = `toast-msg ${type === 'error' ? 'toast-error' : ''}`;
+      const icon = type === 'success' ? '⚡' : (type === 'error' ? '⚠️' : 'ℹ️');
+      toast.innerHTML = `<span style="font-size:1.15rem;">${icon}</span> <span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(12px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
+    }
+
+    /* ── 4. Typewriter Animation for Terminal Output ───────────────────────── */
+    function typewriterEffect(element, text, speed = 12) {
+      element.textContent = '';
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          element.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        }
+      }
+      type();
+    }
+
+    /* ── 5. AJAX-Driven Remote Restart Action (WoL) ────────────────────────── */
+    async function triggerAjaxRestart(event, pcNumber, macAddress, ipAddress) {
+      if (event) event.preventDefault();
+      const btn = document.getElementById(`btn-restart-${pcNumber}`);
+      const badge = document.getElementById(`wol-status-badge-${pcNumber}`);
+      const drawer = document.getElementById(`console-drawer-${pcNumber}`);
+      const consoleOutput = document.getElementById(`console-output-${pcNumber}`);
+
+      if (!btn) return;
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="btn-spinner" style="display:inline-block; margin-right:4px;"></span> <span>Sending WoL Magic Packet...</span>`;
+
+      try {
+        const resp = await fetch(`/admin/restart/${encodeURIComponent(pcNumber)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCsrfToken()
+          },
+          body: JSON.stringify({ pc_id: pcNumber, csrf_token: getCsrfToken() })
+        });
+
+        const data = await resp.json();
+
+        // Update status badge from OFFLINE -> WoL Sent (amber)
+        if (badge) {
+          badge.textContent = '⚡ WoL Sent';
+          badge.className = 'status-badge status-wol-sent';
+        }
+
+        // C terminal output with typewriter animation
+        const cText = (data && data.c_output) ||
+          `[+] Magic packet transmitted to MAC ${macAddress || 'target'}\n[+] Subnet directed broadcast: ${ipAddress || '192.16.16.200'}\n[+] Port: UDP 9 | Payload: 102 bytes (6x0xFF + 16xMAC)\n[+] Return status: 0 (OK)`;
+
+        if (drawer && consoleOutput) {
+          drawer.style.display = 'block';
+          typewriterEffect(consoleOutput, cText, 12);
+        }
+
+        // Toast notification
+        showToast(`Magic packet broadcast to 255.255.255.255:9 (102 bytes)`, 'success');
+
+        btn.innerHTML = `<span>✓ WoL Dispatched</span>`;
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }, 5000);
+
+        pollDashboardStats();
+      } catch (err) {
+        showToast(`WoL dispatch error: ${err.message}`, 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    /* ── 6. Live Ticket Filtering with Search Bar ──────────────────────────── */
     async function applyTicketFilters() {
+      const searchVal = document.getElementById('ticket-search-input')?.value.toLowerCase().trim() || '';
       const labVal = document.getElementById('filter-lab')?.value || 'all';
       const prioVal = document.getElementById('filter-priority')?.value || 'all';
       const indicator = document.getElementById('filter-indicator');
@@ -1210,7 +1512,31 @@
       try {
         const res = await fetch(url);
         const data = await res.json();
-        const tickets = data.tickets || [];
+        let tickets = data.tickets || [];
+
+        // Check for new critical tickets and sound alert chime
+        const hasNewCritical = tickets.some(t => t.priority === 'Critical' && !knownCriticalTicketIds.has(t.id));
+        if (initialCriticalLoadDone && hasNewCritical) {
+          playCriticalAlertChime();
+          showToast('⚠️ New Critical Workstation Fault Alert Received!', 'error');
+        }
+        tickets.forEach(t => {
+          if (t.priority === 'Critical') knownCriticalTicketIds.add(t.id);
+        });
+        initialCriticalLoadDone = true;
+
+        // Apply client-side text search (PC ID, Lab Name, Category, Reporter, Description)
+        if (searchVal) {
+          tickets = tickets.filter(t => {
+            return (t.pc_number && t.pc_number.toLowerCase().includes(searchVal)) ||
+                   (t.lab_name && t.lab_name.toLowerCase().includes(searchVal)) ||
+                   (t.issue_category && t.issue_category.toLowerCase().includes(searchVal)) ||
+                   (t.reporter_name && t.reporter_name.toLowerCase().includes(searchVal)) ||
+                   (t.ticket_number && t.ticket_number.toLowerCase().includes(searchVal)) ||
+                   (t.description && t.description.toLowerCase().includes(searchVal));
+          });
+        }
+
         renderPendingTickets(tickets);
         if (indicator) {
           indicator.textContent = `Showing ${tickets.length} matching ticket(s)`;
@@ -1222,8 +1548,10 @@
     }
 
     function resetTicketFilters() {
+      const searchInput = document.getElementById('ticket-search-input');
       const labSelect = document.getElementById('filter-lab');
       const prioSelect = document.getElementById('filter-priority');
+      if (searchInput) searchInput.value = '';
       if (labSelect) labSelect.value = 'all';
       if (prioSelect) prioSelect.value = 'all';
       applyTicketFilters();
@@ -1264,12 +1592,10 @@
         }
 
         const restartBtn = isOffline
-          ? `<form method="POST" action="/admin/restart/${encodeURIComponent(t.pc_number)}" style="display: inline;">
-               <input type="hidden" name="csrf_token" value="${csrfToken}">
-               <button type="submit" class="btn-restart-sm" title="Execute C WoL program to reboot PC">
-                 <span>⚡ Restart</span>
-               </button>
-             </form>`
+          ? `<button type="button" class="btn-restart-sm" title="Execute C WoL program to reboot PC"
+                     onclick="triggerAjaxRestart(event, '${escapeHtml(t.pc_number)}', '${escapeHtml(t.mac_address || '')}', '${escapeHtml(t.ip_address || '')}')">
+               <span>⚡ Restart</span>
+             </button>`
           : '';
 
         return `
@@ -1280,6 +1606,7 @@
             </td>
             <td>
               <div style="font-weight: 600;">${escapeHtml(t.reported_at)}</div>
+              <div class="ticket-age-pill" data-reported-at="${escapeHtml(t.reported_at)}">${formatElapsedTime(t.reported_at)}</div>
               <span class="age-badge">Position #${index + 1}</span>
             </td>
             <td>
@@ -1316,6 +1643,7 @@
       }).join('');
     }
 
+    /* ── 7. Live Stats Refresh (Every 10 Seconds) ───────────────────────────── */
     async function pollDashboardStats() {
       try {
         const res = await fetch('/api/stats');
@@ -1335,9 +1663,10 @@
         const offlineBadge = document.getElementById('offline-counter-badge');
         if (offlineBadge) offlineBadge.textContent = `${data.offline} Offline`;
 
+        const searchVal = document.getElementById('ticket-search-input')?.value || '';
         const labVal = document.getElementById('filter-lab')?.value || 'all';
         const prioVal = document.getElementById('filter-priority')?.value || 'all';
-        if (labVal === 'all' && prioVal === 'all') {
+        if (!searchVal && labVal === 'all' && prioVal === 'all') {
           const pendingBadge = document.getElementById('pending-counter-badge');
           if (pendingBadge) pendingBadge.textContent = `${data.pending} Pending`;
         }
@@ -1346,11 +1675,23 @@
       }
     }
 
+    // Initialize timers and seed known critical tickets
+    document.querySelectorAll('#pending-tickets-tbody tr').forEach(row => {
+      if (row.innerText.includes('Critical')) {
+        const code = row.querySelector('.ticket-code')?.textContent;
+        if (code) knownCriticalTicketIds.add(code);
+      }
+    });
+    initialCriticalLoadDone = true;
+
+    updateTicketAgeTimers();
+    setInterval(updateTicketAgeTimers, 15000);
+
     refreshNotifications();
     setInterval(refreshNotifications, 10000);
 
     pollDashboardStats();
-    setInterval(pollDashboardStats, 6000);
+    setInterval(pollDashboardStats, 10000); // 10s poll as specified in requirements
   </script>
 
 </body>

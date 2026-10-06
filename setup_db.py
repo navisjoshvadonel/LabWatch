@@ -74,6 +74,7 @@ def initialize_schema(conn: sqlite3.Connection):
             status TEXT NOT NULL DEFAULT 'Online',
             specs TEXT,
             last_heartbeat TIMESTAMP,
+            ping_history TEXT NOT NULL DEFAULT '[1,1,1,1,1,1,1,1,1,1]',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE CASCADE,
             UNIQUE (lab_id, pc_number)
@@ -122,6 +123,14 @@ def initialize_schema(conn: sqlite3.Connection):
     if cols and "salt" not in cols:
         print("[*] Migrating USERS table: Adding 'salt' column...")
         cursor.execute("ALTER TABLE USERS ADD COLUMN salt TEXT NOT NULL DEFAULT ''")
+
+    cursor.execute("PRAGMA table_info(COMPUTERS)")
+    comp_cols = [col[1] for col in cursor.fetchall()]
+    if comp_cols and "ping_history" not in comp_cols:
+        print("[*] Migrating COMPUTERS table: Adding 'ping_history' column...")
+        cursor.execute("ALTER TABLE COMPUTERS ADD COLUMN ping_history TEXT NOT NULL DEFAULT '[1,1,1,1,1,1,1,1,1,1]'")
+        cursor.execute("UPDATE COMPUTERS SET ping_history = '[1,1,1,1,1,1,0,0,0,0]' WHERE status IN ('Offline', 'Faulty')")
+
     conn.commit()
     print("[+] Database schema successfully created.")
 

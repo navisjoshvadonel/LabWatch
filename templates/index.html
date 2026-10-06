@@ -600,6 +600,111 @@
       gap: 1rem;
     }
 
+    /* Lab Collapsible Accordion Sections */
+    .lab-accordion-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .lab-accordion-header {
+      background: #f8fafc;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+    .lab-accordion-header:hover {
+      background: #f1f5f9;
+    }
+    .lab-accordion-title {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .lab-accordion-chevron {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+    .lab-count-badge {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .lab-accordion-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .lab-stat-pill {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .lab-stat-pill.pill-online {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .lab-stat-pill.pill-offline {
+      background: #ffe4e6;
+      color: #be123c;
+      border: 1px solid #fca5a5;
+    }
+    .lab-accordion-body {
+      padding: 1.15rem;
+    }
+
+    /* Mini Sparkline Uptime Telemetry Bar */
+    .sparkline-wrapper {
+      margin-top: 0.75rem;
+      padding: 0.45rem 0.6rem;
+      background: #f8fafc;
+      border-radius: var(--radius-sm);
+      border: 1px solid #e2e8f0;
+    }
+    .sparkline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    .sparkline-pct {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .sparkline-bars {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 10px;
+    }
+    .sparkline-tick {
+      flex: 1;
+      height: 100%;
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+    .sparkline-tick.tick-up {
+      background-color: #10b981;
+    }
+    .sparkline-tick.tick-down {
+      background-color: #ef4444;
+    }
+
     .pc-card {
       background-color: var(--bg-surface);
       border: 1px solid var(--border-card);
@@ -1152,8 +1257,8 @@
         </div>
       </div>
 
-      <div class="pc-grid" id="computers-container">
-        <!-- Rendered via JavaScript -->
+      <div id="computers-container">
+        <!-- Rendered via JavaScript per-lab collapsible accordions -->
       </div>
     </section>
 
@@ -1464,54 +1569,128 @@
       container.innerHTML = '';
 
       if (computers.length === 0) {
-        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">No workstations match criteria</div>';
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 3rem;">No workstations match criteria</div>';
         return;
       }
 
+      // Group workstations by Laboratory
+      const labsMap = new Map();
       computers.forEach(pc => {
-        const card = document.createElement('div');
-        card.className = `pc-card status-${pc.status}`;
+        const labName = pc.lab_name || 'General Laboratory';
+        if (!labsMap.has(labName)) {
+          labsMap.set(labName, []);
+        }
+        labsMap.get(labName).push(pc);
+      });
 
-        const isOnline = pc.status === 'Online';
-        const heartbeatTime = pc.last_heartbeat ? pc.last_heartbeat.split(' ')[1] : 'No Signal';
+      labsMap.forEach((labPCs, labName) => {
+        const totalCount = labPCs.length;
+        const onlineCount = labPCs.filter(p => p.status === 'Online').length;
+        const offlineCount = totalCount - onlineCount;
+        const labSlug = labName.replace(/[^a-zA-Z0-9]/g, '_');
 
-        card.innerHTML = `
-          <div>
-            <div class="pc-card-header">
-              <span class="pc-number">🖥️ ${pc.pc_number}</span>
-              <span class="status-badge ${pc.status}">${pc.status}</span>
+        const labSection = document.createElement('div');
+        labSection.className = 'lab-accordion-card';
+        labSection.id = `lab-sec-${labSlug}`;
+
+        labSection.innerHTML = `
+          <div class="lab-accordion-header" onclick="toggleLabAccordion('${labSlug}')">
+            <div class="lab-accordion-title">
+              <span class="lab-accordion-chevron" id="chevron-${labSlug}">▼</span>
+              <span style="font-weight: 700; color: var(--mepco-navy); font-size: 0.95rem;">🏛️ ${escapeHtml(labName)}</span>
+              <span class="lab-count-badge">${totalCount} Workstations</span>
             </div>
-
-            <div class="pc-kv-grid">
-              <div class="kv-row">
-                <span class="kv-key">IP Address</span>
-                <span class="kv-val mono">${pc.ip_address}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">MAC Address</span>
-                <span class="kv-val mono">${pc.mac_address}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Laboratory</span>
-                <span class="kv-val lab-highlight">${pc.lab_name}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Last Heartbeat</span>
-                <span class="kv-val mono">${heartbeatTime}</span>
-              </div>
+            <div class="lab-accordion-pills">
+              <span class="lab-stat-pill pill-online">🟢 ${onlineCount} Online</span>
+              ${offlineCount > 0 ? `<span class="lab-stat-pill pill-offline">🔴 ${offlineCount} Offline</span>` : ''}
             </div>
           </div>
-
-          <div class="pc-card-footer">
-            <span style="font-size: 0.71875rem; color: var(--text-muted);">PC #${pc.id}</span>
-            ${!isOnline ? 
-              `<button class="btn-wol-gold" onclick="triggerWolRestart('${pc.pc_number}')">⚡ WoL Restart</button>` : 
-              `<button class="btn-report-subtle" onclick="quickReport('${pc.lab_id}', '${pc.id}')">Report Fault</button>`
-            }
+          <div class="lab-accordion-body" id="body-${labSlug}">
+            <div class="pc-grid" id="grid-${labSlug}"></div>
           </div>
         `;
-        container.appendChild(card);
+
+        container.appendChild(labSection);
+        const gridContainer = labSection.querySelector(`#grid-${labSlug}`);
+
+        labPCs.forEach(pc => {
+          const card = document.createElement('div');
+          card.className = `pc-card status-${pc.status}`;
+
+          const isOnline = pc.status === 'Online';
+          const heartbeatTime = pc.last_heartbeat ? pc.last_heartbeat.split(' ')[1] : 'No Signal';
+
+          // 10-ping circular buffer sparkline
+          const pHistory = Array.isArray(pc.ping_history) ? pc.ping_history : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+          const upPings = pHistory.filter(v => v === 1).length;
+          const uptimePct = Math.round((upPings / (pHistory.length || 1)) * 100);
+
+          const sparklineTicks = pHistory.map(h => {
+            return `<span class="sparkline-tick ${h ? 'tick-up' : 'tick-down'}" title="${h ? 'Echo response OK' : 'Ping Timeout'}"></span>`;
+          }).join('');
+
+          card.innerHTML = `
+            <div>
+              <div class="pc-card-header">
+                <span class="pc-number">🖥️ ${escapeHtml(pc.pc_number)}</span>
+                <span class="status-badge ${pc.status}">${pc.status}</span>
+              </div>
+
+              <div class="pc-kv-grid">
+                <div class="kv-row">
+                  <span class="kv-key">IP Address</span>
+                  <span class="kv-val mono">${escapeHtml(pc.ip_address)}</span>
+                </div>
+                <div class="kv-row">
+                  <span class="kv-key">MAC Address</span>
+                  <span class="kv-val mono">${escapeHtml(pc.mac_address)}</span>
+                </div>
+                <div class="kv-row">
+                  <span class="kv-key">Laboratory</span>
+                  <span class="kv-val lab-highlight">${escapeHtml(pc.lab_name)}</span>
+                </div>
+                <div class="kv-row">
+                  <span class="kv-key">Last Heartbeat</span>
+                  <span class="kv-val mono">${escapeHtml(heartbeatTime)}</span>
+                </div>
+              </div>
+
+              <!-- Mini Sparkline / Uptime Bar -->
+              <div class="sparkline-wrapper">
+                <div class="sparkline-header">
+                  <span class="sparkline-label">ICMP Telemetry (Last 10 Pings)</span>
+                  <span class="sparkline-pct">${uptimePct}% Uptime</span>
+                </div>
+                <div class="sparkline-bars" title="Last 10 ICMP sweeps: ${upPings}/10 responded">
+                  ${sparklineTicks}
+                </div>
+              </div>
+            </div>
+
+            <div class="pc-card-footer">
+              <span style="font-size: 0.71875rem; color: var(--text-muted);">PC #${pc.id}</span>
+              ${!isOnline ? 
+                `<button class="btn-wol-gold" onclick="triggerWolRestart('${escapeHtml(pc.pc_number)}')">⚡ WoL Restart</button>` : 
+                `<button class="btn-report-subtle" onclick="quickReport('${pc.lab_id}', '${pc.id}')">Report Fault</button>`
+              }
+            </div>
+          `;
+          gridContainer.appendChild(card);
+        });
       });
+    }
+
+    function toggleLabAccordion(slug) {
+      const body = document.getElementById(`body-${slug}`);
+      const chevron = document.getElementById(`chevron-${slug}`);
+      if (!body) return;
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (chevron) chevron.textContent = '▼';
+      } else {
+        body.style.display = 'none';
+        if (chevron) chevron.textContent = '▶';
+      }
     }
 
     function filterComputersGrid() {

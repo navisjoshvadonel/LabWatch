@@ -475,6 +475,15 @@ def ensure_schema_migrations():
             cursor.execute("ALTER TABLE USERS ADD COLUMN salt TEXT NOT NULL DEFAULT ''")
             conn.commit()
 
+        # Auto-migrate COMPUTERS table for ping_history circular buffer
+        cursor.execute("PRAGMA table_info(COMPUTERS)")
+        comp_cols = [c[1] for c in cursor.fetchall()]
+        if comp_cols and "ping_history" not in comp_cols:
+            logger.info("[*] Auto-migrating COMPUTERS table: adding 'ping_history' circular buffer column...")
+            cursor.execute("ALTER TABLE COMPUTERS ADD COLUMN ping_history TEXT NOT NULL DEFAULT '[1,1,1,1,1,1,1,1,1,1]'")
+            cursor.execute("UPDATE COMPUTERS SET ping_history = '[1,1,1,1,1,1,0,0,0,0]' WHERE status IN ('Offline', 'Faulty')")
+            conn.commit()
+
         # Generate cryptographic salt for any existing users with empty salt
         cursor.execute("SELECT id, username, password_hash, salt FROM USERS WHERE salt IS NULL OR salt = ''")
         unmigrated = cursor.fetchall()
@@ -994,14 +1003,29 @@ def receive_c_daemon_alert():
         pc_number = comp["pc_number"]
         old_status = comp["status"]
 
-        # 1. Update status and heartbeat in database
+        # 1. Update status, heartbeat, and circular buffer of last 10 pings
+        cursor.execute("SELECT ping_history FROM COMPUTERS WHERE id = ?", (comp_id,))
+        p_row = cursor.fetchone()
+        raw_hist = p_row["ping_history"] if (p_row and "ping_history" in p_row.keys() and p_row["ping_history"]) else "[]"
+        try:
+            hist_list = json.loads(raw_hist)
+            if not isinstance(hist_list, list):
+                hist_list = [1] * 10
+        except Exception:
+            hist_list = [1] * 10
+
+        new_tick = 1 if canonical_status == "Online" else 0
+        hist_list.append(new_tick)
+        hist_list = hist_list[-10:]
+        new_hist_json = json.dumps(hist_list)
+
         cursor.execute(
             """
             UPDATE COMPUTERS 
-            SET status = ?, last_heartbeat = CURRENT_TIMESTAMP
+            SET status = ?, last_heartbeat = CURRENT_TIMESTAMP, ping_history = ?
             WHERE id = ?
             """,
-            (canonical_status, comp_id)
+            (canonical_status, new_hist_json, comp_id)
         )
         conn.commit()
         db_ms = (time.perf_counter() - t_start) * 1000.0
@@ -1189,16 +1213,39 @@ def get_labs():
 
 @app.route("/api/computers", methods=["GET"])
 def get_computers():
-    """List computers, optionally filtered by lab_id."""
+    """List computers, optionally filtered by lab_id or specific pc_id."""
     lab_id = request.args.get("lab_id")
+    pc_id = request.args.get("pc_id") or request.args.get("pc_number")
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        if pc_id:
+            cursor.execute(
+                """
+                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address,
+                       c.status, c.specs, c.last_heartbeat, c.ping_history, l.lab_name
+                FROM COMPUTERS c
+                JOIN LABS l ON c.lab_id = l.id
+                WHERE c.pc_number = ? OR c.id = ?
+                LIMIT 1
+                """,
+                (pc_id, int(pc_id) if str(pc_id).isdigit() else -1)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({"error": f"Workstation '{pc_id}' not found"}), 404
+            item = dict(row)
+            try:
+                item["ping_history"] = json.loads(item.get("ping_history") or "[1,1,1,1,1,1,1,1,1,1]")
+            except Exception:
+                item["ping_history"] = [1] * 10
+            return jsonify({"computer": item, "computers": [item]})
+
         if lab_id and lab_id != "all":
             cursor.execute(
                 """
                 SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address,
-                       c.status, c.specs, c.last_heartbeat, l.lab_name
+                       c.status, c.specs, c.last_heartbeat, c.ping_history, l.lab_name
                 FROM COMPUTERS c
                 JOIN LABS l ON c.lab_id = l.id
                 WHERE c.lab_id = ?
@@ -1210,13 +1257,22 @@ def get_computers():
             cursor.execute(
                 """
                 SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address,
-                       c.status, c.specs, c.last_heartbeat, l.lab_name
+                       c.status, c.specs, c.last_heartbeat, c.ping_history, l.lab_name
                 FROM COMPUTERS c
                 JOIN LABS l ON c.lab_id = l.id
                 ORDER BY c.id ASC
                 """
             )
-        return jsonify({"computers": [dict(r) for r in cursor.fetchall()]})
+        
+        comps = []
+        for r in cursor.fetchall():
+            item = dict(r)
+            try:
+                item["ping_history"] = json.loads(item.get("ping_history") or "[1,1,1,1,1,1,1,1,1,1]")
+            except Exception:
+                item["ping_history"] = [1] * 10
+            comps.append(item)
+        return jsonify({"computers": comps})
     finally:
         conn.close()
 

@@ -431,17 +431,32 @@
       padding-top: 1.5rem;
     }
 
-    @media (max-width: 640px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-      .card-footer {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .btn-submit-request {
-        justify-content: center;
-      }
+    /* Queue Position Banner */
+    .queue-position-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      animation: fadeIn .2s ease;
+    }
+    .queue-icon {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+    .queue-info {
+      font-size: 0.78125rem;
+    }
+    .queue-title {
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+    .queue-desc {
+      color: #1d4ed8;
+      font-weight: 500;
     }
   </style>
 </head>
@@ -564,6 +579,14 @@
                 </option>
                 {% endfor %}
               </select>
+              <!-- Estimated Queue Position Indicator -->
+              <div class="queue-position-banner" id="queue-position-banner" style="display: none;">
+                <span class="queue-icon">⏱️</span>
+                <div class="queue-info">
+                  <span class="queue-title">Estimated Queue: </span>
+                  <span class="queue-desc" id="queue-position-text">Calculating queue position...</span>
+                </div>
+              </div>
             </div>
 
             <!-- 2. PC Number Dropdown (Dynamic based on Lab) -->
@@ -666,12 +689,30 @@
     // Embedded JSON data of computers grouped by lab_id from Python
     const computersByLab = {{ computers_by_lab_json | safe }};
 
+    async function updateQueuePosition(labId, labName) {
+      const banner = document.getElementById('queue-position-banner');
+      const textEl = document.getElementById('queue-position-text');
+      if (!banner || !textEl || !labId) return;
+
+      try {
+        const res = await fetch(`/api/tickets?status=Pending&lab_id=${encodeURIComponent(labId)}`);
+        const data = await res.json();
+        const count = (data.tickets || []).length;
+        const estPos = count + 1;
+        textEl.innerHTML = `Your ticket will be <strong>#${estPos}</strong> in queue for ${labName || 'this lab'}. (${count} active pending ticket${count === 1 ? '' : 's'})`;
+        banner.style.display = 'flex';
+      } catch (err) {
+        banner.style.display = 'none';
+      }
+    }
+
     function onLabChange() {
       const labSelect = document.getElementById("lab_id");
       const pcSelect = document.getElementById("pc_number");
       const pcHint = document.getElementById("pc-count-hint");
       const previewBox = document.getElementById("pc-preview-box");
       const selectedLabId = labSelect.value;
+      const selectedLabName = labSelect.options[labSelect.selectedIndex]?.text?.split('(')[0]?.trim() || '';
 
       pcSelect.innerHTML = '<option value="" disabled selected>-- Select Workstation PC --</option>';
       previewBox.style.display = "none";
@@ -679,8 +720,11 @@
       if (!selectedLabId || !computersByLab[selectedLabId]) {
         pcSelect.disabled = true;
         pcHint.textContent = "Select Lab First";
+        document.getElementById('queue-position-banner').style.display = 'none';
         return;
       }
+
+      updateQueuePosition(selectedLabId, selectedLabName);
 
       const pcs = computersByLab[selectedLabId];
       pcHint.textContent = `${pcs.length} PCs assigned to room`;
@@ -699,26 +743,45 @@
       pcSelect.disabled = false;
     }
 
-    function onPCChange() {
+    async function onPCChange() {
       const pcSelect = document.getElementById("pc_number");
       const previewBox = document.getElementById("pc-preview-box");
       const previewText = document.getElementById("pc-preview-text");
       const previewStatus = document.getElementById("pc-preview-status");
 
       const selectedOption = pcSelect.options[pcSelect.selectedIndex];
-      if (!selectedOption || !selectedOption.dataset.ip) {
+      if (!selectedOption || !selectedOption.value) {
         previewBox.style.display = "none";
         return;
       }
 
-      const ip = selectedOption.dataset.ip;
-      const mac = selectedOption.dataset.mac;
-      const status = selectedOption.dataset.status;
+      const pcNum = selectedOption.value;
+      const ip = selectedOption.dataset.ip || '';
+      const mac = selectedOption.dataset.mac || '';
+      const cachedStatus = selectedOption.dataset.status || 'Online';
 
-      previewText.innerHTML = `Workstation <strong>${selectedOption.value}</strong> • IP: <code>${ip}</code> • MAC: <code>${mac}</code>`;
-      previewStatus.textContent = status;
-      previewStatus.className = "pc-status-pill " + (status === "Online" ? "pc-status-online" : "pc-status-offline");
+      // 1. Initial render from cached dropdown attributes
+      previewText.innerHTML = `Workstation <strong>${pcNum}</strong> • IP: <code>${ip}</code> • MAC: <code>${mac}</code>`;
+      previewStatus.textContent = cachedStatus === 'Online' ? '🟢 Online' : '🔴 Offline';
+      previewStatus.className = "pc-status-pill " + (cachedStatus === "Online" ? "pc-status-online" : "pc-status-offline");
       previewBox.style.display = "flex";
+
+      // 2. Real-time live status badge verification from /api/computers?pc_id=...
+      try {
+        const res = await fetch(`/api/computers?pc_id=${encodeURIComponent(pcNum)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const comp = data.computer;
+          if (comp) {
+            const isOnline = comp.status === 'Online';
+            previewStatus.textContent = isOnline ? '🟢 Online' : '🔴 Offline';
+            previewStatus.className = "pc-status-pill " + (isOnline ? "pc-status-online" : "pc-status-offline");
+            previewText.innerHTML = `Workstation <strong>${comp.pc_number}</strong> • IP: <code>${comp.ip_address}</code> • Specs: <span style="color:var(--text-secondary);">${comp.specs || 'N/A'}</span>`;
+          }
+        }
+      } catch (err) {
+        console.warn("Real-time PC status check error:", err);
+      }
     }
 
     // Auto-select first lab on page load if coming from query parameter

@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS COMPUTERS (
     status TEXT NOT NULL DEFAULT 'Online',
     specs TEXT,
     last_heartbeat TIMESTAMP,
+    ping_history TEXT NOT NULL DEFAULT '[1,1,1,1,1,1,1,1,1,1]',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE CASCADE,
     UNIQUE (lab_id, pc_number)
