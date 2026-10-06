@@ -194,7 +194,7 @@ def _build_resolution_email_html(ticket_number: str, reporter_name: str,
                      padding:16px 32px;text-align:center;">
             <p style="margin:0;color:#94a3b8;font-size:11px;line-height:1.5;">
               &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi.<br>
-              Department of Computer Science &amp; Engineering &mdash;
+              Department of Artificial Intelligence &amp; Data Science (AiDS) &mdash;
               LabPulse / LabWatch Automated Notification System.
             </p>
           </td>

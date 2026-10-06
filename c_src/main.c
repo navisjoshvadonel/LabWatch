@@ -90,15 +90,21 @@ void run_monitoring_sweep(LabComputer computers[], int count, int auto_wol) {
 
 void print_usage(const char *prog_name) {
     printf("LabPulse Core Network Protocols (C Daemon)\n");
-    printf("Protocols used: ICMP (Fault Detection), UDP (Remote Restart), TCP (Python API)\n\n");
+    printf("Protocols used: ICMP (Fault Detection), UDP (Remote Restart/WoL), TCP (Python API Bridge)\n");
+    printf("Campus Network : Mepco Schlenk 192.16.16.0/24  (gateway 192.16.16.200)\n\n");
     printf("Usage:\n");
     printf("  %s --sweep                     : Run ICMP sweep across all lab computers\n", prog_name);
     printf("  %s --daemon [interval_sec]     : Run background ICMP monitoring daemon\n", prog_name);
     printf("  %s --ping-pc <PC_ID>           : Ping workstation dynamically using ICMP\n", prog_name);
     printf("  %s --ping-ip <IP>              : Ping specific IPv4 address using ICMP\n", prog_name);
-    printf("  %s --wol <MAC_ADDRESS>         : Broadcast WoL Magic Packet via UDP\n", prog_name);
-    printf("  %s --restart <PC_ID>           : Lookup PC MAC and trigger WoL Restart via UDP\n", prog_name);
+    printf("  %s --wol <MAC_ADDRESS>         : Dual-broadcast WoL (192.16.16.255 + 255.255.255.255, 3x each)\n", prog_name);
+    printf("  %s --restart <PC_ID>           : Lookup PC MAC and trigger reliable dual-broadcast WoL\n", prog_name);
     printf("  %s --notify <PC_ID> <STATUS>   : Send HTTP POST status alert via TCP to Python\n", prog_name);
+    printf("\nWoL broadcast targets per --wol / --restart call:\n");
+    printf("  1. %s  (Mepco Schlenk directed subnet broadcast, primary path)\n", COLLEGE_BROADCAST_IP);
+    printf("  2. %s     (Limited broadcast fallback)\n", DEFAULT_BROADCAST_IP);
+    printf("  Each target: %d transmissions × %d ms gap = %d total magic packets\n",
+           WOL_TRANSMIT_COUNT, WOL_INTER_TX_DELAY_MS, WOL_TRANSMIT_COUNT * 2);
     printf("\n");
 }
 
@@ -169,20 +175,39 @@ int main(int argc, char *argv[]) {
         }
     } else if (strcmp(argv[1], "--wol") == 0 && argc >= 3) {
         const char *mac = argv[2];
-        const char *bcast = (argc >= 4) ? argv[3] : DEFAULT_BROADCAST_IP;
-        udp_send_wol(mac, bcast, DEFAULT_WOL_PORT);
+        /* If the user explicitly passes a broadcast IP, use single-path send.
+         * Otherwise use the reliable dual-broadcast (college subnet + global). */
+        if (argc >= 4) {
+            printf("[*] [UDP] Single-target WoL → MAC %s, broadcast %s\n", mac, argv[3]);
+            udp_send_wol(mac, argv[3], DEFAULT_WOL_PORT);
+        } else {
+            printf("[*] [UDP] Dual-broadcast WoL → MAC %s\n", mac);
+            udp_send_wol_reliable(mac, DEFAULT_WOL_PORT);
+        }
     } else if (strcmp(argv[1], "--restart") == 0 && argc >= 3) {
         const char *target_pc = argv[2];
         int found = 0;
         for (int i = 0; i < comp_count; i++) {
             if (strcmp(computers[i].pc_number, target_pc) == 0) {
                 found = 1;
-                printf("[*] [UDP] Remote Restart initiated for %s (Lab: %s)\n", target_pc, computers[i].lab_name);
-                udp_send_wol(computers[i].mac_address, DEFAULT_BROADCAST_IP, DEFAULT_WOL_PORT);
+                printf("[*] [UDP] Remote Restart initiated for %s (Lab: %s, IP: %s, MAC: %s)\n",
+                       target_pc, computers[i].lab_name,
+                       computers[i].ip_address, computers[i].mac_address);
+                /* Use dual-broadcast reliable WoL:
+                 *   Path 1: 192.16.16.255 (Mepco Schlenk /24 directed subnet broadcast)
+                 *   Path 2: 255.255.255.255 (limited broadcast fallback)
+                 *   Each sent 3 times with 100 ms between transmissions */
+                int wol_result = udp_send_wol_reliable(computers[i].mac_address, DEFAULT_WOL_PORT);
+                if (wol_result == 0) {
+                    printf("[+] Remote restart command delivered for %s.\n", target_pc);
+                } else {
+                    fprintf(stderr, "[-] Remote restart FAILED for %s (error %d).\n",
+                            target_pc, wol_result);
+                }
                 break;
             }
         }
-        if (!found) fprintf(stderr, "[-] Workstation '%s' not found.\n", target_pc);
+        if (!found) fprintf(stderr, "[-] Workstation '%s' not found in inventory.\n", target_pc);
     } else if (strcmp(argv[1], "--notify") == 0 && argc >= 4) {
         const char *pc_id = argv[2];
         const char *status = argv[3];

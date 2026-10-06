@@ -116,14 +116,14 @@ def initialize_schema(conn: sqlite3.Connection):
 
 
 def populate_labs(conn: sqlite3.Connection):
-    """Seed LABS table with Mepco CSE college laboratory rooms."""
+    """Seed LABS table with Mepco AiDS department laboratory rooms."""
     labs_data = [
-        ("Deep Learning Lab", "Computer Science & Engineering", "CSE Block, 2nd Floor, Room CS-201", 30),
-        ("Machine Learning Lab", "Computer Science & Engineering", "CSE Block, 2nd Floor, Room CS-202", 30),
-        ("Data Science Lab", "Computer Science & Engineering", "CSE Block, 1st Floor, Room CS-101", 30),
-        ("Gen AI Lab", "Computer Science & Engineering", "CSE Block, 3rd Floor, Room CS-301", 30),
-        ("Data Analytics Lab", "Computer Science & Engineering", "CSE Block, 1st Floor, Room CS-102", 30),
-        ("Language Processing Lab", "Computer Science & Engineering", "CSE Block, 3rd Floor, Room CS-302", 30),
+        ("Deep Learning Lab", "Artificial Intelligence & Data Science", "AiDS Block, 2nd Floor, Room AI-201", 30),
+        ("Machine Learning Lab", "Artificial Intelligence & Data Science", "AiDS Block, 2nd Floor, Room AI-202", 30),
+        ("Data Science Lab", "Artificial Intelligence & Data Science", "AiDS Block, 1st Floor, Room AI-101", 30),
+        ("Gen AI Lab", "Artificial Intelligence & Data Science", "AiDS Block, 3rd Floor, Room AI-301", 30),
+        ("Data Analytics Lab", "Artificial Intelligence & Data Science", "AiDS Block, 1st Floor, Room AI-102", 30),
+        ("Language Processing Lab", "Artificial Intelligence & Data Science", "AiDS Block, 3rd Floor, Room AI-302", 30),
     ]
 
     cursor = conn.cursor()
@@ -236,7 +236,7 @@ def populate_users(conn: sqlite3.Connection):
         ("nidhes", "nidhes123", "Nidhes", "nidhes@mepcoeng.ac.in", "student"),
         ("tech_rajesh", "tech123", "Rajesh Kumar (Lab Tech)", "rajesh.tech@mepcoeng.ac.in", "technician"),
         ("tech_priya", "tech123", "Priya Sharma (Lab Tech)", "priya.tech@mepcoeng.ac.in", "technician"),
-        ("prof_cse", "staff123", "Prof. CSE Staff Advisor", "hod.cse@mepcoeng.ac.in", "staff"),
+        ("prof_aids", "staff123", "Prof. AiDS Staff Advisor", "hod.aids@mepcoeng.ac.in", "staff"),
     ]
 
     hashed_users = [
