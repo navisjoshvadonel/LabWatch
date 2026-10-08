@@ -1236,70 +1236,6 @@
       </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- SECTION 5: INSTITUTIONAL SECURITY OPERATIONS CENTER (SOC) & SIEM AUDIT -->
-    <!-- ===================================================================== -->
-    <section class="dashboard-section" id="security-section">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">
-            <span>Institutional Security Operations Center (SOC)</span>
-            <span class="badge-counter" id="sec-posture-badge" style="background-color: #10b981;">Zero-Trust Active</span>
-          </h2>
-          <p class="section-subtitle">
-            Real-time SIEM audit log, machine-to-machine daemon verification, and brute-force lockout defense ledger.
-          </p>
-        </div>
-        <button onclick="fetchSecurityStatus()" style="background:var(--mepco-navy);color:#fff;border:none;
-          padding:0.4rem 0.85rem;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
-          <span>[SYNC]</span> Refresh SOC Audit
-        </button>
-      </div>
-
-      <!-- Security KPI Cards -->
-      <div style="padding:1rem 1.5rem; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; background:#f8fafc; border-bottom:1px solid var(--border-color);">
-        <div style="background:#fff; padding:0.85rem 1rem; border-radius:8px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
-          <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase;">RBAC Authorization</div>
-          <div style="font-size:1.1rem; font-weight:800; color:#0f172a; margin-top:0.25rem;">Zero-Trust Enforced</div>
-          <div style="font-size:0.7rem; color:#10b981; font-weight:600; margin-top:0.2rem;">● Strict Role Isolation</div>
-        </div>
-        <div style="background:#fff; padding:0.85rem 1rem; border-radius:8px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
-          <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase;">C Daemon Telemetry</div>
-          <div style="font-size:1.1rem; font-weight:800; color:#0f172a; margin-top:0.25rem;">M2M Token Header</div>
-          <div style="font-size:0.7rem; color:#10b981; font-weight:600; margin-top:0.2rem;">● X-Daemon-Token Active</div>
-        </div>
-        <div style="background:#fff; padding:0.85rem 1rem; border-radius:8px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
-          <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase;">Active Lockouts</div>
-          <div style="font-size:1.1rem; font-weight:800; color:#dc2626; margin-top:0.25rem;" id="stat-active-lockouts">0 Targets</div>
-          <div style="font-size:0.7rem; color:#64748b; font-weight:600; margin-top:0.2rem;">5-Fail / 15m Threshold</div>
-        </div>
-        <div style="background:#fff; padding:0.85rem 1rem; border-radius:8px; border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
-          <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase;">Threat Defenses</div>
-          <div style="font-size:1.1rem; font-weight:800; color:#0284c7; margin-top:0.25rem;">Anti-XSS & Anti-CSRF</div>
-          <div style="font-size:0.7rem; color:#10b981; font-weight:600; margin-top:0.2rem;">● Cryptographic Defense</div>
-        </div>
-      </div>
-
-      <!-- Active Lockouts Sub-Panel -->
-      <div id="active-lockouts-container" style="padding:1rem 1.5rem; border-bottom:1px solid var(--border-color); display:none;">
-        <h3 style="font-size:0.9rem; font-weight:700; color:#991b1b; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
-          <span>[ALERT]</span> Currently Locked Out Targets (Brute-Force Mitigated)
-        </h3>
-        <div id="active-lockouts-list" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
-      </div>
-
-      <!-- Real-Time SIEM Audit Event Feed -->
-      <div style="padding:1.25rem 1.5rem;">
-        <h3 style="font-size:0.9rem; font-weight:700; color:var(--text-primary); margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
-          <span>Recent Security & Audit Ledger Entries</span>
-          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Auto-parsed from <code>security_audit.log</code></span>
-        </h3>
-        <div id="soc-audit-table-wrap" style="max-height:360px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; background:#0f172a; color:#f1f5f9; font-family:Consolas, Monaco, monospace; font-size:0.75rem; padding:0.75rem 1rem; line-height:1.6;">
-          <div id="soc-audit-log-lines">Loading security audit feed...</div>
-        </div>
-      </div>
-    </section>
-
   </main>
 
   <footer class="page-footer">
@@ -1717,84 +1653,6 @@
       }
     }
 
-    /* ── 8. Security Operations Center (SOC) Functions ─────────────────────── */
-    async function fetchSecurityStatus() {
-      try {
-        const res = await fetch('/api/admin/security/status');
-        if (!res.ok) return;
-        const data = await res.json();
-
-        // Update active lockouts
-        const lockouts = data.active_lockouts || [];
-        const countEl = document.getElementById('stat-active-lockouts');
-        if (countEl) countEl.innerText = `${lockouts.length} Targets`;
-
-        const lockContainer = document.getElementById('active-lockouts-container');
-        const lockList = document.getElementById('active-lockouts-list');
-        if (lockContainer && lockList) {
-          if (lockouts.length > 0) {
-            lockContainer.style.display = 'block';
-            lockList.innerHTML = lockouts.map(l => `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:#fee2e2; border:1px solid #fecaca; padding:0.5rem 1rem; border-radius:6px;">
-                <div>
-                  <strong style="color:#991b1b;">${escapeHtml(l.target)}</strong> (${escapeHtml(l.type)}) &mdash;
-                  <span style="color:#7f1d1d; font-size:0.8rem;">Expires: ${escapeHtml(l.expires_at)} (${l.remaining_seconds}s remaining)</span>
-                </div>
-                <button onclick="unlockSecurityTarget('${l.target}')" style="background:#dc2626; color:#fff; border:none; padding:0.25rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                  Unlock Target
-                </button>
-              </div>
-            `).join('');
-          } else {
-            lockContainer.style.display = 'none';
-          }
-        }
-
-        // Render audit events
-        const logLinesEl = document.getElementById('soc-audit-log-lines');
-        if (logLinesEl && data.recent_audit_events) {
-          if (data.recent_audit_events.length === 0) {
-            logLinesEl.innerHTML = '<span style="color:#94a3b8;">No recent security incidents logged. All defenses optimal.</span>';
-          } else {
-            logLinesEl.innerHTML = data.recent_audit_events.slice().reverse().map(line => {
-              let color = '#38bdf8';
-              if (line.includes('AUTH_FAILED') || line.includes('CSRF_REJECT') || line.includes('RBAC_VIOLATION') || line.includes('DAEMON_AUTH_REJECT')) {
-                color = '#f87171';
-              } else if (line.includes('AUTH_LOCKOUT')) {
-                color = '#fbbf24';
-              } else if (line.includes('AUTH_SUCCESS') || line.includes('SECURITY_OVERRIDE') || line.includes('WOL_RESTART')) {
-                color = '#4ade80';
-              }
-              return `<div style="margin-bottom:0.25rem; border-bottom:1px solid #1e293b; padding-bottom:0.2rem;"><span style="color:${color}; font-weight:bold;">${escapeHtml(line)}</span></div>`;
-            }).join('');
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load SOC audit:', err);
-      }
-    }
-
-    async function unlockSecurityTarget(target) {
-      if (!confirm(`Are you sure you want to lift the security lockout on '${target}'?`)) return;
-      try {
-        const csrfToken = '{{ csrf_token() }}';
-        const res = await fetch('/api/admin/security/unlock', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          body: JSON.stringify({ target: target })
-        });
-        const d = await res.json();
-        if (res.ok) {
-          alert(d.message || 'Successfully unlocked target');
-          fetchSecurityStatus();
-        } else {
-          alert(d.error || 'Failed to unlock target');
-        }
-      } catch (err) {
-        alert('Network error: ' + err.message);
-      }
-    }
-
     // Initialize timers and seed known critical tickets
     document.querySelectorAll('#pending-tickets-tbody tr').forEach(row => {
       if (row.innerText.includes('Critical')) {
@@ -1812,9 +1670,6 @@
 
     pollDashboardStats();
     setInterval(pollDashboardStats, 10000); // 10s poll as specified in requirements
-
-    fetchSecurityStatus();
-    setInterval(fetchSecurityStatus, 10000);
   </script>
 
 </body>
