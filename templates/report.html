@@ -67,9 +67,10 @@
     .mepco-top-bar {
       background-color: var(--mepco-navy);
       color: #ffffff;
-      padding: 0.35rem 1.5rem;
-      font-size: 0.75rem;
+      padding: 0.2rem 1.5rem;
+      font-size: 0.72rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
     }
     .top-bar-inner {
       max-width: 1200px;
@@ -95,11 +96,12 @@
     .mepco-main-header {
       background-color: #ffffff;
       border-bottom: 2px solid var(--mepco-blue);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
       position: sticky;
       top: 0;
       z-index: 100;
-      padding: 0.65rem 1.5rem;
+      padding: 0.4rem 1.5rem;
+      flex-shrink: 0;
     }
     .main-header-inner {
       max-width: 1200px;
@@ -122,9 +124,9 @@
       text-decoration: none;
     }
     .mepco-logo-img {
-      height: 44px;
+      height: 38px;
       width: auto;
-      max-width: 240px;
+      max-width: 220px;
       object-fit: contain;
       display: block;
     }
@@ -183,11 +185,14 @@
 
     /* Container */
     .page-container {
-      max-width: 900px;
-      margin: 1.5rem auto 3rem;
-      padding: 1.5rem 1.5rem;
-      flex: 1 0 auto;
+      max-width: 860px;
+      margin: 0.5rem auto;
+      padding: 0 1.25rem;
+      flex: 1;
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     /* Breadcrumb / Phase Banner */
@@ -219,34 +224,34 @@
       background-color: var(--bg-surface);
       border-radius: var(--radius-lg);
       border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 4px 16px rgba(11, 37, 69, 0.07);
       overflow: hidden;
     }
     .card-header {
       background-color: #ffffff;
-      padding: 1.25rem 1.75rem;
+      padding: 0.65rem 1.25rem;
       border-bottom: 1px solid var(--border-color);
     }
     .card-title {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--mepco-navy);
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.1rem;
     }
     .card-subtitle {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       color: var(--text-secondary);
     }
     .card-body {
-      padding: 1.75rem;
+      padding: 0.85rem 1.25rem;
     }
 
     /* Form Layout Grid */
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-      margin-bottom: 1.25rem;
+      gap: 0.65rem;
+      margin-bottom: 0.65rem;
     }
     .form-group-full {
       grid-column: 1 / -1;
@@ -254,10 +259,10 @@
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.25rem;
     }
     .form-label {
-      font-size: 0.8125rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-main);
       display: flex;
@@ -269,16 +274,16 @@
       margin-left: 2px;
     }
     .form-label-hint {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
       font-weight: normal;
     }
 
     .form-select, .form-input, .form-textarea {
       width: 100%;
-      padding: 0.6rem 0.75rem;
+      padding: 0.42rem 0.65rem;
       font-family: inherit;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: var(--text-main);
       background-color: #ffffff;
       border: 1px solid var(--border-input);
@@ -291,8 +296,9 @@
       box-shadow: 0 0 0 3px rgba(0, 102, 179, 0.15);
     }
     .form-textarea {
-      resize: vertical;
-      min-height: 90px;
+      resize: none;
+      min-height: 52px;
+      height: 52px;
     }
 
     /* Workstation Helper Info Box */
@@ -328,22 +334,22 @@
 
     /* Submit Button Area */
     .card-footer {
-      padding: 1.25rem 1.75rem;
+      padding: 0.6rem 1.25rem;
       background-color: #f8fafc;
       border-top: 1px solid var(--border-color);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
     }
     .btn-submit-request {
       background-color: var(--mepco-blue);
       color: #ffffff;
       border: none;
-      padding: 0.65rem 1.5rem;
+      padding: 0.5rem 1.35rem;
       border-radius: var(--radius-md);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -429,12 +435,13 @@
       background: var(--mepco-navy-deep);
       color: rgba(255, 255, 255, 0.65);
       text-align: center;
-      font-size: 0.72rem;
-      padding: 1rem 1.5rem;
-      line-height: 1.6;
+      font-size: 0.7rem;
+      padding: 0.5rem 1.25rem;
+      line-height: 1.45;
       width: 100%;
       margin-top: auto;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
     }
 
     /* Queue Position Banner */
