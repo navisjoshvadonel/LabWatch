@@ -15,6 +15,7 @@
       --mepco-blue-hover: #00508c;
       --mepco-blue-dark: #003e6d;
       --mepco-navy: #0b2545;
+      --mepco-navy-deep: #071a35;
       --mepco-cyan-light: #e0f2fe;
       --mepco-gold: #d97706;
 
@@ -41,6 +42,8 @@
       min-height: 100vh;
       font-size: 0.875rem;
       line-height: 1.5;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── Top Bar ── */
@@ -94,7 +97,7 @@
     .nav-tab-link.active { background: var(--mepco-blue); color: #fff; box-shadow: 0 1px 3px rgba(0,102,179,.25); }
 
     /* ── Page Container ── */
-    .page-container { max-width: 760px; margin: 2rem auto 4rem; padding: 0 1.5rem; }
+    .page-container { max-width: 760px; margin: 2rem auto 4rem; padding: 0 1.5rem; flex: 1 0 auto; width: 100%; }
 
     /* ── Auto-refresh bar ── */
     .auto-refresh-strip {
@@ -230,9 +233,15 @@
 
     /* Footer */
     .page-footer {
-      max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem;
-      text-align: center; font-size: 0.75rem; color: var(--text-muted);
-      border-top: 1px solid var(--border-color); padding-top: 1.5rem;
+      background: var(--mepco-navy-deep);
+      color: rgba(255, 255, 255, 0.65);
+      text-align: center;
+      font-size: 0.72rem;
+      padding: 1rem 1.5rem;
+      line-height: 1.6;
+      width: 100%;
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     @media (max-width: 600px) {

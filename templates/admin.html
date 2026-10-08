@@ -16,6 +16,7 @@
       --mepco-blue-hover: #00508c;
       --mepco-blue-dark: #003e6d;
       --mepco-navy: #0b2545;
+      --mepco-navy-deep: #071a35;
       --mepco-cyan: #0099da;
       --mepco-cyan-light: #e0f2fe;
       --mepco-gold: #d97706;
@@ -68,6 +69,8 @@
       min-height: 100vh;
       line-height: 1.5;
       font-size: 0.875rem;
+      display: flex;
+      flex-direction: column;
     }
 
     /* Top Strip */
@@ -202,6 +205,8 @@
       max-width: 1440px;
       margin: 1.5rem auto 3rem;
       padding: 0 1.5rem;
+      flex: 1 0 auto;
+      width: 100%;
     }
 
     /* Phase 3 Banner */
@@ -620,14 +625,15 @@
     }
 
     .page-footer {
-      max-width: 1440px;
-      margin: 3rem auto 2rem;
-      padding: 0 1.5rem;
+      background: var(--mepco-navy-deep);
+      color: rgba(255, 255, 255, 0.65);
       text-align: center;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--border-color);
-      padding-top: 1.5rem;
+      font-size: 0.72rem;
+      padding: 1rem 1.5rem;
+      line-height: 1.6;
+      width: 100%;
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     /* Live Filter Controls */
