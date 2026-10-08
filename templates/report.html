@@ -488,25 +488,25 @@
           <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="mepco-logo-img">
           <div class="brand-divider"></div>
           <div class="labwatch-titles">
-            <span class="labwatch-title">LabPulse / LabWatch</span>
-            <span class="labwatch-dept">Laboratory PC Fault Reporting Portal &bull; Student Tier</span>
+            <span class="labwatch-title">LabWatch</span>
+            <span class="labwatch-dept">Report a PC Problem</span>
           </div>
         </a>
       </div>
 
       <nav class="campus-nav-tabs">
         <a href="/report" class="nav-tab-link active">
-          <span>📝 Report Fault</span>
+          <span>📝 Report Problem</span>
         </a>
         <a href="javascript:void(0)" onclick="promptTicketSearch()" class="nav-tab-link">
-          <span>🔍 Track Ticket Status</span>
+          <span>🔍 Check Ticket</span>
         </a>
         {% if logged_user and logged_user['role'] in ['admin', 'technician'] %}
         <a href="/admin" class="nav-tab-link">
           <span>🛠️ Admin Dashboard</span>
         </a>
         <a href="/monitor" class="nav-tab-link">
-          <span>📊 Live Monitor</span>
+          <span>📊 Overview</span>
         </a>
         {% endif %}
       </nav>
@@ -516,14 +516,12 @@
   <!-- 3. Form Content Container -->
   <main class="page-container">
 
-
-
     <!-- Error Alert Banner -->
     {% if error_message %}
     <div class="alert-error">
       <span style="font-size: 1.25rem;">⚠️</span>
       <div>
-        <strong>Submission Failed:</strong> {{ error_message }}
+        <strong>Could not submit:</strong> {{ error_message }}
       </div>
     </div>
     {% endif %}
@@ -534,16 +532,15 @@
       <span style="font-size: 1.5rem;">✅</span>
       <div>
         <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.25rem;">
-          Fault Request Submitted Successfully!
+          Problem Reported Successfully!
         </h4>
         <p style="font-size: 0.85rem; line-height: 1.4;">
-          Your request has been logged as Ticket <span class="ticket-success-id">{{ success_ticket.ticket_number }}</span>
+          Your issue has been recorded as Ticket <span class="ticket-success-id">{{ success_ticket.ticket_number }}</span>
           for <strong>{{ success_ticket.pc_number }}</strong> in <strong>{{ success_ticket.lab_name }}</strong>.
-          Initial status: <strong>Pending</strong> (queued oldest-first for IT triage).
         </p>
         <div class="success-actions">
           <a href="/report" class="btn-link-action btn-link-secondary">
-            <span>➕ Submit Another Request</span>
+            <span>➕ Report Another Problem</span>
           </a>
         </div>
       </div>
@@ -553,9 +550,9 @@
     <!-- User Issue Reporting Form Card -->
     <div class="form-card">
       <div class="card-header">
-        <h1 class="card-title">User Issue Reporting Form</h1>
+        <h1 class="card-title">Report a Computer Problem</h1>
         <p class="card-subtitle">
-          Submit laboratory computer hardware, software, or network connectivity faults to the IT support staff.
+          Submit any issue with a lab computer so IT staff can assist you.
         </p>
       </div>
 
@@ -651,7 +648,25 @@
               </label>
               <textarea name="description" id="description" class="form-textarea"
                         placeholder="e.g. PC-30 completely froze during deep learning model compilation. System does not respond to keyboard or mouse. Needs remote restart."
-                        required></textarea>
+                        required oninput="triggerAiDoctorDebounced()"></textarea>
+
+              <!-- Real-Time AI Lab Doctor Guidance Card -->
+              <div id="ai-doctor-guidance-card" style="display:none; margin-top:1rem; background:linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%); border:1px solid #99f6e4; border-radius:8px; padding:1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                  <span style="background:#0f766e; color:#ffffff; font-size:0.6875rem; font-weight:700; padding:0.15rem 0.55rem; border-radius:999px; text-transform:uppercase;">
+                    🤖 AI Lab Doctor &bull; Real-Time Analysis
+                  </span>
+                  <span id="ai-doctor-confidence" style="background:#ccfbf1; color:#0f766e; border:1px solid #5eead4; font-size:0.6875rem; font-weight:700; padding:0.1rem 0.45rem; border-radius:4px;">95% Match</span>
+                </div>
+                <div id="ai-doctor-title" style="font-size:0.95rem; font-weight:800; color:#115e59; margin-bottom:0.25rem;">CUDA GPU Out-Of-Memory Detected</div>
+                <div id="ai-doctor-rca" style="font-size:0.78125rem; color:#134e4a; margin-bottom:0.65rem; line-height:1.45;">Workstation GPU VRAM exhausted.</div>
+                <div style="font-size:0.75rem; font-weight:700; color:#0f766e;">Immediate Student Self-Help Advice:</div>
+                <div id="ai-doctor-advice-text" style="background:#ffffff; border:1px solid #99f6e4; border-radius:4px; padding:0.75rem; font-size:0.78125rem; color:#0f172a; white-space:pre-line; line-height:1.5; margin-top:0.35rem;"></div>
+                <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#0f766e; border-top:1px dashed #99f6e4; padding-top:0.5rem;">
+                  <span>Auto-Remediation Playbook: <strong id="ai-doctor-playbook-name">Kill AI Zombie Workers</strong></span>
+                  <span id="ai-doctor-est-time" style="font-weight:700;">Est: 15s</span>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -782,6 +797,40 @@
       } catch (err) {
         console.warn("Real-time PC status check error:", err);
       }
+    }
+
+    let aiDoctorTimer = null;
+    function triggerAiDoctorDebounced() {
+      clearTimeout(aiDoctorTimer);
+      aiDoctorTimer = setTimeout(runAiDoctorAnalysis, 350);
+    }
+
+    async function runAiDoctorAnalysis() {
+      const desc = document.getElementById("description").value.trim();
+      const card = document.getElementById("ai-doctor-guidance-card");
+      if (desc.length < 8) {
+        card.style.display = "none";
+        return;
+      }
+      const cat = document.getElementById("issue_category").value;
+      try {
+        const res = await fetch("/api/ai/diagnose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description: desc, category: cat })
+        });
+        const data = await res.json();
+        if (res.ok && data.diagnosis) {
+          const d = data.diagnosis;
+          card.style.display = "block";
+          document.getElementById("ai-doctor-title").innerText = d.issue_title;
+          document.getElementById("ai-doctor-rca").innerText = d.root_cause_analysis;
+          document.getElementById("ai-doctor-advice-text").innerText = d.student_instant_advice;
+          document.getElementById("ai-doctor-playbook-name").innerText = d.playbook_title;
+          document.getElementById("ai-doctor-est-time").innerText = "Est: " + d.est_resolution_time;
+          document.getElementById("ai-doctor-confidence").innerText = d.confidence_score + "% Match";
+        }
+      } catch(e) {}
     }
 
     // Auto-select first lab on page load if coming from query parameter

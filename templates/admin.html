@@ -829,7 +829,7 @@
       </div>
       <div class="top-bar-accreditation" style="display:flex; align-items:center; gap:0.85rem;">
         <span class="admin-badge-strip">
-          IT Staff Active Session: <strong>{{ logged_user['full_name'] if logged_user else 'IT Administrator' }}</strong> ({{ (logged_user['role'] if logged_user else 'Admin')|title }})
+          Signed in: <strong>{{ logged_user['full_name'] if logged_user else 'Administrator' }}</strong>
         </span>
         <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.22rem 0.65rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.3rem;">
           Sign Out
@@ -847,20 +847,29 @@
           <div class="brand-divider"></div>
           <div class="labwatch-titles">
             <span class="labwatch-title">LabWatch</span>
-            <span class="labwatch-dept">IT Staff Administration &amp; Triage Dashboard</span>
+            <span class="labwatch-dept">Lab PC Management</span>
           </div>
         </a>
       </div>
 
       <nav class="campus-nav-tabs">
+        <a href="/monitor?tab=monitor" class="nav-tab-link" style="background:#e0f2fe; color:#0369a1; font-weight:700; border:1px solid #bae6fd;">
+          <span>🖥️ All PCs</span>
+        </a>
+        <a href="/monitor?tab=digital-twin" class="nav-tab-link" style="background:#eff6ff; color:#1d4ed8; font-weight:600;">
+          <span>🏢 Lab Layout</span>
+        </a>
+        <a href="/monitor?tab=hod-report" class="nav-tab-link" style="background:#fef3c7; color:#92400e; font-weight:700; border:1px solid #fde68a;">
+          <span>📋 Daily Report</span>
+        </a>
         <a href="#triage-section" class="nav-tab-link active">
-          <span>Ticket Triage</span>
+          <span>Pending Issues</span>
         </a>
         <a href="#wol-section" class="nav-tab-link">
-          <span>Remote Action</span>
+          <span>Offline PCs</span>
         </a>
         <a href="#resolved-section" class="nav-tab-link">
-          <span>Resolved Log</span>
+          <span>Resolved Issues</span>
         </a>
       </nav>
     </div>
@@ -869,20 +878,17 @@
   <!-- 3. Main Dashboard Body -->
   <main class="page-container">
 
-    <!-- Phase 3 Top Heading -->
+    <!-- Top Heading -->
     <div class="dashboard-top-heading">
       <div class="heading-title-group">
-        <h1>IT Staff Administration &amp; Ticket Triage Dashboard</h1>
-        <p>Real-time fault resolution queue and remote action center</p>
+        <h1>Lab PC Issues</h1>
+        <p>View and manage reported computer issues</p>
       </div>
       <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
         <div class="live-status-pill">
           <span class="pulsing-green-dot"></span>
-          <span class="live-status-text">LIVE TELEMETRY ECHO &bull; AUTO-SYNCING</span>
+          <span class="live-status-text">Live</span>
         </div>
-        <span class="phase-pill">
-          <span>Admin Access</span> &bull; IT Staff
-        </span>
       </div>
     </div>
 
@@ -894,12 +900,12 @@
     </div>
     {% endif %}
 
-    <!-- Live C Program Output Terminal Banner (When Remote Restart was clicked) -->
+    <!-- Output Banner (When Restart was clicked) -->
     {% if restarted_pc and c_output %}
     <div class="c-output-banner">
       <div class="c-banner-header">
         <div class="c-banner-title">
-          <span>Remote Restart Initiated</span>
+          <span>Restart Signal Sent</span>
           <span style="background-color: #0369a1; color: #ffffff; padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">Target: {{ restarted_pc }}</span>
         </div>
         <span style="font-size: 0.72rem; color: #94a3b8;">Command executed for {{ restarted_pc }}</span>
@@ -908,89 +914,78 @@
     </div>
     {% endif %}
 
-    <!-- 4 Summary KPI Metric Cards -->
+    <!-- 4 Summary Metric Cards -->
     <div class="kpi-cards-grid">
       <div class="kpi-card highlight-warning">
         <div class="kpi-label">
-          <span>Pending Tickets</span>
-          <span>Queue</span>
+          <span>Pending Issues</span>
         </div>
         <div class="kpi-value" id="kpi-pending-val">{{ stats.pending_count }}</div>
-        <div class="kpi-desc">Sorted strictly oldest-first for priority triage</div>
+        <div class="kpi-desc">Awaiting resolution</div>
       </div>
 
       <div class="kpi-card highlight-danger">
         <div class="kpi-label">
           <span>Offline PCs</span>
-          <span>Action Required</span>
         </div>
         <div class="kpi-value" id="kpi-offline-val">{{ stats.offline_count }}</div>
-        <div class="kpi-desc">Workstations currently offline and unresponsive</div>
+        <div class="kpi-desc">Currently turned off or unreachable</div>
       </div>
 
       <div class="kpi-card highlight-info">
         <div class="kpi-label">
-          <span>Total Monitored PCs</span>
-          <span>6 AI/Data Labs</span>
+          <span>Total PCs</span>
         </div>
         <div class="kpi-value" id="kpi-total-val">{{ stats.total_computers }}</div>
-        <div class="kpi-desc">Workstations across AI & Data Labs</div>
+        <div class="kpi-desc">Across all department labs</div>
       </div>
 
       <div class="kpi-card highlight-success">
         <div class="kpi-label">
-          <span>Resolved Tickets</span>
-          <span>Closed</span>
+          <span>Resolved Issues</span>
         </div>
         <div class="kpi-value" id="kpi-resolved-val">{{ stats.resolved_count }}</div>
-        <div class="kpi-desc">Verified operational by IT staff</div>
+        <div class="kpi-desc">Fixed and closed</div>
       </div>
     </div>
 
     <!-- ===================================================================== -->
-    <!-- SECTION 1: PENDING TICKETS TABLE (OLDEST FIRST)                        -->
+    <!-- SECTION 1: PENDING TICKETS TABLE                                      -->
     <!-- ===================================================================== -->
     <section class="dashboard-section" id="triage-section">
       <div class="section-header">
         <div>
           <h2 class="section-title">
-            <span>Pending Fault Tickets Queue</span>
+            <span>Pending Issues</span>
             <span class="badge-counter-warning" id="pending-counter-badge">{{ pending_tickets|length }} Pending</span>
           </h2>
           <p class="section-subtitle">
-            Oldest tickets are shown first to ensure timely service.
-          </p>
-        </div>
-        <div style="font-size: 0.75rem; color: var(--text-secondary); background: #fef3c7; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #fde68a;">
-          <strong>Queue Rule:</strong> Older tickets appear at top for timely resolution.
-        </div>
-      </div>
-
-      <!-- Live Filter Bar: Search, Lab ID & Priority Query Params -->
+            Issues reported by students and staff.
+      <!-- Filter Bar -->
       <div class="filter-bar">
         <div class="filter-group" style="flex: 1; min-width: 240px;">
           <input type="search" id="ticket-search-input" class="filter-search-input"
-                 placeholder="🔍 Search PC (e.g. PC-30), Lab, Category, Reporter..."
+                 placeholder="🔍 Search by PC, Lab, or Reporter..."
                  oninput="applyTicketFilters()">
         </div>
 
         <div class="filter-group">
-          <label for="filter-lab" class="filter-label">🏛️ Laboratory:</label>
+          <label for="filter-lab" class="filter-label">Lab:</label>
           <select id="filter-lab" class="filter-select" onchange="applyTicketFilters()">
-            <option value="all">All Department Labs</option>
-            <option value="1">Lab 1 - AI Foundations Lab</option>
-            <option value="2">Lab 2 - Deep Learning Lab</option>
-            <option value="3">Lab 3 - Computer Vision Lab</option>
-            <option value="4">Lab 4 - NLP & LLM Lab</option>
-            <option value="5">Lab 5 - Data Engineering Lab</option>
-            <option value="6">Lab 6 - Edge AI & Robotics Lab</option>
+            <option value="all">All Labs</option>
+            <option value="1">Deep Learning Lab</option>
+            <option value="2">Machine Learning Lab</option>
+            <option value="3">Data Science Lab</option>
+            <option value="4">Gen AI Lab</option>
+            <option value="5">Data Analytics Lab</option>
+            <option value="6">Language Processing Lab</option>
           </select>
         </div>
 
         <div class="filter-group">
-          <label for="filter-priority" class="filter-label">⚡ Priority:</label>
+          <label for="filter-priority" class="filter-label">Priority:</label>
           <select id="filter-priority" class="filter-select" onchange="applyTicketFilters()">
-            <option value="all">All Priorities</option>
+            <option value="all">All</option>
             <option value="Critical">Critical</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -999,47 +994,38 @@
         </div>
 
         <button type="button" class="btn-filter-reset" onclick="resetTicketFilters()">Reset</button>
-        <span id="filter-indicator" style="font-size: 0.72rem; color: var(--text-muted); margin-left: auto;">
-          Live queue &bull; Auto-syncing
-        </span>
       </div>
 
       <div class="table-responsive">
         <table class="admin-table" id="pending-tickets-table" {% if not pending_tickets %}style="display:none;"{% endif %}>
           <thead>
             <tr>
-              <th>Ticket #</th>
-              <th>Reported Time (Oldest First)</th>
-              <th>Laboratory</th>
-              <th>Workstation</th>
-              <th>Category</th>
+              <th>Ticket</th>
+              <th>Reported Time</th>
+              <th>Lab</th>
+              <th>Computer</th>
+              <th>Issue Type</th>
               <th>Priority</th>
-              <th>Reporter</th>
-              <th>Description</th>
-              <th style="text-align: right;">Actions</th>
+              <th>Reported By</th>
+              <th>Details</th>
+              <th style="text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody id="pending-tickets-tbody">
             {% for ticket in pending_tickets %}
-            <tr {% if loop.first %}class="highlight-oldest"{% endif %}>
+            <tr>
               <td>
                 <span class="ticket-code">{{ ticket.ticket_number }}</span>
-                {% if loop.first %}
-                <div style="font-size: 0.65rem; color: #b45309; font-weight: 700; margin-top: 2px;">⚡ HIGHEST AGE PRIORITY</div>
-                {% endif %}
               </td>
               <td>
                 <div style="font-weight: 600;">{{ ticket.reported_at }}</div>
                 <div class="ticket-age-pill" data-reported-at="{{ ticket.reported_at }}">calculating...</div>
-                <span class="age-badge">Position #{{ loop.index }}</span>
               </td>
               <td>
                 <div style="font-weight: 600;">{{ ticket.lab_name }}</div>
-                <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ticket.lab_location }}</div>
               </td>
               <td>
                 <div style="font-weight: 700; color: var(--mepco-navy);">{{ ticket.pc_number }}</div>
-                <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ticket.ip_address }}</div>
                 {% if ticket.pc_status == 'Offline' or ticket.pc_status == 'Faulty' %}
                 <span class="status-badge status-offline" style="margin-top: 2px;">Offline</span>
                 {% else %}
@@ -1058,27 +1044,24 @@
               </td>
               <td>
                 <div style="font-weight: 600;">{{ ticket.reporter_name }}</div>
-                <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ticket.reporter_email }}</div>
               </td>
-              <td style="max-width: 240px; font-size: 0.78125rem;">
+              <td style="max-width: 260px; font-size: 0.78125rem;">
                 {{ ticket.description }}
               </td>
               <td style="text-align: right;">
                 <div class="actions-cell" style="justify-content: flex-end;">
-                  <!-- Mark as Resolved Button (Step 4 Requirement) -->
                   <form method="POST" action="/admin/resolve/{{ ticket.id }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn-resolve" title="Verify fault resolved and update database">
-                      <span>✓ Mark as Resolved</span>
+                    <button type="submit" class="btn-resolve" title="Mark this issue as fixed">
+                      <span>✓ Resolve</span>
                     </button>
                   </form>
 
-                  <!-- Remote Restart Button if PC is offline -->
                   {% if ticket.pc_status == 'Offline' or ticket.pc_status == 'Faulty' %}
                   <form method="POST" action="/admin/restart/{{ ticket.pc_number }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn-restart-sm" title="Execute C WoL program to reboot PC">
-                      <span>⚡ Restart</span>
+                    <button type="submit" class="btn-restart-sm" title="Remotely turn on or reboot PC">
+                      <span>⚡ Restart PC</span>
                     </button>
                   </form>
                   {% endif %}
@@ -1090,24 +1073,24 @@
         </table>
         <div id="pending-empty-state" class="empty-state" {% if pending_tickets %}style="display:none;"{% endif %}>
           <div class="empty-state-icon">🎉</div>
-          <h3>All Caught Up! No Pending Tickets</h3>
-          <p>Every reported laboratory PC fault has been resolved.</p>
+          <h3>All Caught Up! No Pending Issues</h3>
+          <p>Every reported laboratory PC issue has been resolved.</p>
         </div>
       </div>
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SECTION 2: THE "REMOTE RESTART" BUTTON FOR OFFLINE PCs (C WoL)        -->
+    <!-- SECTION 2: OFFLINE COMPUTERS                                           -->
     <!-- ===================================================================== -->
     <section class="dashboard-section" id="wol-section">
       <div class="section-header">
         <div>
           <h2 class="section-title">
-            <span>Offline Workstations & Remote Action Center</span>
+            <span>Offline Computers</span>
             <span class="badge-counter" id="offline-counter-badge" style="background-color: #e11d48;">{{ offline_pcs|length }} Offline</span>
           </h2>
           <p class="section-subtitle">
-            Click "Remote Restart" to attempt to remotely boot the workstation.
+            Remotely turn on or restart computers that are offline.
           </p>
         </div>
       </div>
@@ -1124,19 +1107,11 @@
             <span class="status-badge status-offline" id="wol-status-badge-{{ pc.pc_number }}">Offline</span>
           </div>
 
-          <div class="offline-meta">
-            <div>IP Address: <strong>{{ pc.ip_address }}</strong></div>
-            <div>MAC Address: <strong>{{ pc.mac_address }}</strong></div>
-            <div>Specs: <span style="color: var(--text-secondary);">{{ pc.specs }}</span></div>
-            <div>Last Echo: <span style="color: #9f1239;">{{ pc.last_heartbeat or 'Ping timed out' }}</span></div>
-          </div>
-
-          <!-- Step 4 Core: The "Remote Restart" Button executing C program via AJAX -->
           <div style="margin-top: 0.75rem;">
             <button type="button" class="btn-remote-restart" style="width: 100%; justify-content: center;"
                     id="btn-restart-{{ pc.pc_number }}"
                     onclick="triggerAjaxRestart(event, '{{ pc.pc_number }}', '{{ pc.mac_address }}', '{{ pc.ip_address }}')">
-              <span>⚡ Remote Restart</span>
+              <span>⚡ Restart PC</span>
             </button>
           </div>
           <div class="card-console-drawer" id="console-drawer-{{ pc.pc_number }}" style="display:none;">
@@ -1148,28 +1123,25 @@
       {% else %}
       <div class="empty-state">
         <div class="empty-state-icon">🟢</div>
-        <h3>All 140 Laboratory Workstations Are Online!</h3>
-        <p>C ICMP Echo Pinger reports active responses from all machines.</p>
+        <h3>All Computers Are Online</h3>
+        <p>All lab machines are currently responding normally.</p>
       </div>
       {% endif %}
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SECTION 3: RESOLVED TICKETS — GREEN BADGE LOG & EMAIL AUDIT          -->
+    <!-- SECTION 3: RESOLVED ISSUES                                            -->
     <!-- ===================================================================== -->
     <section class="dashboard-section" id="resolved-section">
       <div class="section-header">
         <div>
           <h2 class="section-title">
-            <span>Resolved Tickets Log</span>
+            <span>Resolved Issues</span>
             <span class="badge-counter" style="background-color: #16a34a;">{{ resolved_tickets|length }} Resolved</span>
           </h2>
           <p class="section-subtitle">
-            Tickets that have been resolved by IT Staff. Notifications have been sent to the reporter.
+            Issues that have been fixed and closed.
           </p>
-        </div>
-        <div style="font-size: 0.75rem; color: #15803d; background: #f0fdf4; padding: 0.25rem 0.65rem; border-radius: 4px; border: 1px solid #bbf7d0;">
-          <strong>Email System:</strong> <span id="smtp-mode-badge" style="font-weight:700;">checking&hellip;</span>
         </div>
       </div>
 
@@ -1178,15 +1150,15 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Ticket #</th>
-              <th>Laboratory</th>
-              <th>Workstation</th>
-              <th>Category</th>
-              <th>Reporter</th>
+              <th>Ticket</th>
+              <th>Lab</th>
+              <th>Computer</th>
+              <th>Issue Type</th>
+              <th>Reported By</th>
               <th>Reported At</th>
-              <th>&#x2705; Resolved At</th>
+              <th>Resolved At</th>
               <th>Status</th>
-              <th>Reporter Self-Check</th>
+              <th>Status Link</th>
             </tr>
           </thead>
           <tbody>
@@ -1198,16 +1170,16 @@
               <td>{{ ticket.issue_category }}</td>
               <td>{{ ticket.reporter_name }}</td>
               <td>{{ ticket.reported_at }}</td>
-              <td><span style="color: #16a34a; font-weight: 600;">{{ ticket.resolved_at or '&#8212;' }}</span></td>
+              <td><span style="color: #16a34a; font-weight: 600;">{{ ticket.resolved_at or '—' }}</span></td>
               <td>
-                <span class="status-badge status-resolved">&#x2705; Resolved</span>
+                <span class="status-badge status-resolved">✓ Resolved</span>
               </td>
               <td>
                 <a href="/status/{{ ticket.ticket_number }}"
                    target="_blank"
                    style="font-size:0.71875rem; font-weight:600; color: var(--mepco-blue);
                           text-decoration: none; display:inline-flex; align-items:center; gap:0.3rem;">
-                  &#128269; View Status &#8594;
+                  View &#8594;
                 </a>
               </td>
             </tr>
@@ -1216,11 +1188,13 @@
         </table>
         {% else %}
         <div class="empty-state" style="padding: 2rem;">
-          <p>No resolved tickets yet. Resolve a pending ticket above to see the green badge and email log here.</p>
+          <p>No resolved issues yet.</p>
         </div>
         {% endif %}
       </div>
     </section>
+
+
 
     <!-- ===================================================================== -->
     <!-- SECTION 4: STEP 5 — LIVE EMAIL NOTIFICATION ACTIVITY LOG              -->
@@ -1592,47 +1566,42 @@
         }
 
         const restartBtn = isOffline
-          ? `<button type="button" class="btn-restart-sm" title="Execute C WoL program to reboot PC"
+          ? `<button type="button" class="btn-restart-sm" title="Remotely turn on or reboot PC"
                      onclick="triggerAjaxRestart(event, '${escapeHtml(t.pc_number)}', '${escapeHtml(t.mac_address || '')}', '${escapeHtml(t.ip_address || '')}')">
-               <span>⚡ Restart</span>
+               <span>⚡ Restart PC</span>
              </button>`
           : '';
 
         return `
-          <tr class="${isFirst ? 'highlight-oldest' : ''}">
+          <tr>
             <td>
               <span class="ticket-code">${escapeHtml(t.ticket_number)}</span>
-              ${isFirst ? '<div style="font-size: 0.65rem; color: #b45309; font-weight: 700; margin-top: 2px;">⚡ HIGHEST AGE PRIORITY</div>' : ''}
             </td>
             <td>
               <div style="font-weight: 600;">${escapeHtml(t.reported_at)}</div>
               <div class="ticket-age-pill" data-reported-at="${escapeHtml(t.reported_at)}">${formatElapsedTime(t.reported_at)}</div>
-              <span class="age-badge">Position #${index + 1}</span>
             </td>
             <td>
               <div style="font-weight: 600;">${escapeHtml(t.lab_name)}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(t.lab_location || '')}</div>
             </td>
             <td>
               <div style="font-weight: 700; color: var(--mepco-navy);">${escapeHtml(t.pc_number)}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(t.ip_address)}</div>
               ${statusPill}
             </td>
             <td>${escapeHtml(t.issue_category)}</td>
             <td>${priorityBadge}</td>
             <td>
               <div style="font-weight: 600;">${escapeHtml(t.reporter_name)}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(t.reporter_email || '')}</div>
             </td>
-            <td style="max-width: 240px; font-size: 0.78125rem;">
+            <td style="max-width: 260px; font-size: 0.78125rem;">
               ${escapeHtml(t.description || '')}
             </td>
             <td style="text-align: right;">
               <div class="actions-cell" style="justify-content: flex-end;">
                 <form method="POST" action="/admin/resolve/${t.id}" style="display: inline;">
                   <input type="hidden" name="csrf_token" value="${csrfToken}">
-                  <button type="submit" class="btn-resolve" title="Verify fault resolved and update database">
-                    <span>✓ Mark as Resolved</span>
+                  <button type="submit" class="btn-resolve" title="Mark this issue as fixed">
+                    <span>✓ Resolve</span>
                   </button>
                 </form>
                 ${restartBtn}

@@ -140,15 +140,76 @@ def initialize_schema(conn: sqlite3.Connection):
         cursor.execute("ALTER TABLE COMPUTERS ADD COLUMN ping_history TEXT NOT NULL DEFAULT '[1,1,1,1,1,1,1,1,1,1]'")
         cursor.execute("UPDATE COMPUTERS SET ping_history = '[1,1,1,1,1,1,0,0,0,0]' WHERE status IN ('Offline', 'Faulty')")
 
+    if comp_cols and "is_admin" not in comp_cols:
+        print("[*] Migrating COMPUTERS table: Adding 'is_admin' column...")
+        cursor.execute("ALTER TABLE COMPUTERS ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+
+    # Ensure auxiliary tables exist
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS TECHNICIAN_LOGS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            technician_id INTEGER,
+            technician_name TEXT NOT NULL,
+            lab_id INTEGER,
+            computer_id INTEGER,
+            action_type TEXT NOT NULL,
+            details TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Success',
+            duration_min INTEGER DEFAULT 5,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (technician_id) REFERENCES USERS (id) ON DELETE SET NULL,
+            FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE SET NULL,
+            FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE SET NULL
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_logs_date ON TECHNICIAN_LOGS(timestamp);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_logs_tech ON TECHNICIAN_LOGS(technician_id);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_logs_lab ON TECHNICIAN_LOGS(lab_id);")
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS REMEDIATION_LOGS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER,
+            computer_id INTEGER NOT NULL,
+            playbook_id TEXT NOT NULL,
+            playbook_name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            triggered_by TEXT NOT NULL,
+            output_log TEXT,
+            duration_ms REAL DEFAULT 0,
+            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE CASCADE,
+            FOREIGN KEY (ticket_id) REFERENCES TICKETS (id) ON DELETE SET NULL
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_remediation_comp ON REMEDIATION_LOGS(computer_id);")
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS EXAM_AUDITS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lab_id INTEGER NOT NULL,
+            audited_by TEXT NOT NULL,
+            total_pcs INTEGER NOT NULL,
+            online_pcs INTEGER NOT NULL,
+            offline_pcs INTEGER NOT NULL,
+            readiness_percentage REAL NOT NULL,
+            certificate_id TEXT NOT NULL,
+            certification_status TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE CASCADE
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_exam_audits_lab ON EXAM_AUDITS(lab_id);")
+
     conn.commit()
-    print("[+] Database schema successfully created.")
+    print("[+] Database schema successfully created and verified.")
 
 
 def populate_labs(conn: sqlite3.Connection):
-    """Seed LABS table with Mepco AiDS department laboratory rooms."""
+    """Seed LABS table with Mepco AiDS department laboratory rooms (60 PCs for DL & ML, 30 for others)."""
     labs_data = [
-        ("Deep Learning Lab", "Artificial Intelligence & Data Science", "AiDS Block, 2nd Floor, Room AI-201", 30),
-        ("Machine Learning Lab", "Artificial Intelligence & Data Science", "AiDS Block, 2nd Floor, Room AI-202", 30),
+        ("Deep Learning Lab", "Artificial Intelligence & Data Science", "AiDS Block, 2nd Floor, Room AI-201", 60),
+        ("Machine Learning Lab", "Artificial Intelligence & Data Science", "AiDS Block, 2nd Floor, Room AI-202", 60),
         ("Data Science Lab", "Artificial Intelligence & Data Science", "AiDS Block, 1st Floor, Room AI-101", 30),
         ("Gen AI Lab", "Artificial Intelligence & Data Science", "AiDS Block, 3rd Floor, Room AI-301", 30),
         ("Data Analytics Lab", "Artificial Intelligence & Data Science", "AiDS Block, 1st Floor, Room AI-102", 30),
@@ -163,15 +224,22 @@ def populate_labs(conn: sqlite3.Connection):
         """,
         labs_data,
     )
+    # Update capacities if rows already exist
+    for lab_name, dept, loc, count in labs_data:
+        cursor.execute("UPDATE LABS SET total_pcs = ?, location = ? WHERE lab_name = ?", (count, loc, lab_name))
     conn.commit()
-    print(f"[+] Seeded {len(labs_data)} labs into LABS table.")
+    print(f"[+] Seeded & updated {len(labs_data)} labs into LABS table with 60/30 PC matrix capacities.")
 
 
 def populate_computers(conn: sqlite3.Connection):
     """
-    Populate COMPUTERS table with IP and MAC addresses across all 6 AI & Data labs.
-    Configures PC-01 to PC-30 for Deep Learning Lab (including PC-30 target for C monitoring),
-    PC-01 to PC-30 for Machine Learning Lab, and PC-01 to PC-20 for other departmental labs.
+    Populate COMPUTERS table with IP, MAC, specs and designated Admin Console workstations.
+    - Deep Learning Lab: 60 PCs (PC-01..PC-60) + DL-ADMIN-01 (Admin Console)
+    - Machine Learning Lab: 60 PCs (PC-01..PC-60) + ML-ADMIN-01 (Admin Console)
+    - Data Science Lab: 30 PCs (PC-01..PC-30) + DS-ADMIN-01 (Admin Console)
+    - Gen AI Lab: 30 PCs (PC-01..PC-30) + GA-ADMIN-01 (Admin Console)
+    - Data Analytics Lab: 30 PCs (PC-01..PC-30) + DA-ADMIN-01 (Admin Console)
+    - Language Processing Lab: 30 PCs (PC-01..PC-30) + LP-ADMIN-01 (Admin Console)
     """
     cursor = conn.cursor()
 
@@ -188,69 +256,99 @@ def populate_computers(conn: sqlite3.Connection):
 
     computers_data = []
 
-    # 1. Deep Learning Lab (30 PCs, Subnet 192.168.1.x)
-    for i in range(1, 31):
+    # 1. Deep Learning Lab (60 Workstations + 1 Admin Console, Subnet 192.168.1.x)
+    computers_data.append((
+        id_dl, "DL-ADMIN-01", "192.168.1.10", "00:1A:2B:3C:4D:00", "Online",
+        "Master Lab Admin Console | Intel Xeon W-2245, 64GB DDR5, Dual RTX 4090 24GB, 4TB NVMe, 10G SFP+", 1
+    ))
+    for i in range(1, 61):
         pc_num = f"PC-{i:02d}"
         ip_addr = f"192.168.1.{100 + i}"
         mac_addr = f"00:1A:2B:3C:4D:{i:02X}"
         status = "Faulty" if i == 30 else ("Offline" if i == 15 else "Online")
         specs = "NVIDIA RTX 4090 24GB, Intel Core i9-13900K, 64GB DDR5, 1TB NVMe SSD"
-        computers_data.append((id_dl, pc_num, ip_addr, mac_addr, status, specs))
+        computers_data.append((id_dl, pc_num, ip_addr, mac_addr, status, specs, 0))
 
-    # 2. Machine Learning Lab (30 PCs, Subnet 192.168.2.x)
-    for i in range(1, 31):
+    # 2. Machine Learning Lab (60 Workstations + 1 Admin Console, Subnet 192.168.2.x)
+    computers_data.append((
+        id_ml, "ML-ADMIN-01", "192.168.2.10", "00:1B:44:55:6A:00", "Online",
+        "Master Lab Admin Console | AMD Ryzen 9 7950X, 64GB DDR5, RTX 4080 16GB, 2TB NVMe", 1
+    ))
+    for i in range(1, 61):
         pc_num = f"PC-{i:02d}"
         ip_addr = f"192.168.2.{100 + i}"
         mac_addr = f"00:1B:44:55:6A:{i:02X}"
         status = "Offline" if i == 8 else "Online"
         specs = "NVIDIA RTX 3080 10GB, AMD Ryzen 7 5800X, 32GB DDR4, 512GB NVMe SSD"
-        computers_data.append((id_ml, pc_num, ip_addr, mac_addr, status, specs))
+        computers_data.append((id_ml, pc_num, ip_addr, mac_addr, status, specs, 0))
 
-    # 3. Data Science Lab (20 PCs, Subnet 192.168.3.x)
-    for i in range(1, 21):
+    # 3. Data Science Lab (30 Workstations + 1 Admin Console, Subnet 192.168.3.x)
+    computers_data.append((
+        id_ds, "DS-ADMIN-01", "192.168.3.10", "00:1C:33:77:8B:00", "Online",
+        "Master Lab Admin Console | Intel Core i9-12900, 64GB RAM, 1TB NVMe, Dual Display", 1
+    ))
+    for i in range(1, 31):
         pc_num = f"PC-{i:02d}"
         ip_addr = f"192.168.3.{100 + i}"
         mac_addr = f"00:1C:33:77:8B:{i:02X}"
         status = "Online"
         specs = "Intel Core i7-12700, 32GB RAM, 512GB NVMe SSD"
-        computers_data.append((id_ds, pc_num, ip_addr, mac_addr, status, specs))
+        computers_data.append((id_ds, pc_num, ip_addr, mac_addr, status, specs, 0))
 
-    # 4. Gen AI Lab (20 PCs, Subnet 192.168.4.x)
-    for i in range(1, 21):
+    # 4. Gen AI Lab (30 Workstations + 1 Admin Console, Subnet 192.168.4.x)
+    computers_data.append((
+        id_genai, "GA-ADMIN-01", "192.168.4.10", "00:1D:88:99:AA:00", "Online",
+        "Master Lab Admin Console | NVIDIA RTX 6000 Ada 48GB, Intel Xeon W-3335, 128GB ECC RAM", 1
+    ))
+    for i in range(1, 31):
         pc_num = f"PC-{i:02d}"
         ip_addr = f"192.168.4.{100 + i}"
         mac_addr = f"00:1D:88:99:AA:{i:02X}"
         status = "Offline" if i == 4 else "Online"
         specs = "NVIDIA A5000 24GB, Intel Xeon W-2245, 64GB ECC RAM, 2TB NVMe"
-        computers_data.append((id_genai, pc_num, ip_addr, mac_addr, status, specs))
+        computers_data.append((id_genai, pc_num, ip_addr, mac_addr, status, specs, 0))
 
-    # 5. Data Analytics Lab (20 PCs, Subnet 192.168.5.x)
-    for i in range(1, 21):
+    # 5. Data Analytics Lab (30 Workstations + 1 Admin Console, Subnet 192.168.5.x)
+    computers_data.append((
+        id_da, "DA-ADMIN-01", "192.168.5.10", "00:1E:AA:BB:CC:00", "Online",
+        "Master Lab Admin Console | Intel Core i7-13700, 32GB DDR5, 1TB NVMe, BigData Controller", 1
+    ))
+    for i in range(1, 31):
         pc_num = f"PC-{i:02d}"
         ip_addr = f"192.168.5.{100 + i}"
         mac_addr = f"00:1E:AA:BB:CC:{i:02X}"
         status = "Online"
         specs = "Intel Core i7-11700, 16GB DDR4, 512GB NVMe"
-        computers_data.append((id_da, pc_num, ip_addr, mac_addr, status, specs))
+        computers_data.append((id_da, pc_num, ip_addr, mac_addr, status, specs, 0))
 
-    # 6. Language Processing Lab (20 PCs, Subnet 192.168.6.x)
-    for i in range(1, 21):
+    # 6. Language Processing Lab (30 Workstations + 1 Admin Console, Subnet 192.168.6.x)
+    computers_data.append((
+        id_nlp, "LP-ADMIN-01", "192.168.6.10", "00:1F:DD:EE:FF:00", "Online",
+        "Master Lab Admin Console | AMD Ryzen 9 7950X, 64GB DDR5, Dual RTX 4080 16GB, 2TB NVMe", 1
+    ))
+    for i in range(1, 31):
         pc_num = f"PC-{i:02d}"
         ip_addr = f"192.168.6.{100 + i}"
         mac_addr = f"00:1F:DD:EE:FF:{i:02X}"
         status = "Offline" if i == 20 else "Online"
         specs = "NVIDIA RTX 4070 Ti, AMD Ryzen 9 7900X, 32GB DDR5, 1TB NVMe"
-        computers_data.append((id_nlp, pc_num, ip_addr, mac_addr, status, specs))
+        computers_data.append((id_nlp, pc_num, ip_addr, mac_addr, status, specs, 0))
 
     cursor.executemany(
         """
-        INSERT OR IGNORE INTO COMPUTERS (lab_id, pc_number, ip_address, mac_address, status, specs)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO COMPUTERS (lab_id, pc_number, ip_address, mac_address, status, specs, is_admin)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         computers_data,
     )
+    # Ensure is_admin flags are updated for existing entries
+    for item in computers_data:
+        cursor.execute(
+            "UPDATE COMPUTERS SET is_admin = ?, specs = ? WHERE lab_id = ? AND pc_number = ?",
+            (item[6], item[5], item[0], item[1])
+        )
     conn.commit()
-    print(f"[+] Seeded {len(computers_data)} computers across 6 departmental labs into COMPUTERS table.")
+    print(f"[+] Seeded {len(computers_data)} computers (including dedicated Admin Workstations) into COMPUTERS table.")
 
 
 def populate_users(conn: sqlite3.Connection):
@@ -444,6 +542,116 @@ def populate_tickets(conn: sqlite3.Connection):
     print(f"[+] Seeded {len(tickets_data)} tickets into TICKETS table.")
 
 
+def populate_technician_logs(conn: sqlite3.Connection):
+    """
+    Seed realistic day-by-day technician maintenance, repair, and playbook execution
+    logs for HOD accountability and daily dossier reporting.
+    """
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM USERS WHERE username = 'tech_rajesh'")
+    row_rajesh = cursor.fetchone()
+    tech_rajesh = row_rajesh["id"] if row_rajesh else 7
+
+    cursor.execute("SELECT id FROM USERS WHERE username = 'tech_priya'")
+    row_priya = cursor.fetchone()
+    tech_priya = row_priya["id"] if row_priya else 8
+
+    cursor.execute("SELECT id, lab_name FROM LABS ORDER BY id ASC")
+    labs_map = {row["lab_name"]: row["id"] for row in cursor.fetchall()}
+    id_dl = labs_map.get("Deep Learning Lab", 1)
+    id_ml = labs_map.get("Machine Learning Lab", 2)
+    id_ds = labs_map.get("Data Science Lab", 3)
+    id_genai = labs_map.get("Gen AI Lab", 4)
+    id_da = labs_map.get("Data Analytics Lab", 5)
+    id_nlp = labs_map.get("Language Processing Lab", 6)
+
+    # Fetch some computer IDs
+    cursor.execute("SELECT id, pc_number, lab_id FROM COMPUTERS")
+    comp_map = {(r["lab_id"], r["pc_number"]): r["id"] for r in cursor.fetchall()}
+
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    yesterday_str = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    logs_data = [
+        # Today's Activities
+        (
+            tech_rajesh, "Rajesh Kumar (Lab Tech)", id_dl, comp_map.get((id_dl, "PC-15")),
+            "HARDWARE_REPAIR", "Reseated DDR5 64GB RAM modules in slot DIMM1; completed POST memory integrity test.",
+            "Success", 25, f"{today_str} 09:15:20"
+        ),
+        (
+            tech_rajesh, "Rajesh Kumar (Lab Tech)", id_dl, comp_map.get((id_dl, "PC-30")),
+            "NETWORK_REMEDIATION", "Executed network_self_heal playbook; replaced frayed RJ45 patch cord on Bench 3.",
+            "Success", 15, f"{today_str} 10:30:45"
+        ),
+        (
+            tech_priya, "Priya Sharma (Lab Tech)", id_ml, comp_map.get((id_ml, "PC-08")),
+            "RESOLVE_TICKET", "Reinstalled GRUB bootloader via Mepco PXE Live Rescue image; verified Ubuntu 22.04 boot.",
+            "Success", 30, f"{today_str} 11:45:10"
+        ),
+        (
+            tech_rajesh, "Rajesh Kumar (Lab Tech)", id_genai, comp_map.get((id_genai, "PC-04")),
+            "PLAYBOOK_EXECUTION", "Executed disk_scratch_purge; purged 42GB of orphaned HuggingFace checkpoint lockfiles.",
+            "Success", 8, f"{today_str} 13:20:00"
+        ),
+        (
+            tech_priya, "Priya Sharma (Lab Tech)", id_nlp, comp_map.get((id_nlp, "PC-20")),
+            "PLAYBOOK_EXECUTION", "Executed kill_ai_zombies; reclaimed 24GB VRAM from hung tokenization worker daemon.",
+            "Success", 6, f"{today_str} 14:40:15"
+        ),
+        (
+            tech_rajesh, "Rajesh Kumar (Lab Tech)", id_dl, comp_map.get((id_dl, "DL-ADMIN-01")),
+            "EXAM_AUDIT", "Conducted comprehensive pre-lab exam readiness audit across all 60 workstations; score 98.3%.",
+            "Success", 20, f"{today_str} 15:50:00"
+        ),
+        (
+            tech_priya, "Priya Sharma (Lab Tech)", id_ds, comp_map.get((id_ds, "DS-ADMIN-01")),
+            "LAN_DISCOVERY", "Executed adaptive subnet ARP sweep on 192.168.3.0/24; verified all 30 workstations synchronized.",
+            "Success", 10, f"{today_str} 16:30:22"
+        ),
+        # Yesterday's Activities
+        (
+            tech_priya, "Priya Sharma (Lab Tech)", id_ml, comp_map.get((id_ml, "PC-12")),
+            "PLAYBOOK_EXECUTION", "Executed service_restart on JupyterLab daemon; cleared stale pidfile.",
+            "Success", 5, f"{yesterday_str} 09:30:10"
+        ),
+        (
+            tech_rajesh, "Rajesh Kumar (Lab Tech)", id_dl, comp_map.get((id_dl, "PC-24")),
+            "WOL_RESTART", "Dispatched UDP Wake-on-LAN magic packet to wake dormant workstation before AI practicals.",
+            "Success", 2, f"{yesterday_str} 11:00:35"
+        ),
+        (
+            tech_priya, "Priya Sharma (Lab Tech)", id_da, comp_map.get((id_da, "PC-05")),
+            "RESOLVE_TICKET", "Replaced faulty optical mouse and keyboard USB hub.",
+            "Success", 15, f"{yesterday_str} 14:15:00"
+        ),
+        (
+            tech_rajesh, "Rajesh Kumar (Lab Tech)", id_dl, comp_map.get((id_dl, "PC-30")),
+            "INSPECTION", "Inspected physical patch panel port and verified VLAN 16 tagging on Cisco switch.",
+            "Success", 20, f"{yesterday_str} 16:00:00"
+        ),
+    ]
+
+    cursor.execute("SELECT COUNT(*) FROM TECHNICIAN_LOGS")
+    if cursor.fetchone()[0] == 0:
+        cursor.executemany(
+            """
+            INSERT INTO TECHNICIAN_LOGS (
+                technician_id, technician_name, lab_id, computer_id,
+                action_type, details, status, duration_min, timestamp
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            logs_data,
+        )
+        conn.commit()
+        print(f"[+] Seeded {len(logs_data)} daily activity log entries into TECHNICIAN_LOGS table.")
+    else:
+        print("[*] TECHNICIAN_LOGS already populated.")
+
+
 def export_for_c_program(conn: sqlite3.Connection):
     """
     Exports the list of COMPUTERS with IP and MAC addresses to formatted
@@ -560,6 +768,7 @@ def main():
         populate_computers(conn)
         populate_users(conn)
         populate_tickets(conn)
+        populate_technician_logs(conn)
         export_for_c_program(conn)
         verify_database(conn)
         print("[SUCCESS] Step 1 Data Tier setup completed successfully!")

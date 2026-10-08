@@ -631,7 +631,7 @@
                 <div class="field-input-wrap">
                   <span class="field-icon">👤</span>
                   <input class="field-input" type="text" id="s-username" name="username"
-                         placeholder="e.g. 23cs101 or faculty.name"
+                         placeholder="e.g. 24bad001 or 24bad107"
                          autocomplete="username" required>
                 </div>
               </div>
@@ -641,8 +641,11 @@
                 <div class="field-input-wrap">
                   <span class="field-icon">🔒</span>
                   <input class="field-input" type="password" id="s-password" name="password"
-                         placeholder="Enter password"
+                         placeholder="Roll number (e.g. 24bad001) or student123"
                          autocomplete="current-password" required>
+                </div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                  Password can be your roll number (e.g. <strong>24bad001</strong>) or <strong>student123</strong>
                 </div>
               </div>
 
@@ -786,7 +789,7 @@
           succEl.style.display = 'block';
           const role = (data.user && data.user.role) || 'student';
           setTimeout(() => {
-            if (portal === 'admin' || role === 'admin' || role === 'technician') {
+            if (role === 'admin' || role === 'technician') {
               window.location.href = '/admin';
             } else {
               window.location.href = '/report';

@@ -20,10 +20,17 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 │   ├── tcp.h / tcp.c         # [TCP]  Dynamic alert bridge (HTTP POST via stream socket to Python)
 │   └── main.c                # Daemon orchestrator & CLI entry point
 ├── templates/
-│   └── index.html            # Unified Single-Page Application (SPA) dashboard (Dark theme)
+│   ├── index.html            # Unified SPA (Live Grid, Digital Twin, Triage, Exam Mode, Analytics)
+│   ├── admin.html            # IT Staff Administration & Triage Portal
+│   ├── report.html           # User Issue Reporting Form with AI Lab Doctor
+│   └── login.html            # Institutional Authentication Portal
 ├── bin/
 │   └── labpulse_monitor.exe  # Compiled high-performance C binary
 ├── python_server.py          # Flask Core Server (Auth, Tickets, Automated Alert Handler, SPA)
+├── event_broker.py           # Real-Time Server-Sent Events (SSE) Live Stream Pub/Sub Broker
+├── ai_diagnostic.py          # AI Lab Doctor (Domain NLP & Root Cause Analysis Engine)
+├── remediation_engine.py     # 1-Click Self-Healing Playbooks, L3/L4 Diagnostics & Pre-Exam Audit
+├── qr_generator.py           # Pure-Python Vector SVG QR Code Mobile Reporting Generator
 ├── build.bat / Makefile      # Automated build scripts for Windows and Linux
 ├── computers_monitor.txt     # Target inventory dynamically consumed by C daemon
 ├── labpulse.db               # SQLite database (WAL mode enabled)
@@ -34,28 +41,47 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 
 ---
 
-## Features Implemented in Step 3
+## AIDS Department Real-Time Solving Capabilities
 
-1. **Auth Service**:
-   - `POST /api/auth/login`: Authenticates students, staff, technicians, and admins using SHA-256 hashed passwords.
-   - `POST /api/auth/register`: Role-based account creation with input validation.
-   - `GET /api/auth/me` & `POST /api/auth/logout`: Session management and live role switching.
+1. **High-Performance Server-Sent Events (SSE) Push Stream (`/api/stream/events`)**:
+   - Sub-millisecond live push notifications for PC state changes, ticket filings, and triage actions.
+   - Integrated Web Audio API institutional alert chimes.
 
-2. **Ticketing Engine**:
-   - `POST /api/tickets`: CRUD operations with **Data Validation**:
-     - Enforces non-empty mandatory fields.
-     - **Verifies PC matches the selected lab**: Enforces `computer.lab_id == request.lab_id` to prevent cross-lab mismatches.
-     - Auto-generates unique Ticket ID (`TCK-xxx`), initial `"Pending"` status, and timestamp.
-   - `GET /api/tickets`: Filters by status, lab, user, priority with oldest-first triage ordering.
-   - `PUT /api/tickets/<id>`: Technician triage, status transitions (`In Progress`, `Resolved`), notes, and `resolved_at` timestamps.
+2. **Domain-Specific AI Lab Doctor (`/api/ai/diagnose`)**:
+   - Curricular NLP engine diagnosing PyTorch CUDA OOM, Jupyter deadlocks, and proxy timeouts.
+   - Provides immediate student self-help advice and tags tickets with 1-click remediation playbooks.
 
-3. **Automated Ticket Handling (C to Python Pipeline)**:
-   - `POST /api/pc-status`: Listens for offline alerts from the C daemon.
-   - When the C daemon reports that **PC-30** (or any workstation) has timed out, Python updates the database and **automatically creates a Critical 'Network Down' ticket on the dashboard** in real time!
+3. **Automated Self-Healing Playbooks (`/api/remediate`)**:
+   - `kill_ai_zombies`: Terminates hung PyTorch/CUDA/Jupyter workers and frees GPU VRAM.
+   - `network_self_heal`: Flushes DNS, renews DHCP lease, and audits gateway ping.
+   - `disk_scratch_purge`: Removes HuggingFace lockfiles and scratch temp space.
+   - `service_restart`: Restarts JupyterLab (8888) and SSH daemons.
+   - `wol_restart`: Dual-broadcast Wake-on-LAN via compiled C program.
 
-4. **Unified Single-Page Application (SPA)**:
-   - Accessible at `http://127.0.0.1:5000/`.
-   - **No disjointed individual pages**: Live workstation monitor grid, ticket triage, issue reporting, and live C telemetry feed in one fluid reactive interface.
+4. **Pre-Lab & Practical Exam Readiness Engine (`/api/exam-readiness`)**:
+   - Parallel multi-threaded health check of all PCs in a lab in <2 seconds.
+   - Official printable **Department Lab Readiness Audit Certificate**.
+
+5. **AIDS Department Digital Twin (Interactive Floor Plan)**:
+   - Visual row-by-row layout of all 6 departmental laboratories with click-to-remediate drawer.
+
+6. **Native Vector SVG QR Code Generator (`/api/pc-qr/<pc_id>`)**:
+   - Scan physical QR stickers on monitors to prefill and report issues in 5 seconds.
+
+7. **Designated Master Admin Consoles & 246 Workstation Matrix**:
+   - 60 Workstations in flagship labs (Deep Learning Lab AI-201, Machine Learning Lab AI-202).
+   - 30 Workstations in specialized labs (Data Science AI-101, Gen AI AI-301, Data Analytics AI-102, Language Processing AI-302).
+   - Elevated Instructor Dais / Master Admin Console in each lab (`DL-ADMIN-01` to `LP-ADMIN-01`).
+
+8. **Universal Cross-Lab Remote Admin Terminal (`/api/admin/remote-exec`)**:
+   - Authenticated lab admins can execute live diagnostics (`ping`, `nvidia-smi`, `systeminfo`, `netstat`, `service status`, `traceroute`) on any workstation across any lab with sub-millisecond execution telemetry.
+
+9. **HOD Executive Daily Dossier & Technician Timesheet (`/api/reports/daily`)**:
+   - Day-by-day accountability ledger recording technician service notes, tickets resolved, playbooks executed, and lab MTTR.
+   - Includes printable institutional report with Head of Department signature block and one-click CSV export (`/api/reports/daily/export`).
+
+10. **Zero-Hardcoding Adaptive LAN & Subnet Auto-Discovery (`/api/computers/discover`)**:
+    - Dynamically scans ARP tables and lab subnets, registers newly connected workstations, updates heartbeats, and re-syncs C daemon monitoring target files without restarting binaries.
 
 ---
 

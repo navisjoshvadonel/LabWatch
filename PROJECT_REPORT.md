@@ -144,23 +144,109 @@ Step 4 implements the user-facing and administrator-facing interfaces for Phase 
 
 ---
 
-### 7. Running and Demonstrating the System
+### 8. AIDS Department Real-Time Solving & Automated Remediation Tier (Phase 5 Enterprise Upgrade)
+
+Implemented in [`remediation_engine.py`](file:///d:/CN%20mini/remediation_engine.py), [`ai_diagnostic.py`](file:///d:/CN%20mini/ai_diagnostic.py), [`event_broker.py`](file:///d:/CN%20mini/event_broker.py), and [`qr_generator.py`](file:///d:/CN%20mini/qr_generator.py).
+
+#### 8.1 High-Performance Server-Sent Events (SSE) Live Stream (`/api/stream/events`)
+- **Zero-Latency Push**: Replaces client polling with a thread-safe publish-subscribe message broker broadcasting status transitions (`pc_status_change`), ticket alerts (`ticket_created`), triage resolutions (`ticket_resolved`), and playbook outputs.
+- **Web Audio Alert Chimes**: Synthesizes pleasant institutional dual-tone audio alerts via the HTML5 Web Audio API on technician dashboards when new faults occur or workstations disconnect.
+
+#### 8.2 AI Lab Doctor & Curricular Diagnostics (`/api/ai/diagnose`)
+- **Curricular Domain Models**: Heuristic classification engine specifically tuned to the coursework of Mepco's AIDS department (PyTorch CUDA OOM, Jupyter kernel deadlocks, HuggingFace proxy timeouts on `192.16.16.200`, scratch SSD exhaustion, and physical Cat6 RJ-45 disconnections).
+- **Instant Student Self-Help**: Immediately displays self-help instructions (e.g. `torch.cuda.empty_cache()`, kernel reset, cache cleaning) as the student types into the reporting form.
+- **1-Click Technician Auto-Fix**: Automatically tags tickets with the optimal remediation playbook for single-click execution directly from the triage table.
+
+#### 8.3 Automated Remediation Playbooks Suite (`/api/remediate`)
+1. **`kill_ai_zombies`**: Remotely inspects and terminates high-memory runaway PyTorch, CUDA, and Jupyter worker processes, reclaiming RAM and GPU VRAM without operating system reboots.
+2. **`network_self_heal`**: Flushes local DNS caches, re-registers departmental DHCP leases, and audits round-trip ping latency to Mepco Gateway (`192.16.16.200`).
+3. **`disk_scratch_purge`**: Purges orphaned HuggingFace transformers lockfiles and `%TEMP%` scratch files to resolve 100% full SSD freezes.
+4. **`service_restart`**: Restarts core departmental daemons (JupyterLab Port 8888 and SSH Port 22).
+5. **`wol_restart`**: Dispatches 102-byte Wake-on-LAN magic packets over UDP to `192.16.16.255:9` and `255.255.255.255:9` via compiled C binary.
+6. **Audit Trail**: Every execution is recorded with execution duration in `REMEDIATION_LOGS` table.
+
+#### 8.4 Deep Multi-Protocol Diagnostics (`/api/diagnose/<pc_id>`)
+- Layer 3: ICMP Echo Ping (microsecond RTT latency and packet loss).
+- Layer 4: Non-blocking TCP Port probing (SSH Port 22, JupyterLab Port 8888, Ollama Port 11434, RDP Port 3389).
+- Subnet Gateway: `192.16.16.200` latency verification.
+
+#### 8.5 Pre-Lab & Practical Exam Readiness Engine (`/api/exam-readiness`)
+- **Concurrent Multi-PC Sweep**: Fires high-speed parallel thread pools across all 20-30 workstations in a selected lab in < 2 seconds.
+- **Exam Readiness Certification**: Calculates readiness percentage and renders an official printable **Department of AIDS Lab Readiness Audit Certificate** with verification IDs and signature lines for Course Instructors and HOD.
+
+#### 8.6 AIDS Digital Twin & Interactive Lab Floor Plans
+- Visual real-world architectural representations of all 6 departmental laboratories:
+  - Deep Learning Lab (60 PCs + DL-ADMIN-01 Console = 61 Workstations)
+  - Machine Learning Lab (60 PCs + ML-ADMIN-01 Console = 61 Workstations)
+  - Data Science Lab (30 PCs + DS-ADMIN-01 Console = 31 Workstations)
+  - Gen AI Lab (30 PCs + GA-ADMIN-01 Console = 31 Workstations)
+  - Data Analytics Lab (30 PCs + DA-ADMIN-01 Console = 31 Workstations)
+  - Language Processing Lab (30 PCs + LP-ADMIN-01 Console = 31 Workstations)
+- Total Inventory: **246 high-performance workstations** with static IP DHCP reservations across VLAN 16.
+- Accurately renders Instructor Podium Dais with elevated Master Admin Console, aisle walkway splits, student workstation desks with live pulsing status LEDs, and rear GPU server racks.
+- Clicking any workstation node opens the **Real-Time Remediation Drawer & Remote Admin Shell**.
+
+#### 8.7 Native Vector SVG QR Code Mobile Reporting (`/api/pc-qr/<pc_id>`)
+- Zero-dependency pure-Python vector SVG barcode generator.
+- Allows students to scan the physical QR sticker on a monitor with a smartphone to file pre-filled incident tickets in 5 seconds.
+
+#### 8.8 Department Reliability & MTTR Analytics (`/api/analytics/aids`)
+- Departmental operational uptime gauge.
+- Lab-by-lab reliability matrix ranking.
+- Repeat offender workstation identification (highlighting hardware requiring physical part replacements).
+- Real-time Mean Time to Resolution (MTTR) calculation.
+
+#### 8.9 Universal Cross-Lab Remote Admin Terminal (`/api/admin/remote-exec`)
+- Enables any authenticated lab admin or technician to remotely diagnose and command any workstation in any lab across the department.
+- Built-in multi-tool diagnostic shell:
+  - `ping`: Sub-millisecond ICMP round-trip latency probe.
+  - `nvidia-smi`: Live GPU VRAM allocation, temperature, and CUDA process table.
+  - `systeminfo`: OS kernel version, dual-boot posture, and hardware specifications.
+  - `netstat`: Active listening sockets (SSH 22, JupyterLab 8888, Ollama 11434).
+  - `service status`: Systemd daemon availability.
+  - `traceroute`: L3 hop verification through Cisco core switches and VLAN gateways.
+- All executions log sub-millisecond durations and record automated audit trails into `TECHNICIAN_LOGS`.
+
+#### 8.10 HOD Executive Daily Operational Dossier & Timesheet (`/api/reports/daily`)
+- Day-by-day accountability ledger answering: **"What did the technicians do in each lab today?"**
+- Highlights:
+  - Total maintenance actions logged, tickets resolved, self-healing playbooks run, and WoL dispatches.
+  - Technician Duty Scorecard with hours logged, resolved counts, and efficiency ratings (A+, A, B).
+  - Department Laboratory Workstations Matrix & Availability percentage.
+  - Chronological troubleshooting ledger with timestamps, durations, and technician remediation notes.
+  - Institutional seal and Head of Department (AiDS) official sign-off block.
+  - One-click print-ready CSS layout (`@media print`) and official CSV export (`/api/reports/daily/export`).
+
+#### 8.11 Zero-Hardcoding Adaptive LAN & Subnet Auto-Discovery (`/api/computers/discover`)
+- Scans system ARP caches and CIDR subnet sweeps (192.168.1.0/24 - 192.168.6.0/24).
+- Auto-registers unmapped active workstations into the database inventory.
+- Refreshes online heartbeats and automatically exports updated `computers_monitor.txt` and `computers_monitor.csv` so the compiled C binary daemon tracks new hardware without restarting.
+
+---
+
+### 9. Running and Demonstrating the Upgraded System
 
 ```bash
 # 1. Compile C Network Protocols (ICMP, UDP, TCP)
 .\build.bat
 
-# 2. Start Application Tier Server (Flask Core Server)
+# 2. Start Application Tier Server (Flask Core Server with SSE, AI Doctor & Remediation Engine)
 python python_server.py 5000
-# Portal Entry Points:
-#   - Live Workstation Monitor:   http://127.0.0.1:5000/
-#   - User Issue Reporting Form:  http://127.0.0.1:5000/report
-#   - Admin IT Staff Dashboard:   http://127.0.0.1:5000/admin
 
-# 3. Direct CLI Protocol Testing
+# Portal Entry Points:
+#   - Interactive Digital Twin & Remediation Hub:  http://127.0.0.1:5000/monitor
+#   - HOD Executive Daily Dossier:                 http://127.0.0.1:5000/monitor?tab=hod-report
+#   - User Issue Reporting Form:                   http://127.0.0.1:5000/report
+#   - Admin IT Staff Dashboard:                    http://127.0.0.1:5000/admin
+
+# 3. Direct Protocol & Remediation Testing
 .\bin\labpulse_monitor.exe --ping-pc PC-30    # Pings PC-30 and triggers offline alert
-.\bin\labpulse_monitor.exe --restart PC-30    # Broadcasts WoL Magic Packet via UDP
-.\bin\labpulse_monitor.exe --notify PC-20 offline # Dispatches alert causing automated TCK creation
-.\bin\labpulse_monitor.exe --sweep           # Full inventory ICMP sweep across all 140 PCs
+.\bin\labpulse_monitor.exe --restart PC-30    # Dual-broadcast WoL Magic Packet via UDP
+.\bin\labpulse_monitor.exe --sweep           # Full inventory ICMP sweep across all 246 PCs
+
+# 4. Run Complete Automated Test Suite (23 Unit & Integration Tests)
+python -m pytest tests/ -v
 ```
+
+
 
