@@ -43,7 +43,7 @@
     #define SLEEP_MS(ms) usleep((ms) * 1000)
 #endif
 
-#define MAX_COMPUTERS 256
+#define MAX_COMPUTERS 1024
 #define MAX_LINE_LEN 512
 #define MAX_STR_LEN 64
 

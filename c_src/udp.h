@@ -43,9 +43,13 @@ void udp_craft_wol_packet(unsigned char packet[WOL_PACKET_SIZE],
  * Returns 0 on success, -1 on MAC parse error, -2 on socket/send failure. */
 int udp_send_wol(const char *mac_address, const char *broadcast_ip, int port);
 
-/* Reliable dual-broadcast WoL: sends to BOTH 192.16.16.255 AND 255.255.255.255,
- * each WOL_TRANSMIT_COUNT times.  This is what --restart should call.
+/* Reliable dual-broadcast WoL: sends to BOTH directed subnet broadcast AND 255.255.255.255,
+ * each WOL_TRANSMIT_COUNT times.
  * Returns 0 if at least one transmission succeeded, -1 if all failed. */
 int udp_send_wol_reliable(const char *mac_address, int port);
+
+/* Adaptive directed subnet WoL: automatically computes the /24 broadcast address from
+ * the workstation's IP address and dispatches dual-broadcast magic packets. */
+int udp_send_wol_directed(const char *mac_address, const char *ip_address, int port);
 
 #endif

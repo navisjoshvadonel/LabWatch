@@ -1,7 +1,7 @@
 id,lab_name,pc_number,ip_address,mac_address,status
 841,"Deep Learning Lab",DL-ADMIN-01,192.168.1.10,00:1A:2B:3C:4D:00,Offline
-1,"Deep Learning Lab",PC-01,192.168.1.101,00:1A:2B:3C:4D:01,Offline
-2,"Deep Learning Lab",PC-02,192.168.1.102,00:1A:2B:3C:4D:02,Offline
+1,"Deep Learning Lab",PC-01,192.168.1.101,00:1A:2B:3C:4D:01,Online
+2,"Deep Learning Lab",PC-02,192.168.1.102,00:1A:2B:3C:4D:02,Online
 3,"Deep Learning Lab",PC-03,192.168.1.103,00:1A:2B:3C:4D:03,Offline
 4,"Deep Learning Lab",PC-04,192.168.1.104,00:1A:2B:3C:4D:04,Offline
 5,"Deep Learning Lab",PC-05,192.168.1.105,00:1A:2B:3C:4D:05,Offline
@@ -60,6 +60,8 @@ id,lab_name,pc_number,ip_address,mac_address,status
 899,"Deep Learning Lab",PC-58,192.168.1.158,00:1A:2B:3C:4D:3A,Offline
 900,"Deep Learning Lab",PC-59,192.168.1.159,00:1A:2B:3C:4D:3B,Offline
 901,"Deep Learning Lab",PC-60,192.168.1.160,00:1A:2B:3C:4D:3C,Offline
+2367,"Deep Learning Lab",PC-61,10.173.240.89,68:27:37:07:2E:5E,Online
+2368,"Deep Learning Lab",PC-62,10.173.240.115,EE:BD:97:32:E4:D2,Online
 902,"Machine Learning Lab",ML-ADMIN-01,192.168.2.10,00:1B:44:55:6A:00,Offline
 31,"Machine Learning Lab",PC-01,192.168.2.101,00:1B:44:55:6A:01,Online
 32,"Machine Learning Lab",PC-02,192.168.2.102,00:1B:44:55:6A:02,Online

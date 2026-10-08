@@ -824,8 +824,8 @@
   <div class="mepco-top-bar">
     <div class="top-bar-inner">
       <div class="top-bar-contact">
-        <span>🏫 <strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
-        <span>📍 Aids Department</span>
+        <span><strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
+        <span>Department of Artificial Intelligence and Data Science</span>
       </div>
       <div class="top-bar-accreditation" style="display:flex; align-items:center; gap:0.85rem;">
         <span class="admin-badge-strip">
@@ -854,13 +854,13 @@
 
       <nav class="campus-nav-tabs">
         <a href="/monitor?tab=monitor" class="nav-tab-link" style="background:#e0f2fe; color:#0369a1; font-weight:700; border:1px solid #bae6fd;">
-          <span>🖥️ All PCs</span>
+          <span>All PCs</span>
         </a>
         <a href="/monitor?tab=digital-twin" class="nav-tab-link" style="background:#eff6ff; color:#1d4ed8; font-weight:600;">
-          <span>🏢 Lab Layout</span>
+          <span>Lab Layout</span>
         </a>
         <a href="/monitor?tab=hod-report" class="nav-tab-link" style="background:#fef3c7; color:#92400e; font-weight:700; border:1px solid #fde68a;">
-          <span>📋 Daily Report</span>
+          <span>Daily Report</span>
         </a>
         <a href="#triage-section" class="nav-tab-link active">
           <span>Pending Issues</span>
@@ -872,7 +872,7 @@
           <span>Resolved Issues</span>
         </a>
         <a href="#security-section" class="nav-tab-link" style="background:#fee2e2; color:#991b1b; font-weight:700; border:1px solid #fecaca;">
-          <span>🛡️ SOC & Security</span>
+          <span>SOC & Security</span>
         </a>
       </nav>
     </div>
@@ -968,7 +968,7 @@
       <div class="filter-bar">
         <div class="filter-group" style="flex: 1; min-width: 240px;">
           <input type="search" id="ticket-search-input" class="filter-search-input"
-                 placeholder="🔍 Search by PC, Lab, or Reporter..."
+                 placeholder="Search by PC, Lab, or Reporter..."
                  oninput="applyTicketFilters()">
         </div>
 
@@ -1056,7 +1056,7 @@
                   <form method="POST" action="/admin/resolve/{{ ticket.id }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn-resolve" title="Mark this issue as fixed">
-                      <span>✓ Resolve</span>
+                      <span>Resolve</span>
                     </button>
                   </form>
 
@@ -1064,7 +1064,7 @@
                   <form method="POST" action="/admin/restart/{{ ticket.pc_number }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn-restart-sm" title="Remotely turn on or reboot PC">
-                      <span>⚡ Restart PC</span>
+                      <span>Restart PC</span>
                     </button>
                   </form>
                   {% endif %}
@@ -1075,7 +1075,7 @@
           </tbody>
         </table>
         <div id="pending-empty-state" class="empty-state" {% if pending_tickets %}style="display:none;"{% endif %}>
-          <div class="empty-state-icon">🎉</div>
+          <div class="empty-state-icon">[ALL CAUGHT UP]</div>
           <h3>All Caught Up! No Pending Issues</h3>
           <p>Every reported laboratory PC issue has been resolved.</p>
         </div>
@@ -1105,7 +1105,7 @@
           <div class="offline-card-top">
             <div>
               <div class="offline-pc-id">{{ pc.pc_number }}</div>
-              <div class="offline-lab-name">🏛️ {{ pc.lab_name }}</div>
+              <div class="offline-lab-name">{{ pc.lab_name }}</div>
             </div>
             <span class="status-badge status-offline" id="wol-status-badge-{{ pc.pc_number }}">Offline</span>
           </div>
@@ -1114,7 +1114,7 @@
             <button type="button" class="btn-remote-restart" style="width: 100%; justify-content: center;"
                     id="btn-restart-{{ pc.pc_number }}"
                     onclick="triggerAjaxRestart(event, '{{ pc.pc_number }}', '{{ pc.mac_address }}', '{{ pc.ip_address }}')">
-              <span>⚡ Restart PC</span>
+              <span>Restart PC</span>
             </button>
           </div>
           <div class="card-console-drawer" id="console-drawer-{{ pc.pc_number }}" style="display:none;">
@@ -1125,7 +1125,7 @@
       </div>
       {% else %}
       <div class="empty-state">
-        <div class="empty-state-icon">🟢</div>
+        <div class="empty-state-icon">[ONLINE]</div>
         <h3>All Computers Are Online</h3>
         <p>All lab machines are currently responding normally.</p>
       </div>
@@ -1175,7 +1175,7 @@
               <td>{{ ticket.reported_at }}</td>
               <td><span style="color: #16a34a; font-weight: 600;">{{ ticket.resolved_at or '—' }}</span></td>
               <td>
-                <span class="status-badge status-resolved">✓ Resolved</span>
+                <span class="status-badge status-resolved">Resolved</span>
               </td>
               <td>
                 <a href="/status/{{ ticket.ticket_number }}"
@@ -1237,7 +1237,7 @@
       <div class="section-header">
         <div>
           <h2 class="section-title">
-            <span>🛡️ Institutional Security Operations Center (SOC)</span>
+            <span>Institutional Security Operations Center (SOC)</span>
             <span class="badge-counter" id="sec-posture-badge" style="background-color: #10b981;">Zero-Trust Active</span>
           </h2>
           <p class="section-subtitle">
@@ -1246,7 +1246,7 @@
         </div>
         <button onclick="fetchSecurityStatus()" style="background:var(--mepco-navy);color:#fff;border:none;
           padding:0.4rem 0.85rem;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;">
-          <span>🔄</span> Refresh SOC Audit
+          <span>[SYNC]</span> Refresh SOC Audit
         </button>
       </div>
 
@@ -1277,7 +1277,7 @@
       <!-- Active Lockouts Sub-Panel -->
       <div id="active-lockouts-container" style="padding:1rem 1.5rem; border-bottom:1px solid var(--border-color); display:none;">
         <h3 style="font-size:0.9rem; font-weight:700; color:#991b1b; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
-          <span>⚠️</span> Currently Locked Out Targets (Brute-Force Mitigated)
+          <span>[ALERT]</span> Currently Locked Out Targets (Brute-Force Mitigated)
         </h3>
         <div id="active-lockouts-list" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
       </div>
@@ -1285,7 +1285,7 @@
       <!-- Real-Time SIEM Audit Event Feed -->
       <div style="padding:1.25rem 1.5rem;">
         <h3 style="font-size:0.9rem; font-weight:700; color:var(--text-primary); margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
-          <span>📋 Recent Security & Audit Ledger Entries</span>
+          <span>Recent Security & Audit Ledger Entries</span>
           <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Auto-parsed from <code>security_audit.log</code></span>
         </h3>
         <div id="soc-audit-table-wrap" style="max-height:360px; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; background:#0f172a; color:#f1f5f9; font-family:Consolas, Monaco, monospace; font-size:0.75rem; padding:0.75rem 1rem; line-height:1.6;">
@@ -1298,20 +1298,20 @@
 
   <footer class="page-footer">
     <p>
-      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Department of Artificial Intelligence and Data Science.<br>
       Developed by venki and navi &bull; LabWatch IT Staff Administration Portal
     </p>
   </footer>
 
   <script>
     function renderEmailEntry(e) {
-      const statusIcon = e.sent ? '&#x2705;' : '&#x274C;';
+      const statusIcon = e.sent ? '[SENT]' : '[FAILED]';
       const modeTag = e.demo_mode
         ? '<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">DEMO MODE</span>'
         : '<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">LIVE SMTP</span>';
       const noteText = e.note
         ? `<div style="color:#64748b;font-size:0.75rem;margin-top:0.3rem;">${e.note}</div>`
-        : (e.error ? `<div style="color:#e11d48;font-size:0.75rem;margin-top:0.3rem;">&#9888; ${e.error}</div>` : '');
+        : (e.error ? `<div style="color:#e11d48;font-size:0.75rem;margin-top:0.3rem;">[WARN] ${e.error}</div>` : '');
       return `
       <div style="border:1px solid #e2e8f0;border-radius:6px;padding:0.85rem 1rem;margin-bottom:0.75rem;background:#fff;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
@@ -1342,10 +1342,10 @@
           const smtpLive  = document.getElementById('smtp-live-status');
           if (data.smtp_demo_mode) {
             if (smtpBadge) { smtpBadge.textContent = 'Demo Mode (offline safe)'; smtpBadge.style.color = '#b45309'; }
-            if (smtpLive)  { smtpLive.textContent = '&#9888; Demo Mode &#8212; set LABPULSE_SMTP_PASSWORD to enable live dispatch'; smtpLive.style.color = '#b45309'; }
+            if (smtpLive)  { smtpLive.textContent = '[WARN] Demo Mode &#8212; set LABPULSE_SMTP_PASSWORD to enable live dispatch'; smtpLive.style.color = '#b45309'; }
           } else {
             if (smtpBadge) { smtpBadge.textContent = 'Live SMTP Active'; smtpBadge.style.color = '#15803d'; }
-            if (smtpLive)  { smtpLive.textContent = '&#x2705; Live SMTP Active (Gmail STARTTLS)'; smtpLive.style.color = '#15803d'; }
+            if (smtpLive)  { smtpLive.textContent = '[SENT] Live SMTP Active (Gmail STARTTLS)'; smtpLive.style.color = '#15803d'; }
           }
 
           const body = document.getElementById('email-log-body');
@@ -1455,7 +1455,7 @@
       }
       const toast = document.createElement('div');
       toast.className = `toast-msg ${type === 'error' ? 'toast-error' : ''}`;
-      const icon = type === 'success' ? '⚡' : (type === 'error' ? '⚠️' : 'ℹ️');
+      const icon = type === 'success' ? '[OK]' : (type === 'error' ? '[ALERT]' : '[INFO]');
       toast.innerHTML = `<span style="font-size:1.15rem;">${icon}</span> <span>${message}</span>`;
       container.appendChild(toast);
       setTimeout(() => {
@@ -1508,7 +1508,7 @@
 
         // Update status badge from OFFLINE -> WoL Sent (amber)
         if (badge) {
-          badge.textContent = '⚡ WoL Sent';
+          badge.textContent = 'WoL Sent';
           badge.className = 'status-badge status-wol-sent';
         }
 
@@ -1524,7 +1524,7 @@
         // Toast notification
         showToast(`Magic packet broadcast to 255.255.255.255:9 (102 bytes)`, 'success');
 
-        btn.innerHTML = `<span>✓ WoL Dispatched</span>`;
+        btn.innerHTML = `<span>WoL Dispatched</span>`;
         setTimeout(() => {
           btn.disabled = false;
           btn.innerHTML = originalHtml;
@@ -1559,7 +1559,7 @@
         const hasNewCritical = tickets.some(t => t.priority === 'Critical' && !knownCriticalTicketIds.has(t.id));
         if (initialCriticalLoadDone && hasNewCritical) {
           playCriticalAlertChime();
-          showToast('⚠️ New Critical Workstation Fault Alert Received!', 'error');
+          showToast('[ALERT] New Critical Workstation Fault Alert Received!', 'error');
         }
         tickets.forEach(t => {
           if (t.priority === 'Critical') knownCriticalTicketIds.add(t.id);
@@ -1635,7 +1635,7 @@
         const restartBtn = isOffline
           ? `<button type="button" class="btn-restart-sm" title="Remotely turn on or reboot PC"
                      onclick="triggerAjaxRestart(event, '${escapeHtml(t.pc_number)}', '${escapeHtml(t.mac_address || '')}', '${escapeHtml(t.ip_address || '')}')">
-               <span>⚡ Restart PC</span>
+               <span>Restart PC</span>
              </button>`
           : '';
 
@@ -1668,7 +1668,7 @@
                 <form method="POST" action="/admin/resolve/${t.id}" style="display: inline;">
                   <input type="hidden" name="csrf_token" value="${csrfToken}">
                   <button type="submit" class="btn-resolve" title="Mark this issue as fixed">
-                    <span>✓ Resolve</span>
+                    <span>Resolve</span>
                   </button>
                 </form>
                 ${restartBtn}

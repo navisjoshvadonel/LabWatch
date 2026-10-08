@@ -95,7 +95,7 @@ Implemented in [`python_server.py`](file:///d:/CN%20mini/python_server.py) and [
 
 #### 5.4 Unified Single-Page Application (SPA) Web Portal
 - **No Individual Disjointed Pages**: All workflows operate within a single, cohesive interface at `http://127.0.0.1:5000/`.
-- **Live Workstation Monitor**: Interactive grid displaying all 60 workstations across Lab A, Lab B, and Lab C with live status badges, IP, MAC, and instant `⚡ WoL Restart` buttons.
+- **Live Workstation Monitor**: Interactive grid displaying all 60 workstations across Lab A, Lab B, and Lab C with live status badges, IP, MAC, and instant `WoL Restart` buttons.
 - **Real-Time Synchronization**: 4-second background polling keeps the dashboard in sync with C background workers.
 
 ---
@@ -134,7 +134,7 @@ Step 4 implements the user-facing and administrator-facing interfaces for Phase 
   - Python executes `UPDATE TICKETS SET status = 'Resolved', resolved_at = CURRENT_TIMESTAMP WHERE id = ?` and reloads the dashboard with a success notification.
 - **The "Remote Restart" Button (C Language Wake-on-LAN)**:
   - A dedicated **"Offline Workstations & Remote Action Center"** highlights all offline machines across the 6 laboratories (e.g., `PC-30`, `PC-15`, `PC-08`, `PC-04`, `PC-20`).
-  - Clicking **"⚡ Remote Restart (C WoL)"** posts to `/admin/restart/<pc_id>`.
+  - Clicking **"Remote Restart (C WoL)"** posts to `/admin/restart/<pc_id>`.
   - Python directly executes the compiled C binary:
     ```python
     subprocess.run([BIN_PATH, "--restart", pc_id], capture_output=True, text=True, timeout=5, cwd=BASE_DIR)

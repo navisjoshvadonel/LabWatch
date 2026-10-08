@@ -1,8 +1,8 @@
 # LabPulse Computer Monitoring Target List for C Daemon
 # Format: PC_NUMBER IP_ADDRESS MAC_ADDRESS STATUS LAB_NAME
 DL-ADMIN-01 192.168.1.10 00:1A:2B:3C:4D:00 Offline Deep_Learning_Lab
-PC-01 192.168.1.101 00:1A:2B:3C:4D:01 Offline Deep_Learning_Lab
-PC-02 192.168.1.102 00:1A:2B:3C:4D:02 Offline Deep_Learning_Lab
+PC-01 192.168.1.101 00:1A:2B:3C:4D:01 Online Deep_Learning_Lab
+PC-02 192.168.1.102 00:1A:2B:3C:4D:02 Online Deep_Learning_Lab
 PC-03 192.168.1.103 00:1A:2B:3C:4D:03 Offline Deep_Learning_Lab
 PC-04 192.168.1.104 00:1A:2B:3C:4D:04 Offline Deep_Learning_Lab
 PC-05 192.168.1.105 00:1A:2B:3C:4D:05 Offline Deep_Learning_Lab
@@ -61,6 +61,8 @@ PC-57 192.168.1.157 00:1A:2B:3C:4D:39 Offline Deep_Learning_Lab
 PC-58 192.168.1.158 00:1A:2B:3C:4D:3A Offline Deep_Learning_Lab
 PC-59 192.168.1.159 00:1A:2B:3C:4D:3B Offline Deep_Learning_Lab
 PC-60 192.168.1.160 00:1A:2B:3C:4D:3C Offline Deep_Learning_Lab
+PC-61 10.173.240.89 68:27:37:07:2E:5E Online Deep_Learning_Lab
+PC-62 10.173.240.115 EE:BD:97:32:E4:D2 Online Deep_Learning_Lab
 ML-ADMIN-01 192.168.2.10 00:1B:44:55:6A:00 Offline Machine_Learning_Lab
 PC-01 192.168.2.101 00:1B:44:55:6A:01 Online Machine_Learning_Lab
 PC-02 192.168.2.102 00:1B:44:55:6A:02 Online Machine_Learning_Lab

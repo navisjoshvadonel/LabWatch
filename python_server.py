@@ -503,7 +503,7 @@ def _build_resolution_email_html(ticket_number: str, reporter_name: str,
                 <td align="right">
                   <span style="background:#16a34a;color:#ffffff;font-size:13px;
                                font-weight:700;padding:6px 14px;border-radius:999px;">
-                    ✅ Issue Resolved
+                    Issue Resolved
                   </span>
                 </td>
               </tr>
@@ -614,7 +614,7 @@ def send_resolution_email(
     When SMTP_DEMO_MODE is True (no real password), the email is built and
     logged in notification_log but not transmitted — safe for offline demos.
     """
-    subject = f"[LabPulse] Your Ticket {ticket_number} — PC Fault Resolved ✅"
+    subject = f"[LabPulse] Your Ticket {ticket_number} — PC Fault Resolved"
     html_body = _build_resolution_email_html(
         ticket_number, reporter_name, pc_number, lab_name,
         issue_category, description, resolution_notes, resolved_at
@@ -707,10 +707,11 @@ def _send_email_async(to_email, reporter_name, ticket_number, pc_number,
 
 def get_db_connection():
     """Establish high-performance SQLite connection with Write-Ahead Logging (WAL)."""
-    conn = sqlite3.connect(DB_PATH, timeout=10.0)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
@@ -2100,9 +2101,12 @@ def api_discover_computers():
                 if not detected_lab or detected_lab > 6:
                     detected_lab = 1
 
-                cursor.execute("SELECT COUNT(*) FROM COMPUTERS WHERE lab_id = ? AND is_admin = 0", (detected_lab,))
-                pc_seq = cursor.fetchone()[0] + 1
-                new_pc_num = f"PC-{pc_seq:02d}"
+                cursor.execute("SELECT pc_number FROM COMPUTERS WHERE lab_id = ?", (detected_lab,))
+                existing_nums = {row[0] for row in cursor.fetchall()}
+                candidate_idx = 1
+                while f"PC-{candidate_idx:02d}" in existing_nums:
+                    candidate_idx += 1
+                new_pc_num = f"PC-{candidate_idx:02d}"
                 specs_desc = "Auto-Discovered LAN Workstation | Adaptive DHCP/ARP Agent"
 
                 cursor.execute("""
@@ -3338,7 +3342,7 @@ def admin_resolve_ticket(ticket_id: int):
 
         return redirect(url_for(
             "admin_dashboard",
-            msg=f"✅ Ticket {tck_num} resolved! 'PC Fixed' email sent to {reporter_name} ({reporter_email})."
+            msg=f"Ticket {tck_num} resolved! 'PC Fixed' email sent to {reporter_name} ({reporter_email})."
         ))
     finally:
         conn.close()

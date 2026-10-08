@@ -40,9 +40,12 @@ COLLEGE_BROADCAST_IP = "192.16.16.255"
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA foreign_keys = ON;")
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
+    conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 
@@ -179,31 +182,36 @@ PLAYBOOKS_METADATA = {
     "wol_restart": {
         "title": "Dual-Broadcast WoL Remote Restart",
         "description": "Dispatches 102-byte Wake-on-LAN magic packet over UDP (ports 9/7) via C binary.",
-        "icon": "⚡",
+        "icon": "action-power",
+        "badge": "[POWER]",
         "category": "Power & Hardware"
     },
     "kill_ai_zombies": {
         "title": "Kill AI Zombie Workers (PyTorch/Jupyter OOM)",
         "description": "Terminates runaway Python, CUDA, and defunct JupyterLab processes to reclaim RAM/VRAM.",
-        "icon": "🧠",
+        "icon": "action-process",
+        "badge": "[PROCESS]",
         "category": "Process & Memory"
     },
     "network_self_heal": {
         "title": "Network Stack Self-Heal & Gateway Latency Sweep",
         "description": "Flushes DNS cache, refreshes DHCP leases, resets sockets, and validates gateway latency.",
-        "icon": "🌐",
+        "icon": "action-network",
+        "badge": "[NETWORK]",
         "category": "Network Repair"
     },
     "disk_scratch_purge": {
         "title": "Purge Scratch Temp & HuggingFace Locks",
         "description": "Removes dangling .lock files, clears ~/.cache/huggingface and %TEMP% to free system SSD.",
-        "icon": "🧹",
+        "icon": "action-disk",
+        "badge": "[STORAGE]",
         "category": "Disk Hygiene"
     },
     "service_restart": {
         "title": "Restart JupyterLab & Department Daemons",
         "description": "Restarts JupyterLab daemon (port 8888), SSH service, and LabPulse telemetry agent.",
-        "icon": "🔄",
+        "icon": "action-service",
+        "badge": "[SERVICE]",
         "category": "Service Management"
     }
 }

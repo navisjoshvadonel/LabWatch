@@ -250,15 +250,15 @@
   <div class="mepco-top-bar">
     <div class="top-bar-inner">
       <div class="top-bar-contact">
-        <span>🏫 <strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
-        <span>📍 Aids Department</span>
+        <span><strong>Mepco Schlenk Engineering College (Autonomous)</strong>, Sivakasi</span>
+        <span>Department of Artificial Intelligence & Data Science</span>
       </div>
       <div class="top-bar-accreditation" style="display:flex; align-items:center; gap:0.85rem;">
         <span style="background:rgba(255,255,255,.15); padding:0.25rem 0.65rem; border-radius:4px; color:#e0f2fe; font-size:0.75rem;">
-          👤 Active Session: <strong>{{ logged_user['full_name'] if logged_user else 'User' }}</strong> ({{ (logged_user['role'] if logged_user else 'User')|title }})
+          Active Session: <strong>{{ logged_user['full_name'] if logged_user else 'User' }}</strong> ({{ (logged_user['role'] if logged_user else 'User')|title }})
         </span>
         <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.22rem 0.65rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.3rem;">
-          🚪 Sign Out
+          Sign Out
         </a>
       </div>
     </div>
@@ -276,12 +276,12 @@
         </div>
       </a>
       <nav class="campus-nav-tabs">
-        <a href="/report" class="nav-tab-link">📝 Report Fault</a>
+        <a href="/report" class="nav-tab-link">Report Fault</a>
         {% if logged_user and logged_user['role'] in ['admin', 'technician'] %}
-        <a href="/admin" class="nav-tab-link">🛠️ Admin Dashboard</a>
-        <a href="/monitor" class="nav-tab-link">📊 Live Monitor</a>
+        <a href="/admin" class="nav-tab-link">Admin Dashboard</a>
+        <a href="/monitor" class="nav-tab-link">Live Monitor</a>
         {% endif %}
-        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">🚪 Logout</a>
+        <a href="/logout" class="nav-tab-link" style="color:#dc2626;">Logout</a>
       </nav>
     </div>
   </header>
@@ -293,7 +293,7 @@
     <!-- ── Ticket Not Found ── -->
     <div class="not-found-card">
       <div class="status-header-error">
-        <div class="status-icon">🔍</div>
+        <div class="status-icon">[SEARCH]</div>
         <div class="status-header-text">
           <h1>Ticket Not Found</h1>
           <p>No record of "{{ ticket_number }}" in the LabPulse database.</p>
@@ -305,8 +305,8 @@
           from your submission confirmation or re-submit a fault report.
         </p>
         <div class="action-links">
-          <a href="/report" class="btn-action btn-primary">📝 Submit New Report</a>
-          <a href="/"       class="btn-action btn-secondary">📊 Live Monitor</a>
+          <a href="/report" class="btn-action btn-primary">Submit New Report</a>
+          <a href="/"       class="btn-action btn-secondary">Live Monitor</a>
         </div>
       </div>
       <div class="search-form">
@@ -314,7 +314,7 @@
         <form action="" method="GET" onsubmit="goToTicket(event)" style="display:flex;gap:.65rem;flex:1;">
           <input class="search-input" id="search-ticket-id" type="text"
                  placeholder="e.g. TCK-104" maxlength="12" autocomplete="off">
-          <button type="submit" class="btn-search">🔎 Search</button>
+          <button type="submit" class="btn-search">Search</button>
         </form>
       </div>
     </div>
@@ -333,7 +333,7 @@
       {% if ticket.status == 'Resolved' or ticket.status == 'Closed' %}
       <!-- GREEN RESOLVED HEADER BANNER -->
       <div class="status-header-resolved">
-        <div class="status-icon">✅</div>
+        <div class="status-icon">[RESOLVED]</div>
         <div class="status-header-text">
           <h1>Issue Resolved — PC Back Online!</h1>
           <p>
@@ -347,7 +347,7 @@
       {% elif ticket.status == 'In Progress' %}
       <!-- AMBER IN PROGRESS HEADER -->
       <div class="status-header-pending">
-        <div class="status-icon">🔧</div>
+        <div class="status-icon">[IN PROGRESS]</div>
         <div class="status-header-text">
           <h1>Technician Assigned — In Progress</h1>
           <p>
@@ -360,7 +360,7 @@
       {% else %}
       <!-- YELLOW PENDING HEADER -->
       <div class="status-header-pending">
-        <div class="status-icon">⏳</div>
+        <div class="status-icon">[PENDING]</div>
         <div class="status-header-text">
           <h1>Report Received — Awaiting Technician</h1>
           <p>
@@ -379,15 +379,15 @@
         <div style="margin-bottom: 1.25rem;">
           {% if ticket.status == 'Resolved' or ticket.status == 'Closed' %}
           <span class="badge badge-resolved" style="font-size:0.875rem; padding: 0.35rem 0.85rem;">
-            ✅ {{ ticket.status }} — Green Badge Active
+            {{ ticket.status }} — Green Badge Active
           </span>
           {% elif ticket.status == 'In Progress' %}
           <span class="badge badge-progress" style="font-size:0.875rem; padding: 0.35rem 0.85rem;">
-            🔧 {{ ticket.status }}
+            {{ ticket.status }}
           </span>
           {% else %}
           <span class="badge badge-pending" style="font-size:0.875rem; padding: 0.35rem 0.85rem;">
-            ⏳ {{ ticket.status }}
+            {{ ticket.status }}
           </span>
           {% endif %}
         </div>
@@ -435,7 +435,7 @@
           <div class="field-value">{{ ticket.reporter_name }} &nbsp;({{ ticket.reporter_email }})</div>
 
           {% if ticket.resolved_at %}
-          <div class="field-label">✅ Resolved At</div>
+          <div class="field-label">Resolved At</div>
           <div class="field-value" style="color:#15803d; font-weight:600;">
             {{ ticket.resolved_at }}
           </div>
@@ -448,7 +448,7 @@
         {% if ticket.resolution_notes %}
         <div class="resolution-box">
           <div class="resolution-box-title">
-            <span>🛠️</span> IT Technician Resolution Notes
+            <span></span> IT Technician Resolution Notes
           </div>
           <div class="resolution-box-notes">{{ ticket.resolution_notes }}</div>
         </div>
@@ -456,7 +456,7 @@
 
         <!-- Email Notification Confirmation -->
         <div class="email-notice">
-          <span style="font-size:1.1rem;">📧</span>
+          <span style="font-size:1.1rem;">[EMAIL]</span>
           <div>
             <strong>Email Notification Dispatched:</strong> A detailed 'PC Fixed' notification email
             was automatically sent to <strong>{{ ticket.reporter_email }}</strong> via Python
@@ -466,23 +466,23 @@
         </div>
 
         <div class="action-links">
-          <a href="/report" class="btn-action btn-primary">📝 Report Another Issue</a>
-          <a href="/" class="btn-action btn-secondary">📊 Live Monitor</a>
+          <a href="/report" class="btn-action btn-primary">Report Another Issue</a>
+          <a href="/" class="btn-action btn-secondary">Live Monitor</a>
         </div>
 
         {% else %}
 
         <p style="color:var(--text-secondary); font-size:0.8125rem; margin-bottom:1rem;">
           This page auto-refreshes every 15 seconds. Once IT Staff marks this ticket as resolved,
-          a green <strong>✅ Resolved</strong> badge will appear here and a 'PC Fixed' email
+          a green <strong>Resolved</strong> badge will appear here and a 'PC Fixed' email
           notification will be sent automatically to <strong>{{ ticket.reporter_email }}</strong>.
         </p>
 
         <div class="action-links">
           {% if logged_user and logged_user['role'] in ['admin', 'technician'] %}
-          <a href="/admin" class="btn-action btn-primary">🛠️ IT Admin Dashboard</a>
+          <a href="/admin" class="btn-action btn-primary">IT Admin Dashboard</a>
           {% endif %}
-          <a href="/report" class="btn-action btn-secondary">📝 Submit Another Report</a>
+          <a href="/report" class="btn-action btn-secondary">Submit Another Report</a>
         </div>
 
         {% endif %}
@@ -495,7 +495,7 @@
         <form action="" method="GET" onsubmit="goToTicket(event)" style="display:flex;gap:.65rem;flex:1;">
           <input class="search-input" id="search-ticket-id" type="text"
                  placeholder="e.g. TCK-104" maxlength="12" autocomplete="off">
-          <button type="submit" class="btn-search">🔎 Search</button>
+          <button type="submit" class="btn-search">Search</button>
         </form>
       </div>
     </div>
@@ -506,7 +506,7 @@
 
   <footer class="page-footer">
     <p>
-      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Department of Artificial Intelligence & Data Science.<br>
       Developed by venki and navi &bull; LabWatch Fault Monitoring System
     </p>
   </footer>

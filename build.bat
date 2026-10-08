@@ -7,6 +7,9 @@ echo ===========================================================================
 
 set MINGW_BIN=C:\Users\SNOW\AppData\Local\Microsoft\WinGet\Packages\MartinStorsjo.LLVM-MinGW.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\llvm-mingw-20260616-ucrt-x86_64\bin
 if exist "%MINGW_BIN%" set PATH=%MINGW_BIN%;%PATH%
+if exist "C:\MinGW\bin" set PATH=C:\MinGW\bin;%PATH%
+if exist "C:\msys64\ucrt64\bin" set PATH=C:\msys64\ucrt64\bin;%PATH%
+if exist "C:\msys64\mingw64\bin" set PATH=C:\msys64\mingw64\bin;%PATH%
 
 where gcc >nul 2>nul
 if %errorlevel% neq 0 (

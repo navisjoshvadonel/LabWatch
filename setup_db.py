@@ -47,9 +47,12 @@ def hash_password(password: str, salt: str = None) -> tuple:
 
 def get_db_connection(db_path: str = DB_FILE) -> sqlite3.Connection:
     """Establish connection to SQLite database with foreign keys enabled."""
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA foreign_keys = ON;")
+    conn = sqlite3.connect(db_path, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
+    conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 

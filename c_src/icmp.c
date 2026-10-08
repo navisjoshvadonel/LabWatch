@@ -101,10 +101,8 @@ int icmp_ping_single(const char *ip_address, int timeout_ms, double *rtt_ms) {
 
     if (raw_sock == INVALID_SOCKET) {
 #ifdef _WIN32
-        if (WSAGetLastError() == 10013 || WSAGetLastError() == 10004) {
-            return icmp_ping_windows_api(ip_address, timeout_ms, rtt_ms);
-        }
-        return -2;
+        /* Fall back to Windows IcmpSendEcho API (works reliably without Administrator privileges) */
+        return icmp_ping_windows_api(ip_address, timeout_ms, rtt_ms);
 #else
         raw_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
         if (raw_sock == INVALID_SOCKET) return -2;
@@ -149,7 +147,11 @@ int icmp_ping_single(const char *ip_address, int timeout_ms, double *rtt_ms) {
                             (struct sockaddr *)&dest_addr, sizeof(dest_addr));
     if (bytes_sent == SOCKET_ERROR) {
         CLOSE_SOCKET(raw_sock);
+#ifdef _WIN32
+        return icmp_ping_windows_api(ip_address, timeout_ms, rtt_ms);
+#else
         return -1;
+#endif
     }
 
     char recv_buf[ICMP_RECV_BUF_SIZE];

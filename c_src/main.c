@@ -159,7 +159,7 @@ void print_usage(FILE *stream, const char *prog_name) {
     fprintf(stream, "\nWoL broadcast targets per --wol / --restart call:\n");
     fprintf(stream, "  1. %s  (Mepco Schlenk directed subnet broadcast, primary path)\n", COLLEGE_BROADCAST_IP);
     fprintf(stream, "  2. %s     (Limited broadcast fallback)\n", DEFAULT_BROADCAST_IP);
-    fprintf(stream, "  Each target: %d transmissions × %d ms gap = %d total magic packets\n",
+    fprintf(stream, "  Each target: %d transmissions x %d ms gap = %d total magic packets\n",
             WOL_TRANSMIT_COUNT, WOL_INTER_TX_DELAY_MS, WOL_TRANSMIT_COUNT * 2);
     fprintf(stream, "\n");
 }
@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
             printf("[*] [UDP] Single-target WoL → MAC %s, broadcast %s\n", mac, argv[3]);
             udp_send_wol(mac, argv[3], DEFAULT_WOL_PORT);
         } else {
-            printf("[*] [UDP] Dual-broadcast WoL → MAC %s\n", mac);
+            printf("[*] [UDP] Dual-broadcast WoL -> MAC %s\n", mac);
             udp_send_wol_reliable(mac, DEFAULT_WOL_PORT);
         }
     } else if (strcmp(argv[1], "--restart") == 0 && argc >= 3) {
@@ -264,11 +264,11 @@ int main(int argc, char *argv[]) {
                 printf("[*] [UDP] Remote Restart initiated for %s (Lab: %s, IP: %s, MAC: %s)\n",
                        target_pc, computers[i].lab_name,
                        computers[i].ip_address, computers[i].mac_address);
-                /* Use dual-broadcast reliable WoL:
-                 *   Path 1: 192.16.16.255 (Mepco Schlenk /24 directed subnet broadcast)
+                /* Use adaptive dual-broadcast WoL:
+                 *   Path 1: Directed subnet broadcast derived from PC IP
                  *   Path 2: 255.255.255.255 (limited broadcast fallback)
                  *   Each sent 3 times with 100 ms between transmissions */
-                int wol_result = udp_send_wol_reliable(computers[i].mac_address, DEFAULT_WOL_PORT);
+                int wol_result = udp_send_wol_directed(computers[i].mac_address, computers[i].ip_address, DEFAULT_WOL_PORT);
                 if (wol_result == 0) {
                     printf("[+] Remote restart command delivered for %s.\n", target_pc);
                 } else {

@@ -157,7 +157,7 @@ int udp_send_wol(const char *mac_address, const char *broadcast_ip, int port) {
  *    -1   – MAC address parse error
  *    -4   – both broadcast paths failed completely
  * ------------------------------------------------------------------------- */
-int udp_send_wol_reliable(const char *mac_address, int port) {
+int udp_send_wol_directed(const char *mac_address, const char *ip_address, int port) {
     if (!mac_address) return -1;
     if (port <= 0)    port = DEFAULT_WOL_PORT;
 
@@ -171,42 +171,56 @@ int udp_send_wol_reliable(const char *mac_address, int port) {
     char ts[64];
     get_timestamp(ts, sizeof(ts));
 
+    /* Derive directed /24 broadcast from target IP if available, else default to college broadcast */
+    char directed_broadcast[64];
+    if (ip_address && strlen(ip_address) > 0 && strcmp(ip_address, "0.0.0.0") != 0) {
+        strncpy(directed_broadcast, ip_address, sizeof(directed_broadcast) - 1);
+        directed_broadcast[sizeof(directed_broadcast) - 1] = '\0';
+        char *last_dot = strrchr(directed_broadcast, '.');
+        if (last_dot) {
+            strcpy(last_dot + 1, "255");
+        } else {
+            strncpy(directed_broadcast, COLLEGE_BROADCAST_IP, sizeof(directed_broadcast) - 1);
+            directed_broadcast[sizeof(directed_broadcast) - 1] = '\0';
+        }
+    } else {
+        strncpy(directed_broadcast, COLLEGE_BROADCAST_IP, sizeof(directed_broadcast) - 1);
+        directed_broadcast[sizeof(directed_broadcast) - 1] = '\0';
+    }
+
     printf("[*] [%s] [UDP WoL] Initiating dual-broadcast WoL for MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
            ts, mac_bytes[0], mac_bytes[1], mac_bytes[2],
            mac_bytes[3], mac_bytes[4], mac_bytes[5]);
-    printf("[*]   Target 1: %s (Mepco Schlenk subnet 192.16.16.0/24 directed broadcast)\n",
-           COLLEGE_BROADCAST_IP);
-    printf("[*]   Target 2: %s (Limited / global broadcast fallback)\n",
-           DEFAULT_BROADCAST_IP);
-    printf("[*]   Transmissions per target: %d × %d ms apart  →  %d total packets\n",
+    printf("[*]   Target 1: %s (Subnet directed broadcast)\n", directed_broadcast);
+    printf("[*]   Target 2: %s (Limited / global broadcast fallback)\n", DEFAULT_BROADCAST_IP);
+    printf("[*]   Transmissions per target: %d x %d ms apart -> %d total packets\n",
            WOL_TRANSMIT_COUNT, WOL_INTER_TX_DELAY_MS,
            WOL_TRANSMIT_COUNT * 2);
 
-    /* --- Path 1: Directed subnet broadcast (192.16.16.255) --- */
-    printf("\n[*] --- Path 1: Directed Broadcast → %s:%d ---\n",
-           COLLEGE_BROADCAST_IP, port);
-    int res1 = udp_send_wol(mac_address, COLLEGE_BROADCAST_IP, port);
+    /* --- Path 1: Directed subnet broadcast --- */
+    printf("\n[*] --- Path 1: Directed Broadcast -> %s:%d ---\n", directed_broadcast, port);
+    int res1 = udp_send_wol(mac_address, directed_broadcast, port);
 
     /* Brief gap between the two broadcast targets */
     SLEEP_MS(150);
 
     /* --- Path 2: Limited broadcast (255.255.255.255) --- */
-    printf("\n[*] --- Path 2: Limited Broadcast  → %s:%d ---\n",
-           DEFAULT_BROADCAST_IP, port);
+    printf("\n[*] --- Path 2: Limited Broadcast  -> %s:%d ---\n", DEFAULT_BROADCAST_IP, port);
     int res2 = udp_send_wol(mac_address, DEFAULT_BROADCAST_IP, port);
 
     /* Summary */
     get_timestamp(ts, sizeof(ts));
     if (res1 == 0 || res2 == 0) {
         printf("\n[+] [%s] [UDP WoL COMPLETE] Magic packet delivered successfully.\n", ts);
-        printf("[+]   Subnet broadcast (%s): %s\n",
-               COLLEGE_BROADCAST_IP, (res1 == 0) ? "OK" : "FAILED");
-        printf("[+]   Global broadcast (%s): %s\n",
-               DEFAULT_BROADCAST_IP, (res2 == 0) ? "OK" : "FAILED");
+        printf("[+]   Subnet broadcast (%s): %s\n", directed_broadcast, (res1 == 0) ? "OK" : "FAILED");
+        printf("[+]   Global broadcast (%s): %s\n", DEFAULT_BROADCAST_IP, (res2 == 0) ? "OK" : "FAILED");
         return 0;
     }
 
-    fprintf(stderr, "\n[-] [%s] [UDP WoL FAILED] Both broadcast paths failed for MAC %s\n",
-            ts, mac_address);
+    fprintf(stderr, "\n[-] [%s] [UDP WoL FAILED] Both broadcast paths failed for MAC %s\n", ts, mac_address);
     return -4;
+}
+
+int udp_send_wol_reliable(const char *mac_address, int port) {
+    return udp_send_wol_directed(mac_address, COLLEGE_BROADCAST_IP, port);
 }

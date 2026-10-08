@@ -587,12 +587,12 @@
 
           {% if msg %}
           <div style="background:#ecfdf5; border-bottom:1px solid #a7f3d0; color:#065f46; padding:0.65rem 1.25rem; font-size:0.8rem; font-weight:600; text-align:center;">
-            ✅ {{ msg }}
+            {{ msg }}
           </div>
           {% endif %}
           {% if error %}
           <div style="background:#fef2f2; border-bottom:1px solid #fecaca; color:#991b1b; padding:0.65rem 1.25rem; font-size:0.8rem; font-weight:600; text-align:center;">
-            ⚠️ {{ error }}
+            {{ error }}
           </div>
           {% endif %}
 
@@ -601,12 +601,12 @@
             <button class="portal-tab active" data-portal="student"
                     role="tab" id="tab-student" aria-controls="pane-student"
                     onclick="switchPortal('student')">
-              <span class="tab-icon">🎓</span> Student / Staff
+              <span class="tab-badge" style="font-size:0.75rem; font-weight:700; background:#dbeafe; color:#1e40af; padding:1px 6px; border-radius:4px; margin-right:4px;">[STUDENT]</span> Student / Staff
             </button>
             <button class="portal-tab" data-portal="admin"
                     role="tab" id="tab-admin" aria-controls="pane-admin"
                     onclick="switchPortal('admin')">
-              <span class="tab-icon">🛠️</span> IT Admin
+              <span class="tab-badge" style="font-size:0.75rem; font-weight:700; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:4px; margin-right:4px;">[ADMIN]</span> IT Admin
             </button>
           </div>
 
@@ -614,7 +614,7 @@
           <div class="card-body" id="pane-student" role="tabpanel">
 
             <div class="portal-heading-wrap">
-              <div class="portal-avatar student">🎓</div>
+              <div class="portal-avatar student" style="font-size:0.875rem; font-weight:800; letter-spacing:0.05em;">STD</div>
               <div>
                 <div class="portal-title" id="student-form-title">Student Sign In</div>
                 <div class="portal-subtitle" id="student-form-sub">Access LabWatch to report a workstation fault</div>
@@ -629,7 +629,7 @@
               <div class="field-group">
                 <label class="field-label" for="s-username">Student / Staff Username</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon">👤</span>
+                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">ID</span>
                   <input class="field-input" type="text" id="s-username" name="username"
                          placeholder="e.g. 24bad001 or 24bad107"
                          autocomplete="username" required>
@@ -639,7 +639,7 @@
               <div class="field-group">
                 <label class="field-label" for="s-password">Password</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon">🔒</span>
+                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">PW</span>
                   <input class="field-input" type="password" id="s-password" name="password"
                          placeholder="Roll number (e.g. 24bad001) or student123"
                          autocomplete="current-password" required>
@@ -661,7 +661,7 @@
           <div class="card-body admin-active" id="pane-admin" role="tabpanel" style="display:none;">
 
             <div class="portal-heading-wrap">
-              <div class="portal-avatar admin">🛠️</div>
+              <div class="portal-avatar admin" style="font-size:0.875rem; font-weight:800; letter-spacing:0.05em;">ADM</div>
               <div>
                 <div class="portal-title">IT Administrator Sign In</div>
                 <div class="portal-subtitle">LabWatch IT Staff &amp; Technician Triage Dashboard</div>
@@ -676,7 +676,7 @@
               <div class="field-group">
                 <label class="field-label" for="a-username">IT Staff Username</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon">🆔</span>
+                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">ID</span>
                   <input class="field-input" type="text" id="a-username" name="username"
                          placeholder="IT Staff / Admin username"
                          autocomplete="username" required>
@@ -686,7 +686,7 @@
               <div class="field-group">
                 <label class="field-label" for="a-password">Admin Password</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon">🔑</span>
+                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">PW</span>
                   <input class="field-input" type="password" id="a-password" name="password"
                          placeholder="Administrator password"
                          autocomplete="current-password" required>
@@ -712,7 +712,7 @@
   <!-- ── Page Footer ── -->
   <footer class="page-footer">
     <p>
-      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Aids Department.<br>
+      &copy; 2026 Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Department of Artificial Intelligence and Data Science.<br>
       Developed by venki and navi &bull; LabWatch Sign In Portal
     </p>
   </footer>
@@ -740,7 +740,7 @@
   const initError = "{{ error }}";
   if (initError && initError !== 'None' && initError !== '') {
     const errEl = document.getElementById(initPortal + '-error') || document.getElementById('student-error');
-    if (errEl) { errEl.textContent = '⚠️ ' + initError.replace(/<[^>]+>/g,''); }
+    if (errEl) { errEl.textContent =  initError.replace(/<[^>]+>/g,''); }
   }
 
   /* ── Generic form handler ────────────────────────────────────────────────── */
@@ -761,7 +761,7 @@
       const password = form.querySelector('input[name="password"]').value.trim();
 
       if (!username || !password) {
-        errorEl.textContent = '⚠️  Please enter both username and password.';
+        errorEl.textContent = 'Please enter both username and password.';
         return;
       }
 
@@ -785,7 +785,7 @@
 
         if (resp.ok && data.success) {
           // Show success, then redirect
-          succEl.textContent = '✅ ' + data.message + ' Redirecting…';
+          succEl.textContent =  data.message + ' Redirecting…';
           succEl.style.display = 'block';
           const role = (data.user && data.user.role) || 'student';
           setTimeout(() => {
@@ -796,13 +796,13 @@
             }
           }, 900);
         } else {
-          errorEl.textContent = '⚠️  ' + (data.error || 'Login failed. Please check your credentials.');
+          errorEl.textContent = '' + (data.error || 'Login failed. Please check your credentials.');
           btn.disabled = false;
           spinner.style.display = 'none';
           btnTxt.textContent = portal === 'admin' ? 'Sign In to Admin Dashboard' : 'Sign In to Student Portal';
         }
       } catch (err) {
-        errorEl.textContent = '⚠️  Network error. Please ensure the server is running.';
+        errorEl.textContent = 'Network error. Please ensure the server is running.';
         btn.disabled = false;
         spinner.style.display = 'none';
         btnTxt.textContent = portal === 'admin' ? 'Sign In to Admin Dashboard' : 'Sign In to Student Portal';

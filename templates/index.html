@@ -990,21 +990,21 @@
   <div class="mepco-top-bar">
     <div class="top-bar-inner">
       <div class="top-bar-contact">
-        <span>📍 Sivakasi - 626 005, Tamil Nadu</span>
-        <span>📞 +91-4562-235104, 235120</span>
-        <span>✉ aids_lab@mepcoeng.ac.in</span>
+        <span>Sivakasi - 626 005, Tamil Nadu</span>
+        <span>Tel: +91-4562-235104, 235120</span>
+        <span>Email: aids_lab@mepcoeng.ac.in</span>
         <span class="top-bar-accreditation">Autonomous | NBA (Tier-I) | NAAC 'A' Grade</span>
       </div>
 
       <div class="top-bar-profile">
         <button class="audio-btn active" id="btn-toggle-audio" onclick="toggleAudioChimes()">
-          <span id="audio-icon">🔔</span> Audio Chimes: ON
+          <span id="audio-icon">[AUDIO ON]</span>
         </button>
         <a href="/admin" style="color:#e0f2fe; text-decoration:none; font-weight:600; font-size:0.75rem; margin-left:0.5rem; background:rgba(255,255,255,.12); padding:0.25rem 0.55rem; border-radius:4px;">
-          🛠️ IT Admin Dashboard
+          IT Admin Dashboard
         </a>
         <a href="/logout" style="color:#fee2e2; text-decoration:none; font-weight:700; font-size:0.75rem; background:rgba(239,68,68,.3); padding:0.25rem 0.55rem; border-radius:4px; border:1px solid rgba(239,68,68,.4); display:inline-flex; align-items:center; gap:0.25rem;">
-          🚪 Sign Out
+          Sign Out
         </a>
       </div>
     </div>
@@ -1029,30 +1029,30 @@
         <!-- Primary Navigation Tabs -->
         <nav class="campus-nav-tabs" aria-label="Campus Navigation">
           <button class="nav-tab active" id="tab-btn-monitor" onclick="switchTab('tab-monitor')">
-            <span>🖥️ Live Grid</span>
+            <span>Live Grid</span>
             <span class="badge" id="badge-total-pcs">140</span>
           </button>
           <button class="nav-tab" id="tab-btn-digital-twin" onclick="switchTab('tab-digital-twin')">
-            <span>🏢 Digital Twin</span>
+            <span>Digital Twin</span>
           </button>
           <button class="nav-tab" id="tab-btn-tickets" onclick="switchTab('tab-tickets')">
-            <span>🎫 Tickets</span>
+            <span>Tickets</span>
             <span class="badge" id="badge-pending-tickets">0</span>
           </button>
           <button class="nav-tab" id="tab-btn-exam-readiness" onclick="switchTab('tab-exam-readiness')">
-            <span>🎓 Exam Readiness</span>
+            <span>Exam Readiness</span>
           </button>
           <button class="nav-tab" id="tab-btn-analytics" onclick="switchTab('tab-analytics')">
-            <span>📊 Analytics</span>
+            <span>Analytics</span>
           </button>
           <button class="nav-tab" id="tab-btn-hod-report" onclick="switchTab('tab-hod-report')">
-            <span>📋 HOD Daily Dossier</span>
+            <span>HOD Daily Dossier</span>
           </button>
           <button class="nav-tab" id="tab-btn-report" onclick="switchTab('tab-report')">
-            <span>📝 Report Fault</span>
+            <span>Report Fault</span>
           </button>
           <button class="nav-tab" id="tab-btn-telemetry" onclick="switchTab('tab-telemetry')">
-            <span>📡 Telemetry</span>
+            <span>Telemetry</span>
           </button>
         </nav>
       </div>
@@ -1071,7 +1071,7 @@
     <!-- Metric KPI Cards -->
     <div class="kpi-row">
       <div class="kpi-card">
-        <div class="kpi-icon" style="background-color: var(--mepco-cyan-light); color: var(--mepco-blue);">🖥️</div>
+        <div class="kpi-icon" style="background-color: var(--mepco-cyan-light); color: var(--mepco-blue); font-weight:800; font-size:0.75rem;">ALL</div>
         <div>
           <div class="kpi-val" id="stat-total-pcs">140</div>
           <div class="kpi-label">Workstations Monitored</div>
@@ -1079,7 +1079,7 @@
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-icon" style="background-color: #dcfce7; color: #15803d;">✅</div>
+        <div class="kpi-icon" style="background-color: #dcfce7; color: #15803d;">ON</div>
         <div>
           <div class="kpi-val" style="color: #15803d;" id="stat-online-pcs">--</div>
           <div class="kpi-label">Online &amp; Responsive</div>
@@ -1087,7 +1087,7 @@
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-icon" style="background-color: #ffe4e6; color: #be123c;">⚠️</div>
+        <div class="kpi-icon" style="background-color: #ffe4e6; color: #be123c;">OFF</div>
         <div>
           <div class="kpi-val" style="color: #be123c;" id="stat-offline-pcs">--</div>
           <div class="kpi-label">Offline / Frozen</div>
@@ -1095,7 +1095,7 @@
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-icon" style="background-color: #fef3c7; color: #b45309;">🎫</div>
+        <div class="kpi-icon" style="background-color: #fef3c7; color: #b45309;"></div>
         <div>
           <div class="kpi-val" style="color: #b45309;" id="stat-pending-tickets">--</div>
           <div class="kpi-label">Active Fault Tickets</div>
@@ -1138,9 +1138,9 @@
 
         <div class="toolbar-right">
           <input type="text" id="monitor-search" class="campus-input" placeholder="Search PC, IP or MAC..." oninput="filterComputersGrid()" style="width: 200px;">
-          <button class="btn btn-campus-secondary btn-sm" onclick="openDiscoverModal()">📡 Auto-Discover LAN</button>
-          <button class="btn btn-mepco-primary btn-sm" onclick="openAddComputerModal()">➕ Add Workstation</button>
-          <button class="btn btn-campus-secondary btn-sm" onclick="loadComputers()">🔄 Refresh</button>
+          <button class="btn btn-campus-secondary btn-sm" onclick="openDiscoverModal()">Auto-Discover LAN</button>
+          <button class="btn btn-mepco-primary btn-sm" onclick="openAddComputerModal()">Add Workstation</button>
+          <button class="btn btn-campus-secondary btn-sm" onclick="loadComputers()">Refresh</button>
         </div>
       </div>
 
@@ -1167,8 +1167,8 @@
           </div>
         </div>
         <div class="toolbar-right">
-          <span style="font-size:0.75rem; color:var(--text-muted);">💡 Click any desk to open Real-Time Solving Playbooks</span>
-          <button class="btn btn-campus-secondary btn-sm" onclick="renderDigitalTwin()">🔄 Redraw</button>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Click any desk to open Real-Time Solving Playbooks</span>
+          <button class="btn btn-campus-secondary btn-sm" onclick="renderDigitalTwin()">Redraw</button>
         </div>
       </div>
 
@@ -1176,10 +1176,10 @@
         <!-- Front Podium -->
         <div class="dt-front-podium">
           <div class="podium-smartboard">
-            <span>🖥️ Smart Projector Board &amp; Instructor Audio Matrix</span>
+            <span>Smart Projector Board &amp; Instructor Audio Matrix</span>
           </div>
           <div class="podium-desk">
-            <span style="font-size:1.4rem;">👨‍🏫</span>
+            <span style="font-size:0.75rem; font-weight:800; color:var(--mepco-navy);">[INSTRUCTOR DAIS]</span>
             <div>
               <strong>Faculty Console &bull; Podium</strong>
               <div style="font-size:0.6875rem; color:var(--text-muted);">Master HDMI Switch &bull; Subnet Controller</div>
@@ -1197,7 +1197,7 @@
         <!-- Rear Server Rack -->
         <div class="dt-rear-rack">
           <div style="display:flex; align-items:center; gap:0.75rem;">
-            <span style="font-size:1.6rem;">🗄️</span>
+            <span style="font-size:0.75rem; font-weight:800; color:var(--text-secondary);">[SERVER RACK]</span>
             <div>
               <strong>AIDS Department High-Performance GPU Rack &amp; Cisco Core Switch</strong>
               <div style="font-size:0.71875rem; color:#94a3b8;">Mepco Gateway: 192.16.16.200 &bull; 10Gbps Uplink &bull; DHCP/DNS Cluster</div>
@@ -1267,12 +1267,12 @@
             <!-- Populated dynamically -->
           </select>
           <button class="btn btn-mepco-primary" onclick="triggerExamAudit()" id="btn-run-exam-sweep">
-            🚀 Run Pre-Exam Health Sweep
+            Run Pre-Exam Health Sweep
           </button>
         </div>
         <div class="toolbar-right">
           <button class="btn btn-campus-secondary" onclick="viewLatestCertificate()" id="btn-view-cert" style="display:none;">
-            📜 View Official Audit Certificate
+            View Official Audit Certificate
           </button>
         </div>
       </div>
@@ -1295,7 +1295,7 @@
       <div class="table-card" id="exam-table-card" style="display:none;">
         <div style="padding:1rem 1.25rem; font-weight:700; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
           <span>Workstation Multi-Protocol Health Breakdown</span>
-          <button class="btn btn-campus-secondary btn-sm" onclick="printExamReport()">🖨️ Print Audit Sheet</button>
+          <button class="btn btn-campus-secondary btn-sm" onclick="printExamReport()">Print Audit Sheet</button>
         </div>
         <table class="campus-table">
           <thead>
@@ -1321,28 +1321,28 @@
     <section class="tab-view" id="tab-analytics">
       <div class="kpi-row" style="margin-bottom:1.5rem;">
         <div class="kpi-card">
-          <div class="kpi-icon" style="background:#e0f2fe; color:#0284c7;">⚡</div>
+          <div class="kpi-icon" style="background:#e0f2fe; color:#0284c7; font-weight:800; font-size:0.75rem;">EXEC</div>
           <div>
             <div class="kpi-val" id="analytics-uptime">--%</div>
             <div class="kpi-label">Department Operational Uptime</div>
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="background:#fef3c7; color:#b45309;">⏱️</div>
+          <div class="kpi-icon" style="background:#fef3c7; color:#b45309; font-weight:800; font-size:0.75rem;">TIME</div>
           <div>
             <div class="kpi-val" id="analytics-mttr">8.4 min</div>
             <div class="kpi-label">Mean Time to Resolution (MTTR)</div>
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="background:#dcfce7; color:#15803d;">🛡️</div>
+          <div class="kpi-icon" style="background:#dcfce7; color:#15803d; font-weight:800; font-size:0.75rem;">SEC</div>
           <div>
             <div class="kpi-val" id="analytics-remediations">0</div>
             <div class="kpi-label">Auto-Remediations Executed</div>
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="background:#f3e8ff; color:#7e22ce;">🏢</div>
+          <div class="kpi-icon" style="background:#f3e8ff; color:#7e22ce; font-weight:800; font-size:0.75rem;">LABS</div>
           <div>
             <div class="kpi-val">6 Labs</div>
             <div class="kpi-label">AIDS Engineering Wings</div>
@@ -1400,9 +1400,9 @@
         </div>
 
         <div class="toolbar-right">
-          <button class="btn btn-campus-secondary btn-sm" onclick="exportHodCsv()">📥 Export HOD CSV</button>
-          <button class="btn btn-mepco-primary btn-sm" onclick="printHodReport()">🖨️ Print Official Dossier</button>
-          <button class="btn btn-campus-secondary btn-sm" onclick="openManualTechLogModal()">➕ Log Service Note</button>
+          <button class="btn btn-campus-secondary btn-sm" onclick="exportHodCsv()">Export HOD CSV</button>
+          <button class="btn btn-mepco-primary btn-sm" onclick="printHodReport()">Print Official Dossier</button>
+          <button class="btn btn-campus-secondary btn-sm" onclick="openManualTechLogModal()">Log Service Note</button>
         </div>
       </div>
 
@@ -1473,7 +1473,7 @@
         <!-- Section 1: Technician Productivity & Timesheet Scorecard -->
         <div style="margin-bottom:1.75rem;">
           <h4 style="font-size:0.95rem; font-weight:800; color:var(--mepco-navy); margin-bottom:0.65rem; display:flex; align-items:center; gap:0.4rem;">
-            <span>👨‍🔧</span> 1. Technician Performance Scorecard &amp; Duty Timesheet
+            1. Technician Performance Scorecard &amp; Duty Timesheet
           </h4>
           <div class="table-card">
             <table class="campus-table">
@@ -1498,7 +1498,7 @@
         <!-- Section 2: Laboratory Matrix Status Overview -->
         <div style="margin-bottom:1.75rem;">
           <h4 style="font-size:0.95rem; font-weight:800; color:var(--mepco-navy); margin-bottom:0.65rem; display:flex; align-items:center; gap:0.4rem;">
-            <span>🏛️</span> 2. Department Laboratory Workstations Matrix &amp; Availability Status
+            2. Department Laboratory Workstations Matrix &amp; Availability Status
           </h4>
           <div class="table-card">
             <table class="campus-table">
@@ -1523,7 +1523,7 @@
         <!-- Section 3: Detailed Chronological Activity Ledger -->
         <div style="margin-bottom:2rem;">
           <h4 style="font-size:0.95rem; font-weight:800; color:var(--mepco-navy); margin-bottom:0.65rem; display:flex; align-items:center; gap:0.4rem;">
-            <span>📜</span> 3. Chronological Maintenance &amp; Troubleshooting Action Ledger
+            <span></span> 3. Chronological Maintenance &amp; Troubleshooting Action Ledger
           </h4>
           <div class="table-card">
             <table class="campus-table">
@@ -1634,7 +1634,7 @@
           <!-- Real-Time AI Lab Doctor Guidance Card -->
           <div id="ai-doctor-guidance-card" class="ai-doctor-panel" style="display:none;">
             <div class="ai-doctor-header">
-              <span class="ai-doctor-badge">🤖 AI Lab Doctor &bull; Real-Time Analysis</span>
+              <span class="ai-doctor-badge">AI Lab Doctor &bull; Real-Time Analysis</span>
               <span id="ai-doctor-confidence" class="confidence-tag">95% Match</span>
             </div>
             <div class="ai-doctor-title" id="ai-doctor-title">CUDA GPU Out-Of-Memory Detected</div>
@@ -1665,7 +1665,7 @@
             <strong style="color:var(--mepco-blue);">Core Network Protocols &amp; Solving Telemetry Stream</strong>
             <p style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.15rem;">Live feed of RAW socket ICMP pings, UDP WoL dispatches, and real-time self-healing actions.</p>
           </div>
-          <button class="btn btn-campus-secondary btn-sm" onclick="loadTelemetry()">🔄 Refresh Events</button>
+          <button class="btn btn-campus-secondary btn-sm" onclick="loadTelemetry()">Refresh Events</button>
         </div>
         <div style="background:#0f172a; padding:1.25rem; font-family:'JetBrains Mono',monospace; font-size:0.78125rem; max-height:520px; overflow-y:auto;" id="telemetry-log-container">
           <!-- Rendered via JS -->
@@ -1711,12 +1711,12 @@
         <!-- 1-Click Self-Healing Playbooks -->
         <div>
           <strong style="color:var(--mepco-navy); font-size:0.875rem; display:block; margin-bottom:0.5rem;">
-            ⚡ 1-Click Real-Time Solving Playbooks
+            1-Click Real-Time Solving Playbooks
           </strong>
           <div class="playbook-actions-list">
             <div class="playbook-btn-item" onclick="executePlaybook('kill_ai_zombies')">
               <div class="playbook-btn-left">
-                <div class="playbook-btn-icon" style="background:#e0f2fe; color:#0369a1;">🧠</div>
+                <div class="playbook-btn-icon" style="background:#e0f2fe; color:#0369a1; font-weight:800; font-size:0.6875rem;">PROC</div>
                 <div>
                   <strong>Kill AI Zombies (PyTorch/Jupyter OOM)</strong>
                   <div style="font-size:0.71875rem; color:var(--text-muted);">Reclaims locked GPU VRAM and terminates stuck CUDA loops</div>
@@ -1727,7 +1727,7 @@
 
             <div class="playbook-btn-item" onclick="executePlaybook('network_self_heal')">
               <div class="playbook-btn-left">
-                <div class="playbook-btn-icon" style="background:#dcfce7; color:#15803d;">🌐</div>
+                <div class="playbook-btn-icon" style="background:#dcfce7; color:#15803d; font-weight:800; font-size:0.6875rem;">NET</div>
                 <div>
                   <strong>Network Stack Self-Heal &amp; Gateway Sweep</strong>
                   <div style="font-size:0.71875rem; color:var(--text-muted);">Flushes DNS, renews DHCP lease, tests Mepco Gateway</div>
@@ -1738,7 +1738,7 @@
 
             <div class="playbook-btn-item" onclick="executePlaybook('disk_scratch_purge')">
               <div class="playbook-btn-left">
-                <div class="playbook-btn-icon" style="background:#fef3c7; color:#b45309;">🧹</div>
+                <div class="playbook-btn-icon" style="background:#fef3c7; color:#b45309; font-weight:800; font-size:0.6875rem;">DISK</div>
                 <div>
                   <strong>Purge Scratch Temp &amp; HuggingFace Locks</strong>
                   <div style="font-size:0.71875rem; color:var(--text-muted);">Frees SSD space from orphaned transformers lockfiles</div>
@@ -1749,7 +1749,7 @@
 
             <div class="playbook-btn-item" onclick="executePlaybook('service_restart')">
               <div class="playbook-btn-left">
-                <div class="playbook-btn-icon" style="background:#f3e8ff; color:#7e22ce;">🔄</div>
+                <div class="playbook-btn-icon" style="background:#f3e8ff; color:#7e22ce; font-weight:800; font-size:0.6875rem;">SVC</div>
                 <div>
                   <strong>Restart JupyterLab &amp; Department Daemons</strong>
                   <div style="font-size:0.71875rem; color:var(--text-muted);">Restarts port 8888 web notebook &amp; SSH port 22</div>
@@ -1760,7 +1760,7 @@
 
             <div class="playbook-btn-item" onclick="executePlaybook('wol_restart')">
               <div class="playbook-btn-left">
-                <div class="playbook-btn-icon" style="background:#ffe4e6; color:#be123c;">⚡</div>
+                <div class="playbook-btn-icon" style="background:#ffe4e6; color:#be123c; font-weight:800; font-size:0.6875rem;">PWR</div>
                 <div>
                   <strong>Dual-Broadcast Wake-on-LAN Remote Restart</strong>
                   <div style="font-size:0.71875rem; color:var(--text-muted);">Dispatches 102-byte magic packet via C binary over UDP:9</div>
@@ -1774,10 +1774,10 @@
         <!-- Deep Diagnostics & QR Tools -->
         <div style="display:flex; gap:0.5rem;">
           <button class="btn btn-campus-secondary btn-sm" style="flex:1;" onclick="runDeepDiagnostics()">
-            🔍 Run Deep L3+L4 Diagnostics
+            Run Deep L3+L4 Diagnostics
           </button>
           <button class="btn btn-campus-secondary btn-sm" style="flex:1;" onclick="showCurrentPcQr()">
-            📱 View Mobile QR Sticker
+            View Mobile QR Sticker
           </button>
         </div>
 
@@ -1791,20 +1791,20 @@
         <div style="background:var(--bg-surface-alt); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:0.85rem; margin-top:0.75rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
             <strong style="color:var(--mepco-navy); font-size:0.8125rem; display:flex; align-items:center; gap:0.35rem;">
-              <span>💻</span> Cross-Lab Remote Admin Terminal
+              <span>[TERMINAL]</span> Cross-Lab Remote Admin Terminal
             </strong>
-            <span id="remote-exec-spinner" style="display:none; font-size:0.7rem; color:var(--mepco-blue); font-weight:700;">⚡ Executing...</span>
+            <span id="remote-exec-spinner" style="display:none; font-size:0.7rem; color:var(--mepco-blue); font-weight:700;">Executing...</span>
           </div>
           <div style="font-size:0.71875rem; color:var(--text-muted); margin-bottom:0.5rem;">
             Run live diagnostic shell commands on target workstation across any lab.
           </div>
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.35rem; margin-bottom:0.5rem;">
-            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('ping')">🔍 ping</button>
-            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('nvidia-smi')">🚀 nvidia-smi</button>
-            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('systeminfo')">💻 systeminfo</button>
-            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('netstat')">🌐 netstat</button>
-            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('service')">⚙️ service</button>
-            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('traceroute')">📍 traceroute</button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('ping')">ping</button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('nvidia-smi')">nvidia-smi</button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('systeminfo')">systeminfo</button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('netstat')">netstat</button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('service')">service</button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" onclick="runRemoteAdminCommand('traceroute')">traceroute</button>
           </div>
           <div style="display:flex; gap:0.35rem;">
             <input type="text" id="admin-custom-cmd-input" class="campus-input" placeholder="Custom command (e.g. systeminfo, ping, status)..." style="flex:1; font-family:'JetBrains Mono',monospace; font-size:0.75rem;" onkeydown="if(event.key==='Enter') executeCustomAdminCommand()">
@@ -1816,7 +1816,7 @@
         <div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
             <strong style="color:var(--mepco-navy); font-size:0.75rem;">Interactive Execution Console</strong>
-            <span id="drawer-spinner" style="display:none; font-size:0.75rem; color:#0284c7;">⏳ Running Playbook...</span>
+            <span id="drawer-spinner" style="display:none; font-size:0.75rem; color:#0284c7;">Running Playbook...</span>
           </div>
           <div class="drawer-terminal" id="drawer-terminal-log">
 Ready for command execution. Select a playbook above to dispatch real-time remediation.
@@ -1885,7 +1885,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
 
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
         <button type="button" class="btn btn-campus-secondary" onclick="closeCertModal()">Close</button>
-        <button type="button" class="btn btn-mepco-primary" onclick="window.print()">🖨️ Print Certificate</button>
+        <button type="button" class="btn btn-mepco-primary" onclick="window.print()">Print Certificate</button>
       </div>
     </div>
   </div>
@@ -1954,7 +1954,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
     <div class="modal-window" style="max-width:580px;" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">📡 Adaptive LAN &amp; Subnet Auto-Discovery</h3>
+          <h3 class="modal-title">Adaptive LAN &amp; Subnet Auto-Discovery</h3>
           <span style="font-size:0.75rem; color:var(--text-muted);">Dynamically scan ARP cache &amp; lab subnets without hardcoding</span>
         </div>
         <button class="modal-close" onclick="closeDiscoverModal()">&times;</button>
@@ -1979,12 +1979,12 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
             Sweeps ARP table, registers unmapped MAC/IPs, updates online heartbeats, and re-syncs C daemon monitors.
           </p>
           <button class="btn btn-mepco-primary btn-sm" id="btn-start-discovery" onclick="runLanDiscovery()">
-            <span>⚡ Start Discovery Sweep</span>
+            <span>Start Discovery Sweep</span>
           </button>
         </div>
 
         <div id="discover-progress" style="display:none; text-align:center; padding:1.25rem; background:var(--bg-surface-alt); border-radius:var(--radius-sm); margin-bottom:1rem;">
-          <div style="font-size:1.5rem; margin-bottom:0.35rem;">🛰️</div>
+          <div style="font-size:0.875rem; font-weight:800; color:var(--mepco-navy); margin-bottom:0.35rem;">[LAN DISCOVERY ENGINE READY]</div>
           <strong style="color:var(--mepco-navy); font-size:0.875rem;">Scanning Local Subnet &amp; Parsing ARP Tables...</strong>
           <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Syncing inventory and C monitoring daemon binaries</div>
         </div>
@@ -2009,7 +2009,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
     <div class="modal-window" style="max-width:540px;" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">➕ Add Workstation to Lab Matrix</h3>
+          <h3 class="modal-title">Add Workstation to Lab Matrix</h3>
           <span style="font-size:0.75rem; color:var(--text-muted);">Zero-hardcoding adaptive workstation inventory management</span>
         </div>
         <button class="modal-close" onclick="closeAddComputerModal()">&times;</button>
@@ -2052,7 +2052,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
           </div>
           <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer; font-weight:700; font-size:0.8125rem; color:var(--mepco-gold);">
             <input type="checkbox" id="add-pc-is-admin" value="1">
-            <span>⭐ Admin Console</span>
+            <span>[ADMIN CONSOLE]</span>
           </label>
         </div>
 
@@ -2071,7 +2071,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
     <div class="modal-window" style="max-width:540px;" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">➕ Log Technician Service Note</h3>
+          <h3 class="modal-title">Log Technician Service Note</h3>
           <span style="font-size:0.75rem; color:var(--text-muted);">Record on-duty maintenance action directly into the HOD Dossier</span>
         </div>
         <button class="modal-close" onclick="closeManualTechLogModal()">&times;</button>
@@ -2204,11 +2204,11 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
       const btn = document.getElementById('btn-toggle-audio');
       if (audioEnabled) {
         btn.classList.add('active');
-        btn.innerHTML = '<span id="audio-icon">🔔</span> Audio Chimes: ON';
+        btn.innerHTML = '<span id="audio-icon">[AUDIO ON]</span>';
         playAudioChime('success');
       } else {
         btn.classList.remove('active');
-        btn.innerHTML = '<span id="audio-icon">🔕</span> Audio Chimes: OFF';
+        btn.innerHTML = '<span id="audio-icon">[AUDIO OFF]</span>';
       }
     }
 
@@ -2270,7 +2270,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
 
         sseEventSource.addEventListener('ticket_created', (e) => {
           const data = JSON.parse(e.data).data;
-          showToast(`🔔 New Ticket ${data.ticket_number} on ${data.pc_number} (${data.category})`, 'warning');
+          showToast(`New Ticket ${data.ticket_number} on ${data.pc_number} (${data.category})`, 'warning');
           playAudioChime('alert');
           updateStats();
           if (document.getElementById('tab-tickets').classList.contains('active')) loadTickets();
@@ -2279,7 +2279,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
         sseEventSource.addEventListener('pc_status_change', (e) => {
           const data = JSON.parse(e.data).data;
           const statusType = data.status === 'Online' ? 'success' : 'error';
-          showToast(`📡 ${data.pc_id} changed status to [${data.status}]`, statusType);
+          showToast(`${data.pc_id} changed status to [${data.status}]`, statusType);
           if (data.status !== 'Online') playAudioChime('alert');
           updateStats();
           if (document.getElementById('tab-monitor').classList.contains('active')) loadComputers();
@@ -2288,7 +2288,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
 
         sseEventSource.addEventListener('ticket_resolved', (e) => {
           const data = JSON.parse(e.data).data;
-          showToast(`✅ Ticket ${data.ticket_number} Resolved on ${data.pc_number}`, 'success');
+          showToast(`Ticket ${data.ticket_number} Resolved on ${data.pc_number}`, 'success');
           playAudioChime('success');
           updateStats();
           if (document.getElementById('tab-tickets').classList.contains('active')) loadTickets();
@@ -2297,7 +2297,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
 
         sseEventSource.addEventListener('remediation_completed', (e) => {
           const data = JSON.parse(e.data).data;
-          showToast(`⚡ Playbook '${data.playbook_title}' executed on ${data.pc_number} (${data.status})`, 'success');
+          showToast(`Playbook '${data.playbook_title}' executed on ${data.pc_number} (${data.status})`, 'success');
           updateStats();
         });
 
@@ -2393,7 +2393,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
           <div class="lab-accordion-header" onclick="toggleLabAccordion('${labSlug}')">
             <div class="lab-accordion-title">
               <span class="lab-accordion-chevron" id="chevron-${labSlug}">▼</span>
-              <span style="font-weight: 700; color: var(--mepco-navy); font-size: 0.95rem;">🏛️ ${escapeHtml(labName)}</span>
+              <span style="font-weight: 700; color: var(--mepco-navy); font-size: 0.95rem;">${escapeHtml(labName)}</span>
               <span style="font-size: 0.75rem; color: var(--text-muted);">(${totalCount} Workstations)</span>
             </div>
             <div style="display: flex; gap: 0.5rem;">
@@ -2428,7 +2428,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
             <div class="pc-card-top">
               <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
                 <span class="pc-id-label">${escapeHtml(pc.pc_number)}</span>
-                ${isAdmin ? '<span class="badge-admin-card">⭐ ADMIN</span>' : ''}
+                ${isAdmin ? '<span class="badge-admin-card">[ADMIN]</span>' : ''}
               </div>
               <span class="status-badge ${pc.status.toLowerCase()}">${pc.status}</span>
             </div>
@@ -2441,9 +2441,9 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
               <div class="sparkline-row">${sparkHtml}</div>
             </div>
             <div class="pc-card-actions" onclick="event.stopPropagation()">
-              <button class="btn btn-sm btn-campus-secondary" onclick="openRemediationDrawer('${pc.pc_number}')">⚡ Solve</button>
-              <button class="btn btn-sm btn-campus-secondary" onclick="triggerWolRestart('${pc.pc_number}')">⚡ WoL</button>
-              <button class="btn btn-sm btn-campus-secondary" onclick="showPcQr('${pc.pc_number}')">📱 QR</button>
+              <button class="btn btn-sm btn-campus-secondary" onclick="openRemediationDrawer('${pc.pc_number}')">Solve</button>
+              <button class="btn btn-sm btn-campus-secondary" onclick="triggerWolRestart('${pc.pc_number}')">WoL</button>
+              <button class="btn btn-sm btn-campus-secondary" onclick="showPcQr('${pc.pc_number}')">QR</button>
             </div>
           `;
           gridContainer.appendChild(card);
@@ -2510,7 +2510,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
           
           const daisTitle = document.createElement('div');
           daisTitle.style.cssText = 'font-size:0.75rem; font-weight:800; color:var(--mepco-gold); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.6rem;';
-          daisTitle.innerHTML = '🏛️ INSTRUCTOR DAIS &bull; MASTER ADMIN CONSOLE';
+          daisTitle.innerHTML = 'INSTRUCTOR DAIS &bull; MASTER ADMIN CONSOLE';
           daisWrapper.appendChild(daisTitle);
 
           const adminDesk = document.createElement('div');
@@ -2521,10 +2521,10 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
           adminDesk.onclick = () => openRemediationDrawer(adminPc.pc_number);
 
           adminDesk.innerHTML = `
-            <div style="font-size:1.35rem;">🖥️</div>
+            <div style="font-size:0.75rem; font-weight:800; color:var(--mepco-navy);">[MASTER ADMIN]</div>
             <div class="dt-node-pc" style="font-size:0.875rem;">${escapeHtml(adminPc.pc_number)}</div>
             <div class="dt-node-ip">${escapeHtml(adminPc.ip_address)}</div>
-            <span class="admin-badge-star">⭐ MASTER ADMIN</span>
+            <span class="admin-badge-star">[MASTER ADMIN]</span>
             <span class="status-badge ${adminStatus}" style="margin-top:4px;">${adminPc.status}</span>
           `;
           daisWrapper.appendChild(adminDesk);
@@ -2572,7 +2572,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
             desk.onclick = () => openRemediationDrawer(pc.pc_number);
 
             desk.innerHTML = `
-              <div style="font-size:1.15rem;">🖥️</div>
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">[PC]</div>
               <div class="dt-node-pc">${escapeHtml(pc.pc_number)}</div>
               <div class="dt-node-ip">${escapeHtml(pc.ip_address)}</div>
               <span class="status-badge ${statusClass}" style="margin-top:2px;">${pc.status}</span>
@@ -2635,7 +2635,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
         terminal.scrollTop = terminal.scrollHeight;
       }
 
-      showToast(`⚡ Dispatching '${playbookId}' on ${targetPc}...`, 'info');
+      showToast(`Dispatching '${playbookId}' on ${targetPc}...`, 'info');
 
       try {
         const csrfToken = getCsrfToken();
@@ -2655,7 +2655,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
         if (spinner) spinner.style.display = 'none';
 
         if (res.ok) {
-          showToast(`✓ Playbook '${data.playbook_title}' executed successfully!`, 'success');
+          showToast(`Playbook '${data.playbook_title}' executed successfully!`, 'success');
           playAudioChime('success');
           if (terminal) {
             terminal.innerText += `
@@ -2681,7 +2681,7 @@ ${data.output_log}
       const targetPc = pcNumber || activeDrawerPc;
       if (!targetPc) return;
 
-      showToast(`🔍 Probing multi-layer health on ${targetPc}...`, 'info');
+      showToast(`Probing multi-layer health on ${targetPc}...`, 'info');
       try {
         const res = await fetch(`/api/diagnose/${targetPc}`);
         const data = await res.json();
@@ -2746,8 +2746,8 @@ ${data.output_log}
       const labId = labSelect.value || 1;
       const btn = document.getElementById('btn-run-exam-sweep');
       btn.disabled = true;
-      btn.innerText = '⏳ Sweeping Laboratory Workstations...';
-      showToast("🚀 Initiating parallel pre-exam health sweep...", 'info');
+      btn.innerText = 'Sweeping Laboratory Workstations...';
+      showToast("Initiating parallel pre-exam health sweep...", 'info');
 
       try {
         const csrfToken = getCsrfToken();
@@ -2762,13 +2762,13 @@ ${data.output_log}
 
         const data = await res.json();
         btn.disabled = false;
-        btn.innerText = '🚀 Run Pre-Exam Health Sweep';
+        btn.innerText = 'Run Pre-Exam Health Sweep';
 
         if (res.ok && data.success) {
           const cert = data.certificate;
           latestExamCert = cert;
           renderExamAuditResults(cert);
-          showToast(`✓ Pre-Exam Audit Complete! Readiness Score: ${cert.readiness_percentage}%`, 'success');
+          showToast(`Pre-Exam Audit Complete! Readiness Score: ${cert.readiness_percentage}%`, 'success');
           playAudioChime('success');
           document.getElementById('btn-view-cert').style.display = 'inline-flex';
         } else {
@@ -2776,7 +2776,7 @@ ${data.output_log}
         }
       } catch (err) {
         btn.disabled = false;
-        btn.innerText = '🚀 Run Pre-Exam Health Sweep';
+        btn.innerText = 'Run Pre-Exam Health Sweep';
         showToast("Exam audit network error", 'error');
       }
     }
@@ -2807,12 +2807,12 @@ ${data.output_log}
           <td><strong>${escapeHtml(w.pc_number)}</strong></td>
           <td><span style="font-family:'JetBrains Mono',monospace;">${escapeHtml(w.ip_address)}</span></td>
           <td><span class="status-badge ${w.icmp_online ? 'online' : 'offline'}">${w.icmp_online ? `${w.icmp_rtt_ms} ms` : 'TIMEOUT'}</span></td>
-          <td>${ports.ssh_22 ? '✅ Open' : '❌ Closed'}</td>
-          <td>${ports.jupyter_8888 ? '✅ Ready' : '⚠️ Down'}</td>
+          <td>${ports.ssh_22 ? 'Open' : 'Closed'}</td>
+          <td>${ports.jupyter_8888 ? 'Ready' : 'Down'}</td>
           <td><strong style="color:${w.health_score >= 90 ? '#15803d' : '#d97706'}">${w.health_score}%</strong></td>
           <td><span class="status-badge ${w.icmp_online ? 'online' : 'offline'}">${w.status_summary || (w.icmp_online ? 'Online' : 'Offline')}</span></td>
           <td>
-            <button class="btn btn-sm btn-campus-secondary" onclick="openRemediationDrawer('${w.pc_number}')">⚡ Remediate</button>
+            <button class="btn btn-sm btn-campus-secondary" onclick="openRemediationDrawer('${w.pc_number}')">Remediate</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -2999,7 +2999,7 @@ ${data.output_log}
         btn.innerText = 'Submit Fault Report';
 
         if (res.ok) {
-          showToast(`✓ Ticket ${data.ticket.ticket_number} created successfully!`, 'success');
+          showToast(`Ticket ${data.ticket.ticket_number} created successfully!`, 'success');
           playAudioChime('success');
           document.getElementById('fault-report-form').reset();
           document.getElementById('ai-doctor-guidance-card').style.display = 'none';
@@ -3052,10 +3052,10 @@ ${data.output_log}
           <td>
             <div style="display:flex; gap:0.35rem;">
               ${!isResolved ? `
-                <button class="btn btn-sm btn-autofix" onclick="autoFixTicket(${t.id}, '${t.pc_number}', '${t.issue_category}')" title="Auto-fix via AI playbook">⚡ Auto-Fix</button>
+                <button class="btn btn-sm btn-autofix" onclick="autoFixTicket(${t.id}, '${t.pc_number}', '${t.issue_category}')" title="Auto-fix via AI playbook">Auto-Fix</button>
                 <button class="btn btn-sm btn-campus-secondary" onclick="openResolveModal(${t.id}, '${t.ticket_number}', '${t.status}')">Triage</button>
               ` : `
-                <span style="color:#15803d; font-size:0.75rem; font-weight:700;">✓ Fixed</span>
+                <span style="color:#15803d; font-size:0.75rem; font-weight:700;">Fixed</span>
               `}
             </div>
           </td>
@@ -3070,7 +3070,7 @@ ${data.output_log}
       else if (category.includes('Software') || category.includes('Crash')) playbook = 'kill_ai_zombies';
       else if (category.includes('Hardware')) playbook = 'disk_scratch_purge';
 
-      showToast(`⚡ Running Auto-Fix Playbook (${playbook}) for ${pcNumber}...`, 'info');
+      showToast(`Running Auto-Fix Playbook (${playbook}) for ${pcNumber}...`, 'info');
 
       try {
         const csrfToken = getCsrfToken();
@@ -3089,7 +3089,7 @@ ${data.output_log}
 
         const data = await res.json();
         if (res.ok) {
-          showToast(`✓ Ticket on ${pcNumber} auto-remediated via '${data.playbook_title}'!`, 'success');
+          showToast(`Ticket on ${pcNumber} auto-remediated via '${data.playbook_title}'!`, 'success');
           playAudioChime('success');
           loadTickets();
           loadComputers();
@@ -3146,7 +3146,7 @@ ${data.output_log}
 
     // Wake-on-LAN
     async function triggerWolRestart(pcId) {
-      showToast(`⚡ Dispatching WoL Magic Packet to ${pcId}...`, 'warning');
+      showToast(`Dispatching WoL Magic Packet to ${pcId}...`, 'warning');
       try {
         const csrfToken = getCsrfToken();
         const res = await fetch('/api/restart', {
@@ -3159,7 +3159,7 @@ ${data.output_log}
         });
         const data = await res.json();
         if (res.ok) {
-          showToast(`✓ WoL broadcasted to ${pcId} (${data.target_mac}) via UDP:9`, 'success');
+          showToast(`WoL broadcasted to ${pcId} (${data.target_mac}) via UDP:9`, 'success');
           playAudioChime('success');
           loadTelemetry();
         } else {
@@ -3402,7 +3402,7 @@ ${data.output_log}
                 <div style="font-size:0.6875rem; color:var(--text-muted);">${escapeHtml(l.location)}</div>
               </td>
               <td><span style="font-weight:700;">${l.total_pcs} PCs</span></td>
-              <td><span class="badge-admin-card">⭐ ${escapeHtml(l.admin_workstation)}</span></td>
+              <td><span class="badge-admin-card">[ADMIN] ${escapeHtml(l.admin_workstation)}</span></td>
               <td><span class="status-badge online">${l.online_pcs} Online</span></td>
               <td><span class="status-badge ${l.offline_pcs > 0 ? 'offline' : 'online'}">${l.offline_pcs} Faulty</span></td>
               <td><span class="status-badge ${relClass}">${l.uptime_pct}%</span></td>
@@ -3521,7 +3521,7 @@ ${data.output_log}
         if (res.ok) {
           resultsBox.style.display = 'block';
           resultsBody.innerHTML = `
-            <div style="color:#15803d; font-weight:700; margin-bottom:0.5rem;">✓ ${data.message}</div>
+            <div style="color:#15803d; font-weight:700; margin-bottom:0.5rem;">${data.message}</div>
             <div>Scanned Subnet: <strong>${data.subnet}</strong></div>
             <div>Workstations Discovered on LAN: <strong>${data.discovered_count}</strong></div>
             <div>New Workstations Auto-Registered: <strong>${data.added_count}</strong></div>
@@ -3594,7 +3594,7 @@ ${data.output_log}
 
         const data = await res.json();
         if (res.ok) {
-          showToast(`✓ Workstation ${pcNumber} added and C daemon synced!`, "success");
+          showToast(`Workstation ${pcNumber} added and C daemon synced!`, "success");
           closeAddComputerModal();
           loadComputers();
           updateStats();
@@ -3674,7 +3674,7 @@ ${data.output_log}
 
         const data = await res.json();
         if (res.ok) {
-          showToast("✓ Maintenance note recorded in HOD Dossier!", "success");
+          showToast("Maintenance note recorded in HOD Dossier!", "success");
           closeManualTechLogModal();
           loadHodDailyReport();
         } else {
