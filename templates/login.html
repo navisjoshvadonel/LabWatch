@@ -601,12 +601,12 @@
             <button class="portal-tab active" data-portal="student"
                     role="tab" id="tab-student" aria-controls="pane-student"
                     onclick="switchPortal('student')">
-              <span class="tab-badge" style="font-size:0.75rem; font-weight:700; background:#dbeafe; color:#1e40af; padding:1px 6px; border-radius:4px; margin-right:4px;">[STUDENT]</span> Student / Staff
+              <span class="tab-icon">🎓</span> Student / Staff
             </button>
             <button class="portal-tab" data-portal="admin"
                     role="tab" id="tab-admin" aria-controls="pane-admin"
                     onclick="switchPortal('admin')">
-              <span class="tab-badge" style="font-size:0.75rem; font-weight:700; background:#fef3c7; color:#92400e; padding:1px 6px; border-radius:4px; margin-right:4px;">[ADMIN]</span> IT Admin
+              <span class="tab-icon">👨‍🔧</span> IT Admin / Technician
             </button>
           </div>
 
@@ -614,7 +614,7 @@
           <div class="card-body" id="pane-student" role="tabpanel">
 
             <div class="portal-heading-wrap">
-              <div class="portal-avatar student" style="font-size:0.875rem; font-weight:800; letter-spacing:0.05em;">STD</div>
+              <div class="portal-avatar student">🎓</div>
               <div>
                 <div class="portal-title" id="student-form-title">Student Sign In</div>
                 <div class="portal-subtitle" id="student-form-sub">Access LabWatch to report a workstation fault</div>
@@ -629,9 +629,11 @@
               <div class="field-group">
                 <label class="field-label" for="s-username">Student / Staff Username</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">ID</span>
+                  <span class="field-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  </span>
                   <input class="field-input" type="text" id="s-username" name="username"
-                         placeholder="e.g. 24bad001 or 24bad107"
+                         placeholder="Roll number or username"
                          autocomplete="username" required>
                 </div>
               </div>
@@ -639,13 +641,12 @@
               <div class="field-group">
                 <label class="field-label" for="s-password">Password</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">PW</span>
+                  <span class="field-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </span>
                   <input class="field-input" type="password" id="s-password" name="password"
-                         placeholder="Roll number (e.g. 24bad001) or student123"
+                         placeholder="Password"
                          autocomplete="current-password" required>
-                </div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
-                  Password can be your roll number (e.g. <strong>24bad001</strong>) or <strong>student123</strong>
                 </div>
               </div>
 
@@ -661,9 +662,9 @@
           <div class="card-body admin-active" id="pane-admin" role="tabpanel" style="display:none;">
 
             <div class="portal-heading-wrap">
-              <div class="portal-avatar admin" style="font-size:0.875rem; font-weight:800; letter-spacing:0.05em;">ADM</div>
+              <div class="portal-avatar admin">👨‍🔧</div>
               <div>
-                <div class="portal-title">IT Administrator Sign In</div>
+                <div class="portal-title">IT Staff &amp; Technician Sign In</div>
                 <div class="portal-subtitle">LabWatch IT Staff &amp; Technician Triage Dashboard</div>
               </div>
             </div>
@@ -674,11 +675,13 @@
             <form id="admin-login-form" autocomplete="off" novalidate>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="field-group">
-                <label class="field-label" for="a-username">IT Staff Username</label>
+                <label class="field-label" for="a-username">Staff / Technician Username</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">ID</span>
+                  <span class="field-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  </span>
                   <input class="field-input" type="text" id="a-username" name="username"
-                         placeholder="IT Staff / Admin username"
+                         placeholder="Username"
                          autocomplete="username" required>
                 </div>
               </div>
@@ -686,9 +689,11 @@
               <div class="field-group">
                 <label class="field-label" for="a-password">Admin Password</label>
                 <div class="field-input-wrap">
-                  <span class="field-icon" style="font-size:0.75rem; font-weight:700; color:#64748b;">PW</span>
+                  <span class="field-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </span>
                   <input class="field-input" type="password" id="a-password" name="password"
-                         placeholder="Administrator password"
+                         placeholder="Password"
                          autocomplete="current-password" required>
                 </div>
               </div>

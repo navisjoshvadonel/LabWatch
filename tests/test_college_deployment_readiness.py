@@ -70,13 +70,23 @@ class TestCollegeDeploymentReadiness(unittest.TestCase):
 
         for filepath in target_files:
             self.assertTrue(os.path.exists(filepath), f"File {filepath} does not exist")
+            is_login = os.path.basename(filepath) == "login.html"
+            allowed_login_emojis = {"🎓", "👨", "🔧"}  # User-requested student & technician emojis
             with open(filepath, "r", encoding="utf-8") as f:
                 for idx, line in enumerate(f, 1):
                     emojis = [c for c in line if is_emoji(c)]
-                    self.assertEqual(
-                        len(emojis), 0,
-                        f"Found forbidden emoji in {os.path.basename(filepath)} at line {idx}: {[f'U+{ord(c):04X}' for c in emojis]}"
-                    )
+                    if is_login:
+                        # Allow only student (🎓) and technician (👨‍🔧) in login portal
+                        disallowed = [c for c in emojis if c not in allowed_login_emojis]
+                        self.assertEqual(
+                            len(disallowed), 0,
+                            f"Found unexpected emoji in login.html at line {idx}: {[f'U+{ord(c):04X}' for c in disallowed]}"
+                        )
+                    else:
+                        self.assertEqual(
+                            len(emojis), 0,
+                            f"Found forbidden emoji in {os.path.basename(filepath)} at line {idx}: {[f'U+{ord(c):04X}' for c in emojis]}"
+                        )
 
     def test_02_mepco_schlenk_branding_and_recognition(self):
         """Verify Mepco Schlenk Engineering College institutional branding on all portals."""
