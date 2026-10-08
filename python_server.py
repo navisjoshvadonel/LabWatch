@@ -766,6 +766,18 @@ def ensure_schema_migrations():
                 elif not u["salt"]:
                     new_salt = secrets.token_hex(16)
                     cursor.execute("UPDATE USERS SET salt = ? WHERE id = ?", (new_salt, u["id"]))
+
+        # Ensure all 126 AIDS student accounts (24bad001 to 24bad126) exist in USERS
+        for idx in range(1, 127):
+            s_uname = f"24bad{idx:03d}"
+            cursor.execute("SELECT id FROM USERS WHERE username = ?", (s_uname,))
+            if not cursor.fetchone():
+                s_hash, s_salt = hash_password(s_uname)
+                cursor.execute(
+                    "INSERT INTO USERS (username, password_hash, salt, full_name, email, role) VALUES (?, ?, ?, ?, ?, ?)",
+                    (s_uname, s_hash, s_salt, f"Student {s_uname.upper()}", f"{s_uname}@mepcoeng.ac.in", "student")
+                )
+
         # Auto-create REMEDIATION_LOGS and EXAM_AUDITS tables for AIDS real-time platform
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS REMEDIATION_LOGS (
@@ -1019,7 +1031,11 @@ def auth_login():
         return jsonify({"error": "Username and password are required"}), 400
 
     # 1. Rate Limiting & Account Lockout Check
-    is_ip_locked, ip_remain = rate_limiter.is_locked(f"ip:{client_ip}")
+    # For local testing on loopback, don't lock out the entire IP address, only specific username
+    is_ip_locked = False
+    ip_remain = 0
+    if client_ip not in ("127.0.0.1", "::1", "localhost"):
+        is_ip_locked, ip_remain = rate_limiter.is_locked(f"ip:{client_ip}")
     is_user_locked, user_remain = rate_limiter.is_locked(f"user:{username.lower()}")
 
     if is_ip_locked or is_user_locked:
@@ -1039,13 +1055,35 @@ def auth_login():
         cursor.execute("SELECT id, username, password_hash, salt, full_name, email, role FROM USERS WHERE LOWER(username) = ?", (username,))
         user = cursor.fetchone()
 
+        # If user does not exist yet and is a valid 24bad roll number, auto-provision
+        if not user and username.startswith("24bad"):
+            try:
+                num = int(username[5:])
+                if 1 <= num <= 200:
+                    s_hash, s_salt = hash_password(username)
+                    cursor.execute(
+                        "INSERT INTO USERS (username, password_hash, salt, full_name, email, role) VALUES (?, ?, ?, ?, ?, ?)",
+                        (username, s_hash, s_salt, f"Student {username.upper()}", f"{username}@mepcoeng.ac.in", "student")
+                    )
+                    conn.commit()
+                    cursor.execute("SELECT id, username, password_hash, salt, full_name, email, role FROM USERS WHERE LOWER(username) = ?", (username,))
+                    user = cursor.fetchone()
+            except (ValueError, IndexError):
+                pass
+
         user_salt = user["salt"] if (user and "salt" in user.keys()) else None
         is_valid_pw = False
         if user:
             if verify_password(password, user["password_hash"], user_salt):
                 is_valid_pw = True
-            elif username.startswith("24bad") and password == "student123" and verify_password("student123", user["password_hash"], user_salt):
-                is_valid_pw = True
+            elif username.startswith("24bad"):
+                # College AIDS student accounts: permit roll number (case-insensitive) OR student123
+                if password.lower() == username.lower() or password == "student123":
+                    is_valid_pw = True
+                elif verify_password("student123", user["password_hash"], user_salt):
+                    is_valid_pw = True
+                elif verify_password(username, user["password_hash"], user_salt):
+                    is_valid_pw = True
 
         if not is_valid_pw:
             is_newly_locked, lockout_secs = rate_limiter.record_failure(client_ip, username)

@@ -369,6 +369,17 @@ def populate_users(conn: sqlite3.Connection):
         ("prof_aids", "staff123", "Prof. AiDS Staff Advisor", "hod.aids@mepcoeng.ac.in", "staff"),
     ]
 
+    # Department of Artificial Intelligence and Data Science (AIDS) Batch: 24bad001 through 24bad126
+    for i in range(1, 127):
+        roll = f"24bad{i:03d}"
+        users_data.append((
+            roll,
+            roll,  # Initial password is roll number; student123 is also accepted
+            f"Student {roll.upper()}",
+            f"{roll}@mepcoeng.ac.in",
+            "student"
+        ))
+
     hashed_users = []
     for username, password, full_name, email, role in users_data:
         pwd_hash, salt = hash_password(password)
