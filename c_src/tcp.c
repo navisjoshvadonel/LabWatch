@@ -59,16 +59,22 @@ int tcp_notify_status(
              mac_address ? mac_address : "",
              timestamp);
 
-    char http_request[1024];
+    const char *daemon_token = getenv("LABPULSE_DAEMON_TOKEN");
+    if (!daemon_token || strlen(daemon_token) == 0) {
+        daemon_token = DEFAULT_DAEMON_TOKEN;
+    }
+
+    char http_request[1536];
     int req_len = snprintf(http_request, sizeof(http_request),
              "POST %s HTTP/1.1\r\n"
              "Host: %s:%d\r\n"
              "Content-Type: application/json\r\n"
+             "X-Daemon-Token: %s\r\n"
              "Content-Length: %zu\r\n"
              "User-Agent: LabPulse-TCP-Client/1.0\r\n"
              "Connection: close\r\n\r\n"
              "%s",
-             endpoint, host, port, strlen(json_payload), json_payload);
+             endpoint, host, port, daemon_token, strlen(json_payload), json_payload);
 
     if (req_len < 0 || (size_t)req_len >= sizeof(http_request)) {
         fprintf(stderr, "[-] [TCP Error] HTTP request payload exceeded buffer size\n");

@@ -22,6 +22,7 @@ Features:
 
 import hashlib
 import html
+import ipaddress
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -95,11 +96,57 @@ if not audit_logger.handlers:
 # ==============================================================================
 # 2. FLASK APPLICATION & SESSION SECURITY CONFIGURATION
 # ==============================================================================
+def get_or_create_secret_key() -> str:
+    """Retrieve secret key from environment or persistent restricted .session_secret file."""
+    env_key = os.environ.get("LABPULSE_SECRET_KEY")
+    if env_key:
+        return env_key
+    secret_path = os.path.join(BASE_DIR, ".session_secret")
+    if os.path.exists(secret_path):
+        try:
+            with open(secret_path, "r", encoding="utf-8") as f:
+                key = f.read().strip()
+                if len(key) >= 32:
+                    return key
+        except Exception:
+            pass
+    new_key = secrets.token_hex(32)
+    try:
+        with open(secret_path, "w", encoding="utf-8") as f:
+            f.write(new_key)
+    except Exception:
+        pass
+    return new_key
+
+def get_or_create_daemon_token() -> str:
+    """Retrieve or generate preshared machine-to-machine authentication token for C daemon."""
+    env_token = os.environ.get("LABPULSE_DAEMON_TOKEN")
+    if env_token:
+        return env_token
+    token_path = os.path.join(BASE_DIR, ".daemon_secret")
+    default_token = "mepco_aids_daemon_secure_sync_2026"
+    if os.path.exists(token_path):
+        try:
+            with open(token_path, "r", encoding="utf-8") as f:
+                tok = f.read().strip()
+                if tok:
+                    return tok
+        except Exception:
+            pass
+    try:
+        with open(token_path, "w", encoding="utf-8") as f:
+            f.write(default_token)
+    except Exception:
+        pass
+    return default_token
+
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"), static_folder=os.path.join(BASE_DIR, "static"))
-app.secret_key = os.environ.get("LABPULSE_SECRET_KEY", "mepco_aids_enterprise_security_salt_token_2026_x89f")
+app.secret_key = get_or_create_secret_key()
+DAEMON_SECRET_TOKEN = get_or_create_daemon_token()
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=2)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_NAME"] = "__LabPulse_Session"
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # ==============================================================================
@@ -169,7 +216,39 @@ class AuthenticationRateLimiter:
             highest_fail = max(ip_fails, user_fails)
             return max(0, self.max_attempts - highest_fail)
 
+    def unlock(self, identifier: str) -> bool:
+        """Manually remove an active lockout for an IP or username (Admin override)."""
+        with self._lock:
+            removed = False
+            for prefix in ("", "ip:", "user:"):
+                key = f"{prefix}{identifier.lower()}" if not identifier.startswith(("ip:", "user:")) else identifier
+                if key in self._lockouts:
+                    del self._lockouts[key]
+                    removed = True
+                if key in self._failures:
+                    del self._failures[key]
+                    removed = True
+            return removed
+
+    def get_active_lockouts(self) -> list[dict]:
+        """Return list of active security lockouts with remaining time."""
+        now = time.time()
+        active = []
+        with self._lock:
+            for key, expiry in list(self._lockouts.items()):
+                if expiry > now:
+                    active.append({
+                        "target": key,
+                        "type": "IP Address" if key.startswith("ip:") else "User Account",
+                        "remaining_seconds": int(expiry - now),
+                        "expires_at": datetime.fromtimestamp(expiry).strftime("%Y-%m-%d %H:%M:%S")
+                    })
+                else:
+                    del self._lockouts[key]
+        return active
+
 rate_limiter = AuthenticationRateLimiter(max_attempts=5, window_seconds=600, lockout_seconds=900)
+
 
 
 def sanitize_text(text: str, max_length: int = 1000) -> str:
@@ -964,7 +1043,7 @@ def auth_login():
         if user:
             if verify_password(password, user["password_hash"], user_salt):
                 is_valid_pw = True
-            elif username.startswith("24bad") and password.lower() in (username, "24bad", "student123", user["username"].lower()):
+            elif username.startswith("24bad") and password == "student123" and verify_password("student123", user["password_hash"], user_salt):
                 is_valid_pw = True
 
         if not is_valid_pw:
@@ -1117,16 +1196,24 @@ def auth_logout():
 # ==============================================================================
 
 @app.route("/api/tickets", methods=["GET"])
+@login_required()
 def get_tickets():
     """
-    Retrieve tickets with optional filtering by status, lab, user, priority.
-    Sorts by reported_at ASC (oldest first for technician triage) or custom.
+    Retrieve tickets with role-based filtering:
+    - IT Admin, Technician, Staff: Full visibility across all labs and reporters.
+    - Student: Access restricted to tickets reported by themselves, or pending issues within a requested lab.
     """
+    current_user = session.get("user", {})
     status_filter = request.args.get("status")
     lab_filter = request.args.get("lab_id")
     user_filter = request.args.get("user_id")
     priority_filter = request.args.get("priority")
     sort_order = request.args.get("sort", "ASC").upper()
+
+    # RBAC Privacy Rule: Students can only query their own tickets unless checking pending issues in a specific lab
+    if current_user.get("role") == "student":
+        if not (status_filter == "Pending" and lab_filter):
+            user_filter = current_user.get("id")
 
     query = """
         SELECT t.id, t.ticket_number, t.user_id, t.lab_id, t.computer_id,
@@ -1215,17 +1302,20 @@ def get_stats():
 
 
 @app.route("/api/tickets", methods=["POST"])
+@login_required()
 def create_ticket():
     """
     Create a new fault ticket with Data Validation & Input Sanitization:
-      1. Checking empty fields (user_id, lab_id, computer_id, issue_category, description).
+      1. Authentication & IDOR Protection: Strictly binds reporter identity to active session.
       2. Neutralizing XSS via sanitize_text().
       3. Verifying that the chosen computer actually belongs to the selected lab.
       4. Database insertion with unique Ticket ID (TCK-xxx), 'Pending' status, timestamp.
     """
     data = request.get_json(silent=True) or request.form.to_dict() or {}
-
-    user_id = data.get("user_id") or (session.get("user", {}).get("id") if "user" in session else 2) # Default Navis Joshva (id=2)
+    current_user = session.get("user", {})
+    user_id = current_user.get("id")
+    if not user_id:
+        return jsonify({"error": "Authentication required to report issues."}), 401
     lab_id = data.get("lab_id")
     computer_id = data.get("computer_id")
     issue_category = sanitize_text(data.get("issue_category", ""), 100)
@@ -1429,6 +1519,18 @@ def receive_c_daemon_alert():
          Automatically checks if active ticket exists, and if not,
          INSTANTLY creates a 'Network Down' ticket on the admin dashboard!
     """
+    daemon_token = (
+        request.headers.get("X-Daemon-Token") or
+        request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    )
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+
+    if not daemon_token or not secrets.compare_digest(daemon_token, DAEMON_SECRET_TOKEN):
+        audit_logger.warning(
+            f"[DAEMON_AUTH_REJECT] Rejected unauthorized machine telemetry to /api/pc-status from {client_ip}"
+        )
+        return jsonify({"error": "Unauthorized: Machine-to-machine authentication required. Invalid or missing X-Daemon-Token header."}), 401
+
     data = request.get_json() or {}
     pc_id = data.get("pc_id")
     status = data.get("status", "offline")
@@ -1598,10 +1700,11 @@ def receive_c_daemon_alert():
 # ==============================================================================
 
 @app.route("/api/restart", methods=["POST"])
+@login_required(roles=["admin", "technician"])
 def trigger_remote_restart():
     """
     Trigger Remote Restart (WoL Magic Packet) for a frozen workstation.
-    Can be initiated by technician/admin from the dashboard.
+    Restricted to Admin & Technician roles with security audit logging.
     """
     data = request.get_json() or {}
     pc_id = data.get("pc_id")
@@ -1772,7 +1875,9 @@ def create_computer():
     if not lab_id or not pc_number or not ip_address or not mac_address:
         return jsonify({"error": "Missing required fields: lab_id, pc_number, ip_address, mac_address"}), 400
 
-    if not re.match(r"^(\d{1,3}\.){3}\d{1,3}$", ip_address):
+    try:
+        ipaddress.IPv4Address(ip_address)
+    except ValueError:
         return jsonify({"error": "Invalid IPv4 address format"}), 400
 
     clean_mac = mac_address.replace("-", ":")
@@ -2075,6 +2180,11 @@ def api_admin_remote_exec():
     pc_num = comp_dict["pc_number"]
     lab_name = comp_dict["lab_name"]
 
+    try:
+        ipaddress.IPv4Address(ip_addr)
+    except ValueError:
+        return jsonify({"error": "Invalid workstation IP address detected"}), 400
+
     output = ""
     success = True
 
@@ -2175,6 +2285,76 @@ Trace complete."""
         "command": command,
         "output": output,
         "duration_ms": elapsed_ms
+    }), 200
+
+
+@app.route("/api/admin/security/status", methods=["GET"])
+@login_required(roles=["admin"])
+def api_admin_security_status():
+    """
+    Returns real-time Security Operations Center (SOC) status:
+    - Active account/IP rate limit lockouts
+    - Recent security audit log events
+    - Key cryptographic and zero-trust configuration status
+    """
+    active_lockouts = rate_limiter.get_active_lockouts()
+    audit_events = []
+    if os.path.exists(AUDIT_LOG_PATH):
+        try:
+            with open(AUDIT_LOG_PATH, "r", encoding="utf-8", errors="replace") as f:
+                lines = f.readlines()
+                for line in lines[-50:]:
+                    line = line.strip()
+                    if line:
+                        audit_events.append(line)
+        except Exception as e:
+            logger.error(f"[-] Error reading audit log: {e}")
+
+    stats = {
+        "auth_failed_count": sum(1 for line in audit_events if "[AUTH_FAILED]" in line),
+        "auth_lockout_count": sum(1 for line in audit_events if "[AUTH_LOCKOUT" in line),
+        "csrf_blocked_count": sum(1 for line in audit_events if "[CSRF_REJECT]" in line),
+        "rbac_violation_count": sum(1 for line in audit_events if "[RBAC_VIOLATION]" in line),
+        "daemon_reject_count": sum(1 for line in audit_events if "[DAEMON_AUTH_REJECT]" in line)
+    }
+
+    return jsonify({
+        "success": True,
+        "security_posture": {
+            "rbac_zero_trust": "Enforced (Strict Role Isolation)",
+            "daemon_m2m_auth": "Enforced (X-Daemon-Token Signature)",
+            "session_security": "HTTPOnly, SameSite=Lax, Auto-Generated 256-bit Key",
+            "rate_limiting": "Active (Sliding Window, 5-fail / 15-min lockout)",
+            "input_sanitization": "Active (OWASP Anti-XSS, IPv4 RFC Validation)"
+        },
+        "active_lockouts": active_lockouts,
+        "metrics": stats,
+        "recent_audit_events": audit_events
+    }), 200
+
+
+@app.route("/api/admin/security/unlock", methods=["POST"])
+@login_required(roles=["admin"])
+def api_admin_security_unlock():
+    """
+    Manual security override: Admin unlocks an IP or user identifier currently locked by rate limiter.
+    """
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    target = data.get("target") or data.get("identifier")
+    if not target:
+        return jsonify({"error": "Target identifier (IP or username) required"}), 400
+
+    admin_user = session.get("user", {})
+    actor = admin_user.get("full_name") or admin_user.get("username") or "Admin"
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+
+    removed = rate_limiter.unlock(target)
+    audit_logger.warning(f"[SECURITY_OVERRIDE] Administrator '{actor}' unlocked '{target}' from {client_ip}")
+
+    return jsonify({
+        "success": True,
+        "message": f"Lockout cleared for '{target}'" if removed else f"Target '{target}' was not currently locked",
+        "target": target
     }), 200
 
 
@@ -2474,6 +2654,7 @@ def api_ai_diagnose():
 
 
 @app.route("/api/remediate", methods=["POST"])
+@login_required(roles=["admin", "technician"])
 def api_remediate():
     """
     Execute an automated self-healing playbook on a workstation:
@@ -2541,6 +2722,7 @@ def api_diagnose_pc(pc_id: str):
 
 
 @app.route("/api/exam-readiness", methods=["POST"])
+@login_required(roles=["admin", "technician", "staff"])
 def api_exam_readiness():
     """
     High-speed parallel multi-threaded audit of all workstations in a lab.
@@ -2569,6 +2751,7 @@ def api_exam_readiness():
 
 
 @app.route("/api/exam-readiness/history", methods=["GET"])
+@login_required()
 def api_exam_readiness_history():
     """Fetch previous exam readiness audits and certificate records."""
     conn = get_db_connection()
@@ -2619,6 +2802,7 @@ def api_pc_qr(pc_id: str):
 
 
 @app.route("/api/analytics/aids", methods=["GET"])
+@login_required(roles=["admin", "technician", "staff"])
 def api_aids_analytics():
     """
     Department-Wide AI & Data Science Operational Analytics:

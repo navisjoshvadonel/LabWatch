@@ -6,6 +6,7 @@
 #define DEFAULT_PYTHON_HOST "127.0.0.1"
 #define DEFAULT_PYTHON_PORT 5000
 #define DEFAULT_PYTHON_ENDPOINT "/api/pc-status"
+#define DEFAULT_DAEMON_TOKEN "mepco_aids_daemon_secure_sync_2026"
 #define TCP_TIMEOUT_MS 5000
 
 int tcp_notify_status(
