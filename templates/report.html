@@ -481,6 +481,168 @@
       color: #1d4ed8;
       font-weight: 500;
     }
+
+    /* Auto-Detected Workstation Card Styling (Zero-Typing Mode) */
+    .autodetect-card {
+      background: linear-gradient(135deg, #0b2545 0%, #0066b3 100%);
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .autodetect-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 0.75rem;
+    }
+    .badge-autodetect-pill {
+      background: #38bdf8;
+      color: #0c4a6e;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+    .autodetect-status-tag {
+      background: rgba(255, 255, 255, 0.18);
+      color: #e0f2fe;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+    }
+    .btn-toggle-manual {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-toggle-manual:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .autodetect-grid {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 1.15rem;
+      flex-wrap: wrap;
+    }
+    .autodetect-pc-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid #38bdf8;
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      text-align: center;
+      min-width: 110px;
+    }
+    .autodetect-meta-details {
+      flex: 1;
+    }
+    .autodetect-lab-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .autodetect-sub-meta {
+      font-size: 0.8rem;
+      color: #bae6fd;
+      margin-top: 0.2rem;
+    }
+    .autodetect-sub-meta code {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .quick-chips-section {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .quick-chips-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #93c5fd;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .quick-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.5rem;
+    }
+    .quick-chip-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .quick-chip-btn:hover {
+      background: #38bdf8;
+      color: #0c4a6e;
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+    }
+    .quick-chip-btn:active {
+      transform: translateY(0);
+    }
+    .autodetect-unmapped-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .unmapped-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .btn-demo-sim {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #1e40af;
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .btn-demo-sim:hover {
+      background: #bfdbfe;
+    }
   </style>
 </head>
 <body>
@@ -570,6 +732,76 @@
     </div>
     {% endif %}
 
+    <!-- Auto-Detected Workstation Card (Zero-Typing Mode) -->
+    {% if detected_pc %}
+    <div class="autodetect-card" id="autodetect-active-card">
+      <div class="autodetect-header">
+        <div style="display:flex; align-items:center; gap:0.65rem;">
+          <span class="badge-autodetect-pill">[AUTO-DETECTED WORKSTATION]</span>
+          <span class="autodetect-status-tag">Status: <strong>{{ detected_pc.status }}</strong></span>
+        </div>
+        <div>
+          <button type="button" class="btn-toggle-manual" onclick="toggleManualWorkstationSelection()">
+            [Report for Another Seat / Manual Selection]
+          </button>
+        </div>
+      </div>
+      
+      <div class="autodetect-grid">
+        <div class="autodetect-pc-badge">{{ detected_pc.pc_number }}</div>
+        <div class="autodetect-meta-details">
+          <h2 class="autodetect-lab-name">{{ detected_pc.lab_name }}</h2>
+          <div class="autodetect-sub-meta">
+            <span>Location: <strong>{{ detected_pc.location }}</strong></span> &bull; 
+            <span>Assigned IP: <code>{{ detected_pc.ip_address }}</code></span> &bull; 
+            <span>MAC: <code>{{ detected_pc.mac_address }}</code></span>
+          </div>
+          <div style="font-size:0.75rem; color:#bae6fd; margin-top:0.3rem;">
+            Specs: {{ detected_pc.specs }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 1-Click Common Issues -->
+      <div class="quick-chips-section">
+        <div class="quick-chips-header">1-Click Common Faults (Instant Auto-Fill):</div>
+        <div class="quick-chips-grid">
+          <button type="button" class="quick-chip-btn" onclick="applyQuickIssue('Software Crash', 'CUDA GPU Out-Of-Memory (OOM) / VRAM allocation lock during model training. PyTorch process unresponsive.', 'High')">
+            [CUDA / PyTorch OOM]
+          </button>
+          <button type="button" class="quick-chip-btn" onclick="applyQuickIssue('Peripheral / Display', 'Mouse left-click unresponsive / Keyboard key stuck. Physical peripheral requires replacement.', 'Medium')">
+            [Mouse / Keyboard Fault]
+          </button>
+          <button type="button" class="quick-chip-btn" onclick="applyQuickIssue('Network Connectivity', 'Network timeout through departmental gateway 192.16.16.200. Cannot download model weights or pip packages.', 'High')">
+            [No Internet / Proxy Error]
+          </button>
+          <button type="button" class="quick-chip-btn" onclick="applyQuickIssue('Software Crash', 'JupyterLab notebook kernel died unexpectedly with deadlock error. Kernel status showing disconnected.', 'Medium')">
+            [Jupyter Kernel Deadlock]
+          </button>
+          <button type="button" class="quick-chip-btn" onclick="applyQuickIssue('Peripheral / Display', 'Monitor display is blank / flickering. Display cable checked and power LED unstable.', 'Critical')">
+            [Blank / Flickering Display]
+          </button>
+          <button type="button" class="quick-chip-btn" onclick="applyQuickIssue('Operating System', 'Workstation completely frozen and unresponsive to keyboard or mouse. Needs power cycle or WoL reboot.', 'Critical')">
+            [OS Frozen / Hard Lockup]
+          </button>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="autodetect-unmapped-banner">
+      <div>
+        <span style="font-weight:700; color:#1e40af; font-size:0.75rem;">[NETWORK POSTURE]</span>
+        <span style="font-size:0.8125rem; color:#1e3a8a; margin-left:0.35rem;">
+          Client connected from <code>{{ client_ip }}</code> (Campus Subnet). Manual workstation selection active below.
+        </span>
+      </div>
+      <div class="unmapped-actions">
+        <a href="/report?pc=PC-18" class="btn-demo-sim">[Demo: Simulate PC-18 (Deep Learning Lab)]</a>
+        <a href="/report?pc=PC-08" class="btn-demo-sim">[Demo: Simulate PC-08 (Machine Learning Lab)]</a>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- User Issue Reporting Form Card -->
     <div class="form-card">
       <div class="card-header">
@@ -582,47 +814,57 @@
       <!-- Step 4 Core: Form with POST request to Python Server -->
       <form action="/report" method="POST" id="issue-reporting-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Hidden auto-detected values used when manual selector is collapsed -->
+        {% if detected_pc %}
+        <input type="hidden" name="lab_id" id="hidden_detected_lab" value="{{ detected_pc.lab_id }}">
+        <input type="hidden" name="pc_number" id="hidden_detected_pc" value="{{ detected_pc.pc_number }}">
+        {% endif %}
+
         <div class="card-body">
           <div class="form-split-grid">
 
             <!-- LEFT COLUMN: Workstation & Classification -->
             <div class="form-column">
-              <!-- 1. Lab Room Dropdown -->
-              <div class="form-group">
-                <label for="lab_id" class="form-label">
-                  <span>Lab Room <span class="required-dot">*</span></span>
-                  <span class="form-label-hint">6 Department Labs</span>
-                </label>
-                <select name="lab_id" id="lab_id" class="form-select" required onchange="onLabChange()">
-                  <option value="" disabled selected>-- Select Laboratory Room --</option>
-                  {% for lab in labs %}
-                  <option value="{{ lab.id }}">
-                    {{ lab.lab_name }} ({{ lab.location }})
-                  </option>
-                  {% endfor %}
-                </select>
-                <!-- Estimated Queue Position Indicator -->
-                <div class="queue-position-banner" id="queue-position-banner" style="display: none;">
-                  <span class="queue-icon" style="font-weight:700; font-size:0.75rem;">[QUEUE]</span>
-                  <div class="queue-info">
-                    <span class="queue-title">Estimated Queue: </span>
-                    <span class="queue-desc" id="queue-position-text">Calculating queue position...</span>
+              <!-- Manual selection group -->
+              <div id="manual-selection-group" style="{{ 'display: none;' if detected_pc else 'display: block;' }}">
+                <!-- 1. Lab Room Dropdown -->
+                <div class="form-group">
+                  <label for="lab_id" class="form-label">
+                    <span>Lab Room <span class="required-dot">*</span></span>
+                    <span class="form-label-hint">6 Department Labs</span>
+                  </label>
+                  <select name="lab_id" id="lab_id" class="form-select" {{ 'disabled' if detected_pc else 'required' }} onchange="onLabChange()">
+                    <option value="" disabled selected>-- Select Laboratory Room --</option>
+                    {% for lab in labs %}
+                    <option value="{{ lab.id }}" {{ 'selected' if detected_pc and detected_pc.lab_id == lab.id else '' }}>
+                      {{ lab.lab_name }} ({{ lab.location }})
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <!-- Estimated Queue Position Indicator -->
+                  <div class="queue-position-banner" id="queue-position-banner" style="display: none;">
+                    <span class="queue-icon" style="font-weight:700; font-size:0.75rem;">[QUEUE]</span>
+                    <div class="queue-info">
+                      <span class="queue-title">Estimated Queue: </span>
+                      <span class="queue-desc" id="queue-position-text">Calculating queue position...</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- 2. PC Number Dropdown (Dynamic based on Lab) -->
-              <div class="form-group">
-                <label for="pc_number" class="form-label">
-                  <span>Workstation / PC Number <span class="required-dot">*</span></span>
-                  <span class="form-label-hint" id="pc-count-hint">Select Lab First</span>
-                </label>
-                <select name="pc_number" id="pc_number" class="form-select" required onchange="onPCChange()" disabled>
-                  <option value="" disabled selected>-- First select a Lab Room above --</option>
-                </select>
-                <div class="workstation-preview-box" id="pc-preview-box" style="display: none;">
-                  <span id="pc-preview-text">Workstation details...</span>
-                  <span id="pc-preview-status" class="pc-status-pill">Online</span>
+                <!-- 2. PC Number Dropdown (Dynamic based on Lab) -->
+                <div class="form-group">
+                  <label for="pc_number" class="form-label">
+                    <span>Workstation / PC Number <span class="required-dot">*</span></span>
+                    <span class="form-label-hint" id="pc-count-hint">Select Lab First</span>
+                  </label>
+                  <select name="pc_number" id="pc_number" class="form-select" {{ 'disabled' if detected_pc else 'required' }} onchange="onPCChange()">
+                    <option value="" disabled selected>-- First select a Lab Room above --</option>
+                  </select>
+                  <div class="workstation-preview-box" id="pc-preview-box" style="display: none;">
+                    <span id="pc-preview-text">Workstation details...</span>
+                    <span id="pc-preview-status" class="pc-status-pill">Online</span>
+                  </div>
                 </div>
               </div>
 
@@ -659,6 +901,17 @@
 
             <!-- RIGHT COLUMN: Reporter & Diagnostic Description -->
             <div class="form-column">
+              <!-- Student Register / Roll Number Field -->
+              <div class="form-group">
+                <label for="roll_number" class="form-label">
+                  <span>Student Register / Roll Number <span class="required-dot">*</span></span>
+                  <span class="form-label-hint">For Lab Verification &amp; Accountability</span>
+                </label>
+                <input type="text" name="roll_number" id="roll_number" class="form-input"
+                       placeholder="e.g. 22AD042" required maxlength="20"
+                       style="font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase;">
+              </div>
+
               <!-- Reporter Identification -->
               <div class="form-group">
                 <label for="reporter_name" class="form-label">
@@ -862,8 +1115,81 @@
       } catch(e) {}
     }
 
+    function toggleManualWorkstationSelection() {
+      const manualGroup = document.getElementById("manual-selection-group");
+      const hiddenLab = document.getElementById("hidden_detected_lab");
+      const hiddenPc = document.getElementById("hidden_detected_pc");
+      if (!manualGroup) return;
+
+      const isHidden = manualGroup.style.display === "none";
+      if (isHidden) {
+        manualGroup.style.display = "block";
+        if (hiddenLab) hiddenLab.disabled = true;
+        if (hiddenPc) hiddenPc.disabled = true;
+        const labSelect = document.getElementById("lab_id");
+        if (labSelect) {
+          labSelect.disabled = false;
+          labSelect.required = true;
+        }
+        const pcSelect = document.getElementById("pc_number");
+        if (pcSelect) {
+          pcSelect.disabled = false;
+          pcSelect.required = true;
+        }
+        manualGroup.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        manualGroup.style.display = "none";
+        if (hiddenLab) hiddenLab.disabled = false;
+        if (hiddenPc) hiddenPc.disabled = false;
+        const labSelect = document.getElementById("lab_id");
+        if (labSelect) {
+          labSelect.disabled = true;
+          labSelect.required = false;
+        }
+        const pcSelect = document.getElementById("pc_number");
+        if (pcSelect) {
+          pcSelect.disabled = true;
+          pcSelect.required = false;
+        }
+      }
+    }
+
+    function applyQuickIssue(category, description, priority) {
+      const catSelect = document.getElementById("issue_category");
+      const descArea = document.getElementById("description");
+      const prioSelect = document.getElementById("priority");
+      if (catSelect) catSelect.value = category;
+      if (descArea) {
+        descArea.value = description;
+        triggerAiDoctorDebounced();
+      }
+      if (prioSelect) prioSelect.value = priority;
+
+      const rollInput = document.getElementById("roll_number");
+      if (rollInput && !rollInput.value.trim()) {
+        rollInput.focus();
+      } else {
+        const submitBtn = document.querySelector(".btn-submit-request");
+        if (submitBtn) submitBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
     // Auto-select first lab on page load if coming from query parameter
     window.addEventListener("DOMContentLoaded", () => {
+      {% if detected_pc %}
+      // Sync manual dropdowns with auto-detected workstation
+      const autoLabSelect = document.getElementById("lab_id");
+      if (autoLabSelect) {
+        autoLabSelect.value = "{{ detected_pc.lab_id }}";
+        onLabChange();
+        const autoPcSelect = document.getElementById("pc_number");
+        if (autoPcSelect) {
+          autoPcSelect.value = "{{ detected_pc.pc_number }}";
+          onPCChange();
+        }
+      }
+      {% endif %}
+
       const urlParams = new URLSearchParams(window.location.search);
       const prefillLab = urlParams.get("lab_id");
       const prefillPc = urlParams.get("pc");
@@ -871,19 +1197,23 @@
 
       if (prefillLab) {
         const labSelect = document.getElementById("lab_id");
-        labSelect.value = prefillLab;
-        onLabChange();
+        if (labSelect) {
+          labSelect.value = prefillLab;
+          onLabChange();
 
-        if (prefillPc) {
-          const pcSelect = document.getElementById("pc_number");
-          pcSelect.value = prefillPc;
-          onPCChange();
+          if (prefillPc) {
+            const pcSelect = document.getElementById("pc_number");
+            if (pcSelect) {
+              pcSelect.value = prefillPc;
+              onPCChange();
+            }
+          }
         }
       }
 
       if (prefillCategory) {
         const catSelect = document.getElementById("issue_category");
-        catSelect.value = prefillCategory;
+        if (catSelect) catSelect.value = prefillCategory;
       }
     });
   </script>

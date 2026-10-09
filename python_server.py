@@ -1014,6 +1014,35 @@ def send_wol_packet(mac_address: str, broadcast_ip: str = "255.255.255.255", por
         return False
 
 
+# Thread-safe synchronization lock for atomic Ticket Number generation
+_ticket_generation_lock = threading.Lock()
+
+
+def generate_next_ticket_number(cursor) -> str:
+    """
+    Thread-safe, collision-proof Ticket Number generator (e.g. 'TCK-106').
+    Scans existing ticket numbers, identifies numerical suffixes, and produces
+    the strictly next unique ticket number to prevent SQLite constraint failures.
+    """
+    cursor.execute("SELECT ticket_number FROM TICKETS WHERE ticket_number LIKE 'TCK-%'")
+    existing_nums = set()
+    for row in cursor.fetchall():
+        val = row[0] if isinstance(row, tuple) else row["ticket_number"]
+        if val and str(val).startswith("TCK-"):
+            suffix = str(val)[4:]
+            if suffix.isdigit():
+                existing_nums.add(int(suffix))
+
+    cursor.execute("SELECT MAX(id) FROM TICKETS")
+    max_id_row = cursor.fetchone()
+    max_id = (max_id_row[0] or 100) if max_id_row else 100
+
+    candidate = max(max(existing_nums, default=100), max_id) + 1
+    while candidate in existing_nums:
+        candidate += 1
+    return f"TCK-{candidate}"
+
+
 # ==============================================================================
 # 1. AUTHENTICATION SERVICE (PBKDF2-HMAC-SHA256 + RATE LIMITING + AUDIT TRAIL)
 # ==============================================================================
@@ -1287,9 +1316,12 @@ def get_tickets():
         query += " AND t.priority = ?"
         params.append(priority_filter.capitalize())
 
-    if user_filter:
-        query += " AND t.user_id = ?"
-        params.append(int(user_filter))
+    if user_filter and str(user_filter).lower() != "all":
+        if str(user_filter).strip().isdigit():
+            query += " AND t.user_id = ?"
+            params.append(int(user_filter))
+        else:
+            return jsonify({"error": "Invalid user_id filter: must be a positive integer"}), 400
 
     safe_sort = "DESC" if sort_order == "DESC" else "ASC"
     query += f" ORDER BY t.reported_at {safe_sort}"
@@ -1357,47 +1389,67 @@ def create_ticket():
         return jsonify({"error": "Authentication required to report issues."}), 401
     lab_id = data.get("lab_id")
     computer_id = data.get("computer_id")
+    pc_param = data.get("pc_id") or data.get("pc_number")
+    if not computer_id and pc_param:
+        computer_id = pc_param
+
     issue_category = sanitize_text(data.get("issue_category", ""), 100)
     description = sanitize_text(data.get("description", ""), 1000)
     priority = sanitize_text(data.get("priority", "Medium"), 20).capitalize()
-
-    # 1. Validate empty fields
-    if not lab_id:
-        return jsonify({"error": "Validation Error: Laboratory selection is required"}), 400
-    if not computer_id:
-        return jsonify({"error": "Validation Error: Workstation computer selection is required"}), 400
-    if not issue_category:
-        return jsonify({"error": "Validation Error: Issue Category is required"}), 400
-    if not description or len(description) < 5:
-        return jsonify({"error": "Validation Error: Please provide a descriptive summary (at least 5 characters)"}), 400
-
-    valid_categories = {
-        "Network Connectivity", "Operating System", "Hardware Fault",
-        "Peripheral / Display", "Software Crash", "Power Issue", "Other"
-    }
-    if issue_category not in valid_categories:
-        return jsonify({"error": f"Invalid category. Must be one of: {', '.join(sorted(valid_categories))}"}), 400
-
-    if priority not in ("Low", "Medium", "High", "Critical"):
-        priority = "Medium"
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
 
-        # 2. DATA VALIDATION: Verify PC matches the selected lab
-        cursor.execute("SELECT id, lab_id, pc_number, ip_address, status FROM COMPUTERS WHERE id = ?", (computer_id,))
-        comp = cursor.fetchone()
-        if not comp:
-            return jsonify({"error": f"Validation Error: Computer ID #{computer_id} does not exist in inventory"}), 400
+        # 1. Locate computer by ID or PC Number
+        comp = None
+        if computer_id is not None:
+            if str(computer_id).isdigit():
+                cursor.execute("SELECT id, lab_id, pc_number, ip_address, status FROM COMPUTERS WHERE id = ?", (int(computer_id),))
+                comp = cursor.fetchone()
+            if not comp:
+                cursor.execute("SELECT id, lab_id, pc_number, ip_address, status FROM COMPUTERS WHERE pc_number = ?", (str(computer_id),))
+                comp = cursor.fetchone()
 
-        if int(comp["lab_id"]) != int(lab_id):
-            cursor.execute("SELECT lab_name FROM LABS WHERE id = ?", (comp["lab_id"],))
-            actual_lab = cursor.fetchone()
-            actual_lab_name = actual_lab["lab_name"] if actual_lab else f"Lab #{comp['lab_id']}"
-            return jsonify({
-                "error": f"Validation Error: {comp['pc_number']} is assigned to '{actual_lab_name}', not the selected lab!"
-            }), 400
+        if not comp:
+            if not computer_id:
+                return jsonify({"error": "Validation Error: Workstation computer selection is required"}), 400
+            return jsonify({"error": f"Validation Error: Workstation '{computer_id}' does not exist in inventory"}), 400
+
+        # Auto-resolve lab_id if omitted (e.g. from 1-tap podium action)
+        if not lab_id:
+            lab_id = comp["lab_id"]
+        else:
+            if not str(lab_id).isdigit():
+                return jsonify({"error": "Validation Error: Laboratory ID must be a valid integer"}), 400
+            lab_id = int(lab_id)
+            if int(comp["lab_id"]) != lab_id:
+                cursor.execute("SELECT lab_name FROM LABS WHERE id = ?", (comp["lab_id"],))
+                actual_lab = cursor.fetchone()
+                actual_lab_name = actual_lab["lab_name"] if actual_lab else f"Lab #{comp['lab_id']}"
+                return jsonify({
+                    "error": f"Validation Error: {comp['pc_number']} is assigned to '{actual_lab_name}', not the selected lab!"
+                }), 400
+
+        computer_id = comp["id"]
+
+        # 2. Validate mandatory fields
+        if not lab_id:
+            return jsonify({"error": "Validation Error: Laboratory selection is required"}), 400
+        if not issue_category:
+            return jsonify({"error": "Validation Error: Issue Category is required"}), 400
+        if not description or len(description) < 5:
+            return jsonify({"error": "Validation Error: Please provide a descriptive summary (at least 5 characters)"}), 400
+
+        valid_categories = {
+            "Network Connectivity", "Operating System", "Hardware Fault",
+            "Peripheral / Display", "Software Crash", "Power Issue", "Other"
+        }
+        if issue_category not in valid_categories:
+            return jsonify({"error": f"Invalid category. Must be one of: {', '.join(sorted(valid_categories))}"}), 400
+
+        if priority not in ("Low", "Medium", "High", "Critical"):
+            priority = "Medium"
 
         # Verify user exists
         cursor.execute("SELECT id, full_name, username FROM USERS WHERE id = ?", (user_id,))
@@ -1405,25 +1457,30 @@ def create_ticket():
         if not reporter:
             return jsonify({"error": f"User #{user_id} not found"}), 400
 
-        # 3. Generate unique Ticket Number (e.g. TCK-104)
-        cursor.execute("SELECT MAX(id) FROM TICKETS")
-        max_id_row = cursor.fetchone()
-        next_id = (max_id_row[0] or 100) + 1
-        ticket_number = f"TCK-{next_id}"
-
-        # 4. Insert ticket
-        cursor.execute(
-            """
-            INSERT INTO TICKETS (
-                ticket_number, user_id, lab_id, computer_id,
-                issue_category, description, status, priority, reported_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, CURRENT_TIMESTAMP)
-            """,
-            (ticket_number, user_id, int(lab_id), int(computer_id), issue_category, description, priority)
-        )
-        conn.commit()
-        created_ticket_id = cursor.lastrowid
+        # 3. Generate unique Ticket Number (e.g. TCK-104) and insert atomically
+        created_ticket_id = None
+        ticket_number = None
+        with _ticket_generation_lock:
+            for attempt in range(5):
+                ticket_number = generate_next_ticket_number(cursor)
+                try:
+                    cursor.execute(
+                        """
+                        INSERT INTO TICKETS (
+                            ticket_number, user_id, lab_id, computer_id,
+                            issue_category, description, status, priority, reported_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, CURRENT_TIMESTAMP)
+                        """,
+                        (ticket_number, user_id, int(lab_id), int(computer_id), issue_category, description, priority)
+                    )
+                    conn.commit()
+                    created_ticket_id = cursor.lastrowid
+                    break
+                except sqlite3.IntegrityError:
+                    conn.rollback()
+                    if attempt == 4:
+                        raise
 
         ticket_details = {
             "id": created_ticket_id,
@@ -1487,8 +1544,12 @@ def update_ticket(ticket_id: int):
                 updates.append("resolved_at = CURRENT_TIMESTAMP")
 
         if technician_id is not None:
-            updates.append("technician_id = ?")
-            params.append(technician_id if technician_id > 0 else None)
+            try:
+                tech_int = int(technician_id)
+                updates.append("technician_id = ?")
+                params.append(tech_int if tech_int > 0 else None)
+            except (ValueError, TypeError):
+                return jsonify({"error": "Invalid technician_id: must be a valid integer ID"}), 400
 
         if resolution_notes:
             updates.append("resolution_notes = ?")
@@ -1652,25 +1713,28 @@ def receive_c_daemon_alert():
             existing_ticket = cursor.fetchone()
 
             if not existing_ticket:
-                # Generate new Ticket ID
-                cursor.execute("SELECT MAX(id) FROM TICKETS")
-                max_row = cursor.fetchone()
-                next_id = (max_row[0] or 100) + 1
-                ticket_number = f"TCK-{next_id}"
-
+                # Generate new Ticket ID atomically
                 ticket_desc = f"{pc_number} is offline or unreachable. Needs restart or check."
-
-                cursor.execute(
-                    """
-                    INSERT INTO TICKETS (
-                        ticket_number, user_id, lab_id, computer_id,
-                        issue_category, description, status, priority, reported_at
-                    )
-                    VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical', CURRENT_TIMESTAMP)
-                    """,
-                    (ticket_number, lab_id, comp_id, ticket_desc)
-                )
-                conn.commit()
+                with _ticket_generation_lock:
+                    for attempt in range(5):
+                        ticket_number = generate_next_ticket_number(cursor)
+                        try:
+                            cursor.execute(
+                                """
+                                INSERT INTO TICKETS (
+                                    ticket_number, user_id, lab_id, computer_id,
+                                    issue_category, description, status, priority, reported_at
+                                )
+                                VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical', CURRENT_TIMESTAMP)
+                                """,
+                                (ticket_number, lab_id, comp_id, ticket_desc)
+                            )
+                            conn.commit()
+                            break
+                        except sqlite3.IntegrityError:
+                            conn.rollback()
+                            if attempt == 4:
+                                raise
                 created_ticket_number = ticket_number
                 action_msg = f"Offline detected! Automated 'Network Down' ticket {ticket_number} created on dashboard."
 
@@ -1859,18 +1923,31 @@ def get_computers():
                 item["ping_history"] = [1] * 10
             return jsonify({"computer": item, "computers": [item]})
 
-        if lab_id and lab_id != "all":
-            cursor.execute(
-                """
-                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address,
-                       c.status, c.specs, c.is_admin, c.last_heartbeat, c.ping_history, l.lab_name
-                FROM COMPUTERS c
-                JOIN LABS l ON c.lab_id = l.id
-                WHERE c.lab_id = ?
-                ORDER BY c.is_admin DESC, c.id ASC
-                """,
-                (int(lab_id),)
-            )
+        if lab_id and str(lab_id).lower() != "all":
+            if str(lab_id).strip().isdigit():
+                cursor.execute(
+                    """
+                    SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address,
+                           c.status, c.specs, c.is_admin, c.last_heartbeat, c.ping_history, l.lab_name
+                    FROM COMPUTERS c
+                    JOIN LABS l ON c.lab_id = l.id
+                    WHERE c.lab_id = ?
+                    ORDER BY c.is_admin DESC, c.id ASC
+                    """,
+                    (int(lab_id),)
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address,
+                           c.status, c.specs, c.is_admin, c.last_heartbeat, c.ping_history, l.lab_name
+                    FROM COMPUTERS c
+                    JOIN LABS l ON c.lab_id = l.id
+                    WHERE l.lab_name LIKE ?
+                    ORDER BY c.is_admin DESC, c.id ASC
+                    """,
+                    (f"%{lab_id}%",)
+                )
         else:
             cursor.execute(
                 """
@@ -2001,12 +2078,31 @@ def update_computer(computer_id: int):
         specs = sanitize_text(data.get("specs", comp["specs"] or ""), 250)
         is_admin = 1 if data.get("is_admin") in (1, "1", True, "true") else (0 if "is_admin" in data else comp["is_admin"])
 
-        cursor.execute("""
-            UPDATE COMPUTERS
-            SET pc_number = ?, ip_address = ?, mac_address = ?, status = ?, specs = ?, is_admin = ?
-            WHERE id = ?
-        """, (pc_number, ip_address, mac_address, status, specs, is_admin, computer_id))
-        conn.commit()
+        cursor.execute("SELECT id, pc_number FROM COMPUTERS WHERE ip_address = ? AND id != ?", (ip_address, computer_id))
+        conflict_ip = cursor.fetchone()
+        if conflict_ip:
+            return jsonify({"error": f"Conflict: IP address '{ip_address}' is already assigned to {conflict_ip['pc_number']}"}), 409
+
+        cursor.execute("SELECT id, pc_number FROM COMPUTERS WHERE mac_address = ? AND id != ?", (mac_address, computer_id))
+        conflict_mac = cursor.fetchone()
+        if conflict_mac:
+            return jsonify({"error": f"Conflict: MAC address '{mac_address}' is already registered to {conflict_mac['pc_number']}"}), 409
+
+        cursor.execute("SELECT id FROM COMPUTERS WHERE lab_id = ? AND pc_number = ? AND id != ?", (comp["lab_id"], pc_number, computer_id))
+        conflict_pc = cursor.fetchone()
+        if conflict_pc:
+            return jsonify({"error": f"Conflict: Workstation '{pc_number}' already exists in this laboratory"}), 409
+
+        try:
+            cursor.execute("""
+                UPDATE COMPUTERS
+                SET pc_number = ?, ip_address = ?, mac_address = ?, status = ?, specs = ?, is_admin = ?
+                WHERE id = ?
+            """, (pc_number, ip_address, mac_address, status, specs, is_admin, computer_id))
+            conn.commit()
+        except sqlite3.IntegrityError as e:
+            conn.rollback()
+            return jsonify({"error": f"Database Conflict: {str(e)}"}), 409
 
         sync_computers_export_files()
 
@@ -2199,7 +2295,8 @@ def api_admin_remote_exec():
     """
     data = request.get_json(silent=True) or request.form.to_dict() or {}
     pc_id = data.get("pc_id") or data.get("pc_number")
-    command = (data.get("command") or "systeminfo").strip().lower()
+    raw_command = data.get("command")
+    command = str(raw_command if raw_command is not None else "systeminfo").strip().lower()
 
     if not pc_id:
         return jsonify({"error": "Workstation identifier (pc_id) is required"}), 400
@@ -2424,9 +2521,12 @@ def api_daily_report():
             WHERE DATE(tl.timestamp) = DATE(?)
         """
         params = [target_date]
-        if lab_filter and lab_filter != "all":
-            query += " AND tl.lab_id = ?"
-            params.append(int(lab_filter))
+        if lab_filter and str(lab_filter).lower() != "all":
+            if str(lab_filter).strip().isdigit():
+                query += " AND tl.lab_id = ?"
+                params.append(int(lab_filter))
+            else:
+                return jsonify({"error": "Invalid lab_id filter: must be a positive integer"}), 400
 
         query += " ORDER BY tl.timestamp DESC"
         cursor.execute(query, params)
@@ -2592,7 +2692,13 @@ def api_technician_manual_log():
     computer_id = data.get("computer_id")
     action_type = sanitize_text(data.get("action_type", "INSPECTION"), 50)
     details = sanitize_text(data.get("details", ""), 500)
-    duration_min = int(data.get("duration_min", 15))
+    raw_dur = data.get("duration_min")
+    try:
+        duration_min = int(raw_dur) if raw_dur is not None else 15
+        if duration_min < 1:
+            duration_min = 5
+    except (ValueError, TypeError):
+        duration_min = 15
 
     if not details:
         return jsonify({"error": "Action details/description are required"}), 400
@@ -2843,6 +2949,59 @@ def api_pc_qr(pc_id: str):
     }), 200
 
 
+@app.route("/api/client/auto-detect", methods=["GET"])
+def api_client_auto_detect():
+    """
+    Zero-Typing Workstation Auto-Detection API:
+    Resolves client workstation based on request IP address without student typing.
+    Enables instant detection when students access LabWatch from any lab computer.
+    """
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.remote_addr or "127.0.0.1")
+    override_ip = request.args.get("ip") or request.args.get("client_ip")
+    override_pc = request.args.get("pc")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        detected_pc = None
+        target_ip = override_ip or (client_ip if client_ip not in ("127.0.0.1", "localhost", "::1") else None)
+        if target_ip:
+            cursor.execute("""
+                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address, c.status, c.specs, l.lab_name, l.location, l.department
+                FROM COMPUTERS c JOIN LABS l ON c.lab_id = l.id
+                WHERE c.ip_address = ?
+            """, (target_ip,))
+            row = cursor.fetchone()
+            if row:
+                detected_pc = dict(row)
+
+        if not detected_pc and override_pc:
+            cursor.execute("""
+                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address, c.status, c.specs, l.lab_name, l.location, l.department
+                FROM COMPUTERS c JOIN LABS l ON c.lab_id = l.id
+                WHERE c.pc_number = ? OR c.id = ?
+            """, (override_pc, int(override_pc) if str(override_pc).isdigit() else -1))
+            row = cursor.fetchone()
+            if row:
+                detected_pc = dict(row)
+
+        if detected_pc:
+            return jsonify({
+                "detected": True,
+                "client_ip": client_ip,
+                "computer": detected_pc
+            }), 200
+
+        return jsonify({
+            "detected": False,
+            "client_ip": client_ip,
+            "message": "Client IP not mapped to a registered laboratory workstation."
+        }), 200
+    finally:
+        conn.close()
+
+
 @app.route("/api/analytics/aids", methods=["GET"])
 @login_required(roles=["admin", "technician", "staff"])
 def api_aids_analytics():
@@ -3037,6 +3196,34 @@ def user_issue_reporting():
                 "status": comp["status"]
             })
 
+        # Client IP-Based Workstation Auto-Detection (Zero-Typing Student Reporting)
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.remote_addr or "127.0.0.1")
+        override_ip = request.args.get("ip") or request.args.get("client_ip")
+        override_pc = request.args.get("pc")
+
+        detected_pc = None
+        target_ip = override_ip or (client_ip if client_ip not in ("127.0.0.1", "localhost", "::1") else None)
+        if target_ip:
+            cursor.execute("""
+                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address, c.status, c.specs, l.lab_name, l.location, l.department
+                FROM COMPUTERS c JOIN LABS l ON c.lab_id = l.id
+                WHERE c.ip_address = ?
+            """, (target_ip,))
+            row = cursor.fetchone()
+            if row:
+                detected_pc = dict(row)
+
+        if not detected_pc and override_pc:
+            cursor.execute("""
+                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address, c.status, c.specs, l.lab_name, l.location, l.department
+                FROM COMPUTERS c JOIN LABS l ON c.lab_id = l.id
+                WHERE c.pc_number = ? OR c.id = ?
+            """, (override_pc, int(override_pc) if str(override_pc).isdigit() else -1))
+            row = cursor.fetchone()
+            if row:
+                detected_pc = dict(row)
+
         success_ticket = None
         error_message = request.args.get("error")
 
@@ -3048,7 +3235,9 @@ def user_issue_reporting():
             pc_raw = data.get("pc_number") or data.get("computer_id")
             issue_category = (data.get("issue_category") or "").strip()
             description = (data.get("description") or "").strip()
-            reporter_name = (data.get("reporter_name") or current_user.get("full_name") or "Student Reporter").strip()
+            roll_number = (data.get("roll_number") or "").strip().upper()
+            base_reporter = (data.get("reporter_name") or current_user.get("full_name") or "Student Reporter").strip()
+            reporter_name = f"{base_reporter} [{roll_number}]" if roll_number else base_reporter
             priority = (data.get("priority") or "Medium").strip().capitalize()
 
             # Data Validation
@@ -3087,25 +3276,33 @@ def user_issue_reporting():
                     if not description:
                         description = f"Fault reported on {pc_num} in {comp['status']} state: {issue_category}"
 
+                    if roll_number and not description.startswith("[Roll No:"):
+                        description = f"[Roll No: {roll_number}]\n{description}"
+
                     # Reporter user ID (Navis Joshva = id 2 default)
                     user_id = session.get("user", {}).get("id") or 2
 
-                    # Unique Ticket ID generation (TCK-xxx)
-                    cursor.execute("SELECT MAX(id) FROM TICKETS")
-                    max_id = (cursor.fetchone()[0] or 100) + 1
-                    ticket_number = f"TCK-{max_id}"
-
-                    cursor.execute(
-                        """
-                        INSERT INTO TICKETS (
-                            ticket_number, user_id, lab_id, computer_id,
-                            issue_category, description, status, priority, reported_at
-                        )
-                        VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, CURRENT_TIMESTAMP)
-                        """,
-                        (ticket_number, user_id, lab_id, computer_id, issue_category, description, priority)
-                    )
-                    conn.commit()
+                    # Unique Ticket ID generation (TCK-xxx) and atomic insert
+                    with _ticket_generation_lock:
+                        for attempt in range(5):
+                            ticket_number = generate_next_ticket_number(cursor)
+                            try:
+                                cursor.execute(
+                                    """
+                                    INSERT INTO TICKETS (
+                                        ticket_number, user_id, lab_id, computer_id,
+                                        issue_category, description, status, priority, reported_at
+                                    )
+                                    VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, CURRENT_TIMESTAMP)
+                                    """,
+                                    (ticket_number, user_id, lab_id, computer_id, issue_category, description, priority)
+                                )
+                                conn.commit()
+                                break
+                            except sqlite3.IntegrityError:
+                                conn.rollback()
+                                if attempt == 4:
+                                    raise
 
                     cursor.execute("SELECT lab_name FROM LABS WHERE id = ?", (lab_id,))
                     lab_row = cursor.fetchone()
@@ -3120,7 +3317,8 @@ def user_issue_reporting():
                         "priority": priority,
                         "status": "Pending",
                         "reported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "reporter": reporter_name
+                        "reporter": reporter_name,
+                        "roll_number": roll_number
                     }
                     add_telemetry("TICKET_CREATED", f"[Client Form] Ticket {ticket_number} submitted for {pc_num} in {lab_name}", success_ticket)
 
@@ -3136,6 +3334,8 @@ def user_issue_reporting():
             computers=computers,
             computers_by_lab=computers_by_lab,
             computers_by_lab_json=json.dumps(computers_by_lab),
+            detected_pc=detected_pc,
+            client_ip=client_ip,
             success_ticket=success_ticket,
             error_message=error_message,
             logged_user=session.get("user")
@@ -3520,7 +3720,6 @@ def get_notification_status():
 
 
 @app.route("/status/<ticket_number>", methods=["GET"])
-@login_required(roles=["student", "staff", "technician", "admin"])
 def reporter_ticket_status(ticket_number: str):
     """
     Step 5: Reporter self-check view for ticket status (Phase 4 UI Update).
@@ -3599,16 +3798,22 @@ def update_pc_status_cli(pc_id: str, status: str, ip_address: str = None, mac_ad
         if canonical_status in ("Offline", "Faulty"):
             cursor.execute("SELECT id FROM TICKETS WHERE computer_id = ? AND status IN ('Pending', 'In Progress')", (comp_id,))
             if not cursor.fetchone():
-                cursor.execute("SELECT MAX(id) FROM TICKETS")
-                max_id = (cursor.fetchone()[0] or 100) + 1
-                tck_num = f"TCK-{max_id}"
-                desc = f"{pc_num} is offline. Needs restart or check."
-                cursor.execute(
-                    "INSERT INTO TICKETS (ticket_number, user_id, lab_id, computer_id, issue_category, description, status, priority) VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical')",
-                    (tck_num, lab_id, comp_id, desc)
-                )
-                conn.commit()
-                logger.info(f"[+] [AUTOMATED TICKET] Created {tck_num} for {pc_num}")
+                with _ticket_generation_lock:
+                    for attempt in range(5):
+                        tck_num = generate_next_ticket_number(cursor)
+                        desc = f"{pc_num} is offline. Needs restart or check."
+                        try:
+                            cursor.execute(
+                                "INSERT INTO TICKETS (ticket_number, user_id, lab_id, computer_id, issue_category, description, status, priority) VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical')",
+                                (tck_num, lab_id, comp_id, desc)
+                            )
+                            conn.commit()
+                            logger.info(f"[+] [AUTOMATED TICKET] Created {tck_num} for {pc_num}")
+                            break
+                        except sqlite3.IntegrityError:
+                            conn.rollback()
+                            if attempt == 4:
+                                raise
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
         logger.info(f"[+] [DB UPDATE] Workstation '{pc_num}': '{old_status}' -> '{canonical_status}' (in {elapsed_ms:.2f} ms)")

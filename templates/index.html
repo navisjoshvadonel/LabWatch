@@ -1772,8 +1772,35 @@
           </div>
         </div>
 
+        <!-- Podium Desk Quick-Log Physical Hardware Faults -->
+        <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:var(--radius-sm); padding:0.85rem; margin-top:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+            <strong style="color:#9a3412; font-size:0.8125rem; display:flex; align-items:center; gap:0.35rem;">
+              <span>[PODIUM DESK]</span> 1-Tap Physical Fault Reporting
+            </strong>
+            <span id="podium-report-spinner" style="display:none; font-size:0.7rem; color:#c2410c; font-weight:700;">Logging...</span>
+          </div>
+          <div style="font-size:0.71875rem; color:#7c2d12; margin-bottom:0.5rem;">
+            Log broken peripherals, display faults, or walk-up student complaints with 1 tap (No student phone needed):
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.4rem; margin-bottom:0.35rem;">
+            <button type="button" class="btn btn-sm btn-campus-secondary" style="background:#ffffff; border-color:#fdba74; color:#9a3412; text-align:left; font-size:0.72rem;" onclick="logPodiumFault('Mouse / Keyboard Fault', 'Peripheral / Display', 'Medium', 'Mouse unresponsive / Keyboard keys damaged during lab session.')">
+              [HARDWARE] Mouse/Keyboard Fault
+            </button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" style="background:#ffffff; border-color:#fdba74; color:#9a3412; text-align:left; font-size:0.72rem;" onclick="logPodiumFault('Blank / Flickering Display', 'Peripheral / Display', 'High', 'Monitor screen blank or flickering. Display cable / power supply checked.')">
+              [DISPLAY] Blank / Flickering Screen
+            </button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" style="background:#ffffff; border-color:#fdba74; color:#9a3412; text-align:left; font-size:0.72rem;" onclick="logPodiumFault('Workstation Frozen / BSOD', 'Operating System', 'High', 'System locked up completely. Student unable to write code / restart needed.')">
+              [OS] Frozen / BSOD Hard Lock
+            </button>
+            <button type="button" class="btn btn-sm btn-campus-secondary" style="background:#ffffff; border-color:#fdba74; color:#9a3412; text-align:left; font-size:0.72rem;" onclick="logPodiumFault('Network Cable Unplugged / No IP', 'Network Connectivity', 'Critical', 'Ethernet cable disconnected / unseated or DHCP lease failed.')">
+              [NET] Ethernet Unplugged / No IP
+            </button>
+          </div>
+        </div>
+
         <!-- Deep Diagnostics & QR Tools -->
-        <div style="display:flex; gap:0.5rem;">
+        <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
           <button class="btn btn-campus-secondary btn-sm" style="flex:1;" onclick="runDeepDiagnostics()">
             Run Deep L3+L4 Diagnostics
           </button>
@@ -2675,6 +2702,54 @@ ${data.output_log}
       } catch (err) {
         if (spinner) spinner.style.display = 'none';
         showToast("Remediation RPC dispatch error", 'error');
+      }
+    }
+
+    async function logPodiumFault(title, category, priority, details) {
+      if (!activeDrawerPc) return;
+      const spinner = document.getElementById('podium-report-spinner');
+      if (spinner) spinner.style.display = 'inline';
+
+      try {
+        const csrfToken = getCsrfToken();
+        const res = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({
+            pc_number: activeDrawerPc,
+            issue_category: category,
+            description: `[Podium Staff Quick-Report]: ${title} - ${details}`,
+            priority: priority,
+            reporter_name: 'Lab Assistant (Instructor Dais)'
+          })
+        });
+
+        const data = await res.json();
+        if (spinner) spinner.style.display = 'none';
+
+        if (res.ok) {
+          const tckId = data.ticket?.ticket_number || data.ticket_number || 'TCK';
+          showToast(`[PODIUM] Logged ${tckId} for ${activeDrawerPc}: ${title}`, 'success');
+          playAudioChime('alert');
+          const terminal = document.getElementById('drawer-terminal-log');
+          if (terminal) {
+            terminal.innerText += `\n[+] [PODIUM FAULT LOGGED] Ticket ${tckId} registered for ${activeDrawerPc} (${category}). Added to FIFO Triage Queue.\n`;
+            terminal.scrollTop = terminal.scrollHeight;
+          }
+          if (typeof loadComputers === 'function') loadComputers();
+          if (typeof loadTickets === 'function') loadTickets();
+          if (document.getElementById('tab-digital-twin')?.classList.contains('active') && typeof renderDigitalTwin === 'function') {
+            renderDigitalTwin();
+          }
+        } else {
+          showToast(data.error || 'Failed to log ticket', 'error');
+        }
+      } catch (err) {
+        if (spinner) spinner.style.display = 'none';
+        showToast('Network error while logging podium ticket', 'error');
       }
     }
 
