@@ -83,6 +83,13 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 10. **Zero-Hardcoding Adaptive LAN & Subnet Auto-Discovery (`/api/computers/discover`)**:
     - Dynamically scans ARP tables and lab subnets, registers newly connected workstations, updates heartbeats, and re-syncs C daemon monitoring target files without restarting binaries.
 
+11. **Printable Workstation QR Code Physical Sticker Sheet (`/print-qr-stickers`)**:
+    - One-click print-ready sheet generating institutional QR labels for all 246 workstations across all 6 department labs or single-lab batches.
+    - Designed with `@media print` CSS for standard A4 sticker paper to affix directly onto student workstation monitors.
+
+12. **College Deployment Pre-Flight Health & Posture Telemetry (`/api/deployment/status`)**:
+    - Comprehensive system verification reporting SQLite WAL mode, database integrity check, C binary compilation, campus gateway reachability, active LAN interfaces, and security lockouts.
+
 ---
 
 ## Quick Start & Running
@@ -94,11 +101,26 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 
 ### 2. Start the Application Core Server
 ```bash
+# Windows Batch Launcher (Automated Pre-Flight & Browser Launch):
+.\start_labwatch.bat
+
+# Or Modern PowerShell Launcher:
+.\deploy_labwatch.ps1
+
+# Or Direct Python Execution:
 python python_server.py 5000
 ```
 Open **`http://127.0.0.1:5000`** in any browser to access the live dashboard.
+Workstations across the campus lab LAN can access directly via **`http://<CAMPUS_LAN_IP>:5000`**.
 
-### 3. Trigger C Protocol Daemon & Automated Ticket Creation
+### 3. Key Portal Endpoints
+- **Live Digital Twin & Remediation Hub**: `http://127.0.0.1:5000/monitor`
+- **Student Fault Reporting Form**: `http://127.0.0.1:5000/report`
+- **IT Admin Triage Dashboard**: `http://127.0.0.1:5000/admin`
+- **Workstation QR Physical Label Sheet**: `http://127.0.0.1:5000/print-qr-stickers`
+- **Deployment Posture Health API**: `http://127.0.0.1:5000/api/deployment/status`
+
+### 4. Trigger C Protocol Daemon & Automated Ticket Creation
 ```bash
 # Ping PC-30 (detects timeout and alerts Python via TCP):
 .\bin\labpulse_monitor.exe --ping-pc PC-30

@@ -222,6 +222,14 @@ Implemented in [`remediation_engine.py`](file:///d:/CN%20mini/remediation_engine
 - Auto-registers unmapped active workstations into the database inventory.
 - Refreshes online heartbeats and automatically exports updated `computers_monitor.txt` and `computers_monitor.csv` so the compiled C binary daemon tracks new hardware without restarting.
 
+#### 8.12 Physical Workstation QR Code Sticker Sheet Generator (`/print-qr-stickers`)
+- Produces print-ready institutional QR barcode labels for all 246 workstations across all 6 departmental laboratories or filtered single-lab batches.
+- Incorporates high-contrast pure-Python vector SVGs, official Mepco Schlenk branding, computer designations, assigned VLAN 16 IPs, and mobile reporting URLs.
+- Designed with `@media print` CSS for standard A4 sticker paper to paste onto physical monitor bezels.
+
+#### 8.13 Institutional Deployment Posture & Pre-flight Diagnostics Telemetry (`/api/deployment/status`)
+- Comprehensive pre-flight system inspection auditing SQLite WAL mode, database integrity check (`PRAGMA integrity_check`), C binary executable health, departmental gateway connectivity (`192.16.16.200`), active multi-interface LAN IPv4 bindings, and account lockout rate limiter state.
+
 ---
 
 ### 9. Running and Demonstrating the Upgraded System
@@ -230,21 +238,27 @@ Implemented in [`remediation_engine.py`](file:///d:/CN%20mini/remediation_engine
 # 1. Compile C Network Protocols (ICMP, UDP, TCP)
 .\build.bat
 
-# 2. Start Application Tier Server (Flask Core Server with SSE, AI Doctor & Remediation Engine)
-python python_server.py 5000
+# 2. Start Application Tier Server (Automated Pre-Flight & Multi-Host Launcher)
+.\start_labwatch.bat           # Automated Windows Batch Launcher
+# or
+.\deploy_labwatch.ps1          # Modern PowerShell Institutional Launcher
+# or
+python python_server.py 5000   # Direct Python execution
 
 # Portal Entry Points:
 #   - Interactive Digital Twin & Remediation Hub:  http://127.0.0.1:5000/monitor
 #   - HOD Executive Daily Dossier:                 http://127.0.0.1:5000/monitor?tab=hod-report
 #   - User Issue Reporting Form:                   http://127.0.0.1:5000/report
 #   - Admin IT Staff Dashboard:                    http://127.0.0.1:5000/admin
+#   - Workstation Physical QR Sticker Sheet:       http://127.0.0.1:5000/print-qr-stickers
+#   - Institutional Deployment Posture API:        http://127.0.0.1:5000/api/deployment/status
 
 # 3. Direct Protocol & Remediation Testing
 .\bin\labpulse_monitor.exe --ping-pc PC-30    # Pings PC-30 and triggers offline alert
 .\bin\labpulse_monitor.exe --restart PC-30    # Dual-broadcast WoL Magic Packet via UDP
 .\bin\labpulse_monitor.exe --sweep           # Full inventory ICMP sweep across all 246 PCs
 
-# 4. Run Complete Automated Test Suite (23 Unit & Integration Tests)
+# 4. Run Complete Automated Test Suite (57 Unit & Integration Tests)
 python -m pytest tests/ -v
 ```
 

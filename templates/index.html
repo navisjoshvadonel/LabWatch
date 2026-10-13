@@ -1027,34 +1027,22 @@
           </div>
         </div>
 
-        <!-- Primary Navigation Tabs -->
+        <!-- Primary Navigation Tabs (Tech Anna Essentials) -->
         <nav class="campus-nav-tabs" aria-label="Campus Navigation">
           <button class="nav-tab active" id="tab-btn-monitor" onclick="switchTab('tab-monitor')">
-            <span>Live Grid</span>
-            <span class="badge" id="badge-total-pcs">140</span>
-          </button>
-          <button class="nav-tab" id="tab-btn-digital-twin" onclick="switchTab('tab-digital-twin')">
-            <span>Digital Twin</span>
+            <span>All PCs</span>
+            <span class="badge" id="badge-total-pcs">246</span>
           </button>
           <button class="nav-tab" id="tab-btn-tickets" onclick="switchTab('tab-tickets')">
-            <span>Tickets</span>
+            <span>Pending Issues</span>
             <span class="badge" id="badge-pending-tickets">0</span>
           </button>
-          <button class="nav-tab" id="tab-btn-exam-readiness" onclick="switchTab('tab-exam-readiness')">
-            <span>Exam Readiness</span>
-          </button>
-          <button class="nav-tab" id="tab-btn-analytics" onclick="switchTab('tab-analytics')">
-            <span>Analytics</span>
-          </button>
-          <button class="nav-tab" id="tab-btn-hod-report" onclick="switchTab('tab-hod-report')">
-            <span>HOD Daily Dossier</span>
-          </button>
           <button class="nav-tab" id="tab-btn-report" onclick="switchTab('tab-report')">
-            <span>Report Fault</span>
+            <span>Report Problem</span>
           </button>
-          <button class="nav-tab" id="tab-btn-telemetry" onclick="switchTab('tab-telemetry')">
-            <span>Telemetry</span>
-          </button>
+          <a href="/print-qr-stickers" target="_blank" class="nav-tab" style="text-decoration:none; display:inline-flex; align-items:center;">
+            <span>QR Stickers</span>
+          </a>
         </nav>
       </div>
 
@@ -1101,21 +1089,6 @@
           <div class="kpi-val" style="color: #b45309;" id="stat-pending-tickets">--</div>
           <div class="kpi-label">Active Fault Tickets</div>
         </div>
-      </div>
-    </div>
-
-    <!-- Daemon Status Bar -->
-    <div class="daemon-bar">
-      <div class="daemon-left">
-        <div class="live-dot" style="box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);"></div>
-        <div>
-          <span class="daemon-title">Mepco C Protocols &amp; Real-Time Solving Engine:</span>
-          <span class="daemon-msg" id="daemon-summary-text">Monitoring 6 departmental AI labs via ICMP, UDP WoL, and automated self-healing playbooks...</span>
-        </div>
-      </div>
-      <div class="daemon-protocol">
-        Network Subnet: <strong>192.16.16.0/24 (Gateway: 192.16.16.200)</strong>
-      </div>
     </div>
 
     <!-- ========================================================================
@@ -2253,7 +2226,7 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
       }, 4000);
     }
 
-    // Tab Switching
+    // Tab Switching (Clean & Fast)
     function switchTab(tabId) {
       document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -2263,24 +2236,15 @@ Ready for command execution. Select a playbook above to dispatch real-time remed
 
       const btnMap = {
         'tab-monitor': 'tab-btn-monitor',
-        'tab-digital-twin': 'tab-btn-digital-twin',
         'tab-tickets': 'tab-btn-tickets',
-        'tab-exam-readiness': 'tab-btn-exam-readiness',
-        'tab-analytics': 'tab-btn-analytics',
-        'tab-hod-report': 'tab-btn-hod-report',
-        'tab-report': 'tab-btn-report',
-        'tab-telemetry': 'tab-btn-telemetry'
+        'tab-report': 'tab-btn-report'
       };
       if (btnMap[tabId]) {
         document.getElementById(btnMap[tabId])?.classList.add('active');
       }
 
       if (tabId === 'tab-monitor') loadComputers();
-      if (tabId === 'tab-digital-twin') renderDigitalTwin();
       if (tabId === 'tab-tickets') loadTickets();
-      if (tabId === 'tab-analytics') loadAidsAnalytics();
-      if (tabId === 'tab-hod-report') loadHodDailyReport();
-      if (tabId === 'tab-telemetry') loadTelemetry();
     }
 
     // Server-Sent Events (SSE) Live Push Stream
@@ -3271,7 +3235,8 @@ ${data.output_log}
         });
 
         if (data.events.length > 0) {
-          document.getElementById('daemon-summary-text').innerText = data.events[0].message;
+          const sumEl = document.getElementById('daemon-summary-text');
+          if (sumEl) sumEl.innerText = data.events[0].message;
         }
       } catch(e) {}
     }
@@ -3319,19 +3284,20 @@ ${data.output_log}
               handleLabChange().then(() => {
                 const pcVal = params.get('pc') || params.get('pc_number');
                 const pcSelect = document.getElementById('form-pc-select');
-                for (let i = 0; i < pcSelect.options.length; i++) {
-                  if (pcSelect.options[i].text.includes(pcVal)) {
-                    pcSelect.selectedIndex = i;
-                    break;
+                if (pcSelect) {
+                  for (let i = 0; i < pcSelect.options.length; i++) {
+                    if (pcSelect.options[i].text.includes(pcVal)) {
+                      pcSelect.selectedIndex = i;
+                      break;
+                    }
                   }
                 }
               });
             }
           }, 300);
         }
-      // Check if URL specifies HOD report tab
-      if (params.get('tab') === 'hod' || params.get('tab') === 'hod-report') {
-        switchTab('tab-hod-report');
+      } else if (params.get('tab') === 'tickets') {
+        switchTab('tab-tickets');
       }
     });
 

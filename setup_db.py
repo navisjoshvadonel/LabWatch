@@ -117,6 +117,7 @@ def initialize_schema(conn: sqlite3.Connection):
             resolved_at TIMESTAMP,
             technician_id INTEGER,
             resolution_notes TEXT,
+            reporter_email TEXT,
             FOREIGN KEY (user_id) REFERENCES USERS (id),
             FOREIGN KEY (lab_id) REFERENCES LABS (id),
             FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id),
@@ -135,6 +136,12 @@ def initialize_schema(conn: sqlite3.Connection):
     if cols and "salt" not in cols:
         print("[*] Migrating USERS table: Adding 'salt' column...")
         cursor.execute("ALTER TABLE USERS ADD COLUMN salt TEXT NOT NULL DEFAULT ''")
+
+    cursor.execute("PRAGMA table_info(TICKETS)")
+    ticket_cols = [col[1] for col in cursor.fetchall()]
+    if ticket_cols and "reporter_email" not in ticket_cols:
+        print("[*] Migrating TICKETS table: Adding 'reporter_email' column...")
+        cursor.execute("ALTER TABLE TICKETS ADD COLUMN reporter_email TEXT")
 
     cursor.execute("PRAGMA table_info(COMPUTERS)")
     comp_cols = [col[1] for col in cursor.fetchall()]

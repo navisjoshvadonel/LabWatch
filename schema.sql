@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS TICKETS (
     resolved_at TIMESTAMP,
     technician_id INTEGER,
     resolution_notes TEXT,
+    reporter_email TEXT,
     FOREIGN KEY (user_id) REFERENCES USERS (id) ON DELETE RESTRICT,
     FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE RESTRICT,
     FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE RESTRICT,

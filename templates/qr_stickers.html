@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workstation QR Stickers | Mepco Schlenk Engineering College</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <style>
+    :root {
+      --mepco-navy: #002147;
+      --mepco-blue: #0066b3;
+      --mepco-blue-dark: #004d80;
+      --mepco-gold: #c59b27;
+      --bg-page: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      padding: 1.5rem;
+      line-height: 1.4;
+    }
+
+    .no-print {
+      max-width: 1200px;
+      margin: 0 auto 1.5rem auto;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .toolbar-title h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--mepco-navy);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toolbar-title p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-select {
+      padding: 0.45rem 0.85rem;
+      font-size: 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text-main);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-print {
+      background: var(--mepco-blue);
+      color: #ffffff;
+      border: none;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.15s ease;
+    }
+
+    .btn-print:hover {
+      background: var(--mepco-blue-dark);
+    }
+
+    .btn-back {
+      background: #f8fafc;
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-back:hover {
+      background: #e2e8f0;
+      color: var(--text-main);
+    }
+
+    .stickers-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .stickers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .sticker-card {
+      background: var(--card-bg);
+      border: 2px solid #0f172a;
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      position: relative;
+    }
+
+    .sticker-header {
+      width: 100%;
+      border-bottom: 1.5px solid #0f172a;
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .inst-title {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--mepco-navy);
+      line-height: 1.15;
+    }
+
+    .dept-subtitle {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--mepco-blue);
+      margin-top: 0.15rem;
+    }
+
+    .pc-badge-banner {
+      display: inline-block;
+      background: var(--mepco-navy);
+      color: #ffffff;
+      padding: 0.2rem 1rem;
+      border-radius: 4px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      font-family: monospace;
+    }
+
+    .lab-name-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.15rem;
+    }
+
+    .net-meta {
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 0.65rem;
+    }
+
+    .qr-svg-holder {
+      width: 160px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .qr-svg-holder svg {
+      width: 100% !important;
+      height: 100% !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+    }
+
+    .scan-prompt {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--mepco-navy);
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .stickers-container {
+        max-width: 100%;
+        margin: 0;
+      }
+
+      .stickers-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+      }
+
+      .sticker-card {
+        border: 1.5px solid #000000;
+        box-shadow: none;
+        padding: 0.65rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .qr-svg-holder {
+        width: 130px;
+        height: 130px;
+      }
+
+      @page {
+        margin: 0.8cm;
+        size: A4 portrait;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Controls Bar (Hidden during printing) -->
+  <div class="no-print">
+    <div class="toolbar-title">
+      <h1>[LABWATCH] Workstation QR Physical Label Generator</h1>
+      <p>Mepco Schlenk Engineering College (Autonomous), Sivakasi &mdash; Dept. of AI &amp; Data Science</p>
+    </div>
+    <div class="toolbar-actions">
+      <label for="lab-filter" style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Lab Filter:</label>
+      <select id="lab-filter" class="filter-select" onchange="filterLab(this.value)">
+        <option value="all" {% if selected_lab_id == 'all' %}selected{% endif %}>All 6 Laboratories (246 PCs)</option>
+        {% for lab in labs %}
+        <option value="{{ lab.id }}" {% if selected_lab_id == lab.id|string %}selected{% endif %}>{{ lab.lab_name }} ({{ lab.total_pcs }} PCs)</option>
+        {% endfor %}
+      </select>
+      <button class="btn-print" onclick="window.print()">[PRINT STICKERS (Ctrl+P)]</button>
+      <a href="/admin" class="btn-back">[Back to Admin]</a>
+    </div>
+  </div>
+
+  <!-- Stickers Grid Container -->
+  <div class="stickers-container">
+    <div class="stickers-grid" id="stickers-grid">
+      {% for item in workstations %}
+      <div class="sticker-card" data-lab-id="{{ item.lab_id }}">
+        <div class="sticker-header">
+          <div class="inst-title">Mepco Schlenk Engineering College</div>
+          <div class="dept-subtitle">Dept. of Artificial Intelligence &amp; Data Science</div>
+        </div>
+
+        <div class="pc-badge-banner">{{ item.pc_number }}</div>
+        <div class="lab-name-tag">{{ item.lab_name }}</div>
+        <div class="net-meta">IP: {{ item.ip_address }} &bull; VLAN 16</div>
+
+        <div class="qr-svg-holder">
+          {{ item.qr_svg | safe }}
+        </div>
+
+        <div class="scan-prompt">Scan with Phone to Report Issue</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <script>
+    function filterLab(labId) {
+      if (labId === 'all') {
+        window.location.href = '/print-qr-stickers';
+      } else {
+        window.location.href = '/print-qr-stickers?lab_id=' + labId;
+      }
+    }
+  </script>
+</body>
+</html>

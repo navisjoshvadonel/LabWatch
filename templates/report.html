@@ -722,6 +722,9 @@
         <p style="font-size: 0.85rem; line-height: 1.4;">
           Your issue has been recorded as Ticket <span class="ticket-success-id">{{ success_ticket.ticket_number }}</span>
           for <strong>{{ success_ticket.pc_number }}</strong> in <strong>{{ success_ticket.lab_name }}</strong>.
+          {% if success_ticket.reporter_email %}
+          <br><span style="color:#15803d; font-size:0.78125rem;">[EMAIL CONFIRMATION] Automated status updates linked to <strong>{{ success_ticket.reporter_email }}</strong> via Gmail SMTP.</span>
+          {% endif %}
         </p>
         <div class="success-actions">
           <a href="/report" class="btn-link-action btn-link-secondary">
@@ -785,19 +788,6 @@
             [OS Frozen / Hard Lockup]
           </button>
         </div>
-      </div>
-    </div>
-    {% else %}
-    <div class="autodetect-unmapped-banner">
-      <div>
-        <span style="font-weight:700; color:#1e40af; font-size:0.75rem;">[NETWORK POSTURE]</span>
-        <span style="font-size:0.8125rem; color:#1e3a8a; margin-left:0.35rem;">
-          Client connected from <code>{{ client_ip }}</code> (Campus Subnet). Manual workstation selection active below.
-        </span>
-      </div>
-      <div class="unmapped-actions">
-        <a href="/report?pc=PC-18" class="btn-demo-sim">[Demo: Simulate PC-18 (Deep Learning Lab)]</a>
-        <a href="/report?pc=PC-08" class="btn-demo-sim">[Demo: Simulate PC-08 (Machine Learning Lab)]</a>
       </div>
     </div>
     {% endif %}
@@ -910,6 +900,17 @@
                 <input type="text" name="roll_number" id="roll_number" class="form-input"
                        placeholder="e.g. 22AD042" required maxlength="20"
                        style="font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase;">
+              </div>
+
+              <!-- Student Email for Live Gmail Updates -->
+              <div class="form-group">
+                <label for="reporter_email" class="form-label">
+                  <span>Student Email Address (Live Gmail Updates)</span>
+                  <span class="form-label-hint">Dispatches live email upon ticket resolution</span>
+                </label>
+                <input type="email" name="reporter_email" id="reporter_email" class="form-input"
+                       placeholder="e.g. 24bad019@mepcoeng.ac.in or personal email"
+                       value="{{ logged_user['email'] if logged_user and logged_user['email'] else '' }}">
               </div>
 
               <!-- Reporter Identification -->

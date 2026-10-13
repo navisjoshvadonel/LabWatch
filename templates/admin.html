@@ -859,14 +859,8 @@
       </div>
 
       <nav class="campus-nav-tabs">
-        <a href="/monitor?tab=monitor" class="nav-tab-link" style="background:#e0f2fe; color:#0369a1; font-weight:700; border:1px solid #bae6fd;">
+        <a href="/monitor" class="nav-tab-link" style="background:#e0f2fe; color:#0369a1; font-weight:700; border:1px solid #bae6fd;">
           <span>All PCs</span>
-        </a>
-        <a href="/monitor?tab=digital-twin" class="nav-tab-link" style="background:#eff6ff; color:#1d4ed8; font-weight:600;">
-          <span>Lab Layout</span>
-        </a>
-        <a href="/monitor?tab=hod-report" class="nav-tab-link" style="background:#fef3c7; color:#92400e; font-weight:700; border:1px solid #fde68a;">
-          <span>Daily Report</span>
         </a>
         <a href="#triage-section" class="nav-tab-link active">
           <span>Pending Issues</span>
@@ -876,6 +870,9 @@
         </a>
         <a href="#resolved-section" class="nav-tab-link">
           <span>Resolved Issues</span>
+        </a>
+        <a href="/print-qr-stickers" target="_blank" class="nav-tab-link" style="background:#ecfdf5; color:#065f46; font-weight:700; border:1px solid #a7f3d0;">
+          <span>QR Stickers</span>
         </a>
         <a href="#security-section" class="nav-tab-link" style="background:#fee2e2; color:#991b1b; font-weight:700; border:1px solid #fecaca;">
           <span>SOC & Security</span>
@@ -901,10 +898,9 @@
       </div>
     </div>
 
-    <!-- Notification Alert Message if redirected -->
     {% if status_msg %}
     <div class="alert-banner-info">
-      <span style="font-size: 1.25rem;">ℹ️</span>
+      <span style="font-weight: 700; font-size: 0.8125rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px;">[INFO]</span>
       <div>{{ status_msg }}</div>
     </div>
     {% endif %}
@@ -1219,15 +1215,22 @@
             Log of emails sent to reporters upon ticket resolution.
           </p>
         </div>
-        <button onclick="refreshNotifications()" style="background:var(--mepco-blue);color:#fff;border:none;
-          padding:0.35rem 0.75rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;">
-          Refresh
-        </button>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <button type="button" onclick="openSmtpConfigModal()" style="background:#0284c7;color:#fff;border:none;
+            padding:0.4rem 0.85rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;">
+            <span>Configure Gmail SMTP</span>
+          </button>
+          <button type="button" onclick="refreshNotifications()" style="background:var(--mepco-blue);color:#fff;border:none;
+            padding:0.4rem 0.75rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       <div style="padding: 0.75rem 1.5rem; background: #f8fafc; border-bottom: 1px solid var(--border-color);
                   font-size: 0.75rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; color: var(--text-secondary);">
-        <span><strong>Sender:</strong> <code>labpulse.mepco@gmail.com</code></span>
+        <span><strong>Sender:</strong> <code id="smtp-sender-val">loading&hellip;</code></span>
+        <span><strong>Protocol:</strong> <code>RFC 3207 STARTTLS (smtp.gmail.com:587)</code></span>
         <span id="smtp-live-status" style="font-weight:700; color: #b45309;">loading&hellip;</span>
       </div>
 
@@ -1235,6 +1238,98 @@
         <p style="color: var(--text-muted); font-size: 0.8125rem;">Loading notification log&hellip;</p>
       </div>
     </section>
+
+    <!-- Gmail SMTP Protocol Configuration Modal -->
+    <div id="smtp-config-modal" style="display:none; position:fixed; z-index:9999; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+      <div style="background:#ffffff; border-radius:12px; width:100%; max-width:620px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:1px solid #cbd5e1; overflow:hidden;">
+        <!-- Modal Header -->
+        <div style="background:#0066b3; color:#ffffff; padding:1.2rem 1.5rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="margin:0; font-size:1.05rem; font-weight:800; letter-spacing:-0.01em;">Gmail SMTP Protocol Configuration</h3>
+            <p style="margin:0.2rem 0 0; font-size:0.75rem; color:#bae6fd;">RFC 3207 STARTTLS over Port 587 &bull; Live Student Email Dispatch</p>
+          </div>
+          <button type="button" onclick="closeSmtpConfigModal()" style="background:rgba(255,255,255,0.2); border:none; color:#ffffff; font-size:1rem; font-weight:700; border-radius:6px; width:30px; height:30px; cursor:pointer;">X</button>
+        </div>
+
+        <!-- Modal Body -->
+        <div style="padding:1.5rem; max-height:calc(85vh - 120px); overflow-y:auto;">
+          <!-- Guidance Banner -->
+          <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:0.85rem 1rem; margin-bottom:1.25rem; font-size:0.78125rem; color:#0369a1; line-height:1.5;">
+            <strong>Live Gmail Requirement:</strong> Google requires <strong>2-Step Verification</strong> and a <strong>16-character Google App Password</strong> (e.g. <code>abcd efgh ijkl mnop</code>). Regular passwords will be rejected by Google SMTP.
+            <div style="margin-top:0.4rem;">
+              <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" style="color:#0284c7; font-weight:700; text-decoration:underline;">
+                Open Google Account &gt; App Passwords (Generate Code)
+              </a>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr; gap:1rem;">
+            <!-- Sender Email -->
+            <div>
+              <label for="smtp-input-email" style="display:block; font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:0.35rem;">
+                Sender Gmail Address <span style="color:#e11d48;">*</span>
+              </label>
+              <input type="email" id="smtp-input-email" placeholder="e.g. labpulse.mepco@gmail.com"
+                     style="width:100%; padding:0.6rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8125rem; box-sizing:border-box;">
+            </div>
+
+            <!-- Google App Password -->
+            <div>
+              <label for="smtp-input-password" style="display:block; font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:0.35rem;">
+                Google App Password (16 Characters) <span style="color:#e11d48;">*</span>
+              </label>
+              <div style="position:relative;">
+                <input type="password" id="smtp-input-password" placeholder="Enter 16-character code (spaces auto-stripped)"
+                       style="width:100%; padding:0.6rem 2.8rem 0.6rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8125rem; box-sizing:border-box; font-family:'JetBrains Mono',monospace;">
+                <button type="button" onclick="togglePasswordVisibility()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748b; font-size:0.7rem; font-weight:700; cursor:pointer;">SHOW</button>
+              </div>
+              <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">
+                Spaces in the code are automatically stripped during handshake.
+              </div>
+            </div>
+
+            <!-- Sender Display Name -->
+            <div>
+              <label for="smtp-input-name" style="display:block; font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:0.35rem;">
+                Sender Display Name
+              </label>
+              <input type="text" id="smtp-input-name" placeholder="LabPulse | Mepco IT Support"
+                     style="width:100%; padding:0.6rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8125rem; box-sizing:border-box;">
+            </div>
+
+            <!-- Test Recipient -->
+            <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:0.85rem;">
+              <label for="smtp-input-test-recipient" style="display:block; font-size:0.75rem; font-weight:700; color:#1e293b; margin-bottom:0.35rem;">
+                Test Recipient Student Email (Live Protocol Handshake Test)
+              </label>
+              <input type="email" id="smtp-input-test-recipient" placeholder="e.g. 24bad019@mepcoeng.ac.in or your personal email"
+                     style="width:100%; padding:0.55rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8125rem; box-sizing:border-box;">
+              <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">
+                Optional: Dispatch a live test message immediately to verify student inbox reception.
+              </div>
+            </div>
+          </div>
+
+          <!-- Handshake Output Box -->
+          <div id="smtp-test-result" style="display:none; margin-top:1rem; padding:0.85rem 1rem; border-radius:6px; font-size:0.75rem; font-family:'JetBrains Mono',monospace; line-height:1.45;"></div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+          <button type="button" onclick="switchToDemoMode()" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:0.5rem 0.85rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+            Use Offline Demo Mode
+          </button>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" id="btn-smtp-verify" onclick="verifySmtpHandshake()" style="background:#0284c7; color:#ffffff; border:none; padding:0.5rem 0.95rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+              Verify &amp; Send Test
+            </button>
+            <button type="button" id="btn-smtp-save" onclick="saveSmtpConfig()" style="background:#16a34a; color:#ffffff; border:none; padding:0.5rem 1.15rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+              Save &amp; Activate Live
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </main>
 
@@ -1249,8 +1344,11 @@
     function renderEmailEntry(e) {
       const statusIcon = e.sent ? '[SENT]' : '[FAILED]';
       const modeTag = e.demo_mode
-        ? '<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">DEMO MODE</span>'
+        ? '<span style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">CAMPUS INTRANET MODE</span>'
         : '<span style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:1px 6px;border-radius:999px;font-size:0.65rem;font-weight:700;">LIVE SMTP</span>';
+      const actionTag = e.action
+        ? `<span style="background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:700;margin-left:4px;">${e.action}</span>`
+        : '';
       const noteText = e.note
         ? `<div style="color:#64748b;font-size:0.75rem;margin-top:0.3rem;">${e.note}</div>`
         : (e.error ? `<div style="color:#e11d48;font-size:0.75rem;margin-top:0.3rem;">[WARN] ${e.error}</div>` : '');
@@ -1260,8 +1358,8 @@
           <div>
             <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 7px;border-radius:4px;">${e.ticket_number}</span>
             &nbsp;${statusIcon}&nbsp;
-            <span style="font-size:0.8125rem;font-weight:600;color:#0f172a;">${e.pc_number} &#8212; ${e.lab_name}</span>
-            &nbsp;${modeTag}
+            <span style="font-size:0.8125rem;font-weight:600;color:#0f172a;">${e.pc_number} &mdash; ${e.lab_name}</span>
+            &nbsp;${modeTag}${actionTag}
           </div>
           <div style="font-size:0.71875rem;color:#64748b;">${e.timestamp}</div>
         </div>
@@ -1280,20 +1378,24 @@
           const counter = document.getElementById('email-log-counter');
           if (counter) counter.textContent = `${data.notifications_sent} Dispatched`;
 
-          const smtpBadge = document.getElementById('smtp-mode-badge');
-          const smtpLive  = document.getElementById('smtp-live-status');
-          if (data.smtp_demo_mode) {
-            if (smtpBadge) { smtpBadge.textContent = 'Demo Mode (offline safe)'; smtpBadge.style.color = '#b45309'; }
-            if (smtpLive)  { smtpLive.textContent = '[WARN] Demo Mode &#8212; set LABPULSE_SMTP_PASSWORD to enable live dispatch'; smtpLive.style.color = '#b45309'; }
-          } else {
-            if (smtpBadge) { smtpBadge.textContent = 'Live SMTP Active'; smtpBadge.style.color = '#15803d'; }
-            if (smtpLive)  { smtpLive.textContent = '[SENT] Live SMTP Active (Gmail STARTTLS)'; smtpLive.style.color = '#15803d'; }
+          const senderEl = document.getElementById('smtp-sender-val');
+          if (senderEl && data.smtp_sender_email) {
+            senderEl.textContent = data.smtp_sender_email;
+          }
+
+          const smtpLive = document.getElementById('smtp-live-status');
+          if (smtpLive) {
+            if (data.smtp_demo_mode) {
+              smtpLive.innerHTML = '<span style="color:#b45309;">[CAMPUS INTRANET] Demo Mode &mdash; Set Google App Password to enable live dispatch</span> <button type="button" onclick="openSmtpConfigModal()" style="margin-left:6px;background:#0284c7;color:#fff;border:none;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700;cursor:pointer;">Enter App Password</button>';
+            } else {
+              smtpLive.innerHTML = '<span style="color:#15803d;">[LIVE SMTP ACTIVE] Authenticated with smtp.gmail.com:587 (STARTTLS)</span>';
+            }
           }
 
           const body = document.getElementById('email-log-body');
           if (!body) return;
           if (!data.recent_emails || data.recent_emails.length === 0) {
-            body.innerHTML = '<p style="color:#64748b;font-size:0.8125rem;">No emails dispatched yet. Resolve a pending ticket to trigger the first notification.</p>';
+            body.innerHTML = '<p style="color:#64748b;font-size:0.8125rem;">No emails dispatched yet. Resolve a pending ticket to trigger notification.</p>';
           } else {
             body.innerHTML = data.recent_emails.map(renderEmailEntry).join('');
           }
@@ -1302,6 +1404,173 @@
           const body = document.getElementById('email-log-body');
           if (body) body.innerHTML = `<p style="color:#e11d48;font-size:0.8125rem;">Error fetching notifications: ${err}</p>`;
         });
+    }
+
+    /* ── Modal Controls & Live Handshake Engine ────────────────────────── */
+    function openSmtpConfigModal() {
+      const modal = document.getElementById('smtp-config-modal');
+      if (modal) modal.style.display = 'flex';
+      fetch('/api/admin/smtp/config')
+        .then(r => r.json())
+        .then(data => {
+          const emailInput = document.getElementById('smtp-input-email');
+          const nameInput  = document.getElementById('smtp-input-name');
+          if (emailInput && data.sender_email) emailInput.value = data.sender_email;
+          if (nameInput && data.sender_name) nameInput.value = data.sender_name;
+        })
+        .catch(() => {});
+    }
+
+    function closeSmtpConfigModal() {
+      const modal = document.getElementById('smtp-config-modal');
+      if (modal) modal.style.display = 'none';
+      const resultBox = document.getElementById('smtp-test-result');
+      if (resultBox) resultBox.style.display = 'none';
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('smtp-input-password');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function verifySmtpHandshake() {
+      const email = (document.getElementById('smtp-input-email').value || '').trim();
+      const password = (document.getElementById('smtp-input-password').value || '').trim();
+      const recipient = (document.getElementById('smtp-input-test-recipient').value || '').trim();
+      const resultBox = document.getElementById('smtp-test-result');
+      const verifyBtn = document.getElementById('btn-smtp-verify');
+
+      if (!email) {
+        alert('Please enter a sender Gmail address.');
+        return;
+      }
+      if (!password) {
+        alert('Please enter your 16-character Google App Password.');
+        return;
+      }
+
+      if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.textContent = 'Verifying Handshake...'; }
+      if (resultBox) {
+        resultBox.style.display = 'block';
+        resultBox.style.background = '#f8fafc';
+        resultBox.style.color = '#0f172a';
+        resultBox.style.border = '1px solid #cbd5e1';
+        resultBox.textContent = '[CONNECTING] Contacting smtp.gmail.com:587 via STARTTLS...';
+      }
+
+      fetch('/api/admin/smtp/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+          sender_email: email,
+          app_password: password,
+          recipient_email: recipient
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.textContent = 'Verify & Send Test'; }
+        if (data.success) {
+          resultBox.style.background = '#f0fdf4';
+          resultBox.style.color = '#166534';
+          resultBox.style.border = '1px solid #86efac';
+          resultBox.innerHTML = `<strong>[SUCCESS] Handshake Verified!</strong><br>${data.message}`;
+        } else {
+          resultBox.style.background = '#fff1f2';
+          resultBox.style.color = '#9f1239';
+          resultBox.style.border = '1px solid #fecdd3';
+          resultBox.innerHTML = `<strong>[ERROR] Handshake Failed</strong><br>${data.error || 'Check Gmail credentials'}`;
+        }
+      })
+      .catch(err => {
+        if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.textContent = 'Verify & Send Test'; }
+        resultBox.style.background = '#fff1f2';
+        resultBox.style.color = '#9f1239';
+        resultBox.style.border = '1px solid #fecdd3';
+        resultBox.innerHTML = `<strong>[NETWORK ERROR]</strong><br>${err}`;
+      });
+    }
+
+    function saveSmtpConfig() {
+      const email = (document.getElementById('smtp-input-email').value || '').trim();
+      const password = (document.getElementById('smtp-input-password').value || '').trim();
+      const name = (document.getElementById('smtp-input-name').value || '').trim();
+      const saveBtn = document.getElementById('btn-smtp-save');
+      const resultBox = document.getElementById('smtp-test-result');
+
+      if (!email) {
+        alert('Please enter a sender Gmail address.');
+        return;
+      }
+      if (!password) {
+        alert('Please enter your 16-character Google App Password.');
+        return;
+      }
+
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+      fetch('/api/admin/smtp/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+          sender_email: email,
+          app_password: password,
+          sender_name: name,
+          demo_mode: false
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save & Activate Live'; }
+        if (data.success) {
+          alert('Gmail SMTP credentials saved successfully! Live email notifications are now active.');
+          closeSmtpConfigModal();
+          refreshNotifications();
+        } else {
+          if (resultBox) {
+            resultBox.style.display = 'block';
+            resultBox.style.background = '#fff1f2';
+            resultBox.style.color = '#9f1239';
+            resultBox.style.border = '1px solid #fecdd3';
+            resultBox.textContent = data.error || 'Failed to save configuration';
+          } else {
+            alert(data.error || 'Failed to save configuration');
+          }
+        }
+      })
+      .catch(err => {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save & Activate Live'; }
+        alert(`Error saving configuration: ${err}`);
+      });
+    }
+
+    function switchToDemoMode() {
+      if (!confirm('Switch to Offline Campus Intranet Demo Mode? Emails will be logged without transmission.')) return;
+      fetch('/api/admin/smtp/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+          sender_email: document.getElementById('smtp-input-email').value || 'labpulse.mepco@gmail.com',
+          app_password: 'demo_mode_no_real_send',
+          demo_mode: true
+        })
+      })
+      .then(r => r.json())
+      .then(() => {
+        closeSmtpConfigModal();
+        refreshNotifications();
+      })
+      .catch(err => alert(`Error: ${err}`));
     }
 
     function getCsrfToken() {
