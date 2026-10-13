@@ -51,7 +51,7 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg-page);
       color: var(--text-main);
-      font-size: 0.875rem;
+      font-size: 1rem;
       overflow-x: hidden;
     }
 
@@ -68,44 +68,44 @@
       padding: 0;
     }
     .inst-header-inner {
-      max-width: 1200px;
+      max-width: 1360px;
       margin: 0 auto;
-      padding: 0.45rem 1.5rem;
+      padding: 0.65rem 2rem;
       display: flex;
       align-items: center;
-      gap: 1.1rem;
+      gap: 1.25rem;
       flex-wrap: wrap;
     }
     .inst-logo {
-      height: 40px;
+      height: 48px;
       width: auto;
       object-fit: contain;
       flex-shrink: 0;
     }
     .inst-text { flex: 1; }
     .inst-name {
-      font-size: 1.05rem;
+      font-size: 1.35rem;
       font-weight: 800;
       color: #ffffff;
       letter-spacing: -0.01em;
       line-height: 1.25;
     }
     .inst-sub {
-      font-size: 0.72rem;
+      font-size: 0.85rem;
       color: #93c5fd;
       font-weight: 500;
       margin-top: 0.15rem;
     }
     .inst-badges {
       display: flex;
-      gap: 0.45rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
       align-items: center;
     }
     .inst-badge {
-      font-size: 0.65rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 0.18rem 0.55rem;
+      padding: 0.22rem 0.65rem;
       border-radius: 999px;
       letter-spacing: 0.03em;
       border: 1px solid rgba(255,255,255,.2);
@@ -130,16 +130,16 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem 1.5rem;
+      padding: 2.5rem 2.5rem;
     }
 
     .portal-layout {
       width: 100%;
-      max-width: 1040px;
+      max-width: 1380px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1.15fr 0.95fr;
-      gap: 2rem;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 4.5rem;
       align-items: center;
     }
 
@@ -147,20 +147,21 @@
     .vision-panel {
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 2.25rem;
       align-items: center;
       justify-content: center;
     }
 
     .mepco-oval-card {
-      background: #1688ca;
-      border-radius: 80px;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 38%, #0066b3 100%);
+      border: 2.5px solid rgba(255, 255, 255, 0.5);
+      border-radius: 999px;
       width: 100%;
-      max-width: 400px;
-      padding: 1.35rem 1.8rem;
+      max-width: 580px;
+      padding: 2.6rem 3.4rem;
       text-align: center;
-      box-shadow: 0 10px 28px rgba(22, 136, 202, 0.22);
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+      box-shadow: 0 20px 50px rgba(2, 132, 199, 0.38), 0 6px 20px rgba(11, 37, 69, 0.15);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
       cursor: default;
     }
 
@@ -168,22 +169,22 @@
     @keyframes floatCard1 {
       0%, 100% {
         transform: translateY(0px);
-        box-shadow: 0 10px 28px rgba(22, 136, 202, 0.22);
+        box-shadow: 0 20px 50px rgba(2, 132, 199, 0.38);
       }
       50% {
-        transform: translateY(-12px);
-        box-shadow: 0 22px 40px rgba(22, 136, 202, 0.34);
+        transform: translateY(-14px);
+        box-shadow: 0 32px 64px rgba(2, 132, 199, 0.48);
       }
     }
 
     @keyframes floatCard2 {
       0%, 100% {
         transform: translateY(0px);
-        box-shadow: 0 10px 28px rgba(22, 136, 202, 0.22);
+        box-shadow: 0 20px 50px rgba(2, 132, 199, 0.38);
       }
       50% {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 36px rgba(22, 136, 202, 0.32);
+        transform: translateY(-12px);
+        box-shadow: 0 30px 60px rgba(2, 132, 199, 0.45);
       }
     }
 
@@ -197,32 +198,33 @@
 
     .mepco-oval-card:hover {
       animation-play-state: paused;
-      transform: translateY(-6px) scale(1.02);
-      box-shadow: 0 24px 46px rgba(22, 136, 202, 0.38);
+      transform: translateY(-10px) scale(1.03);
+      box-shadow: 0 36px 70px rgba(2, 132, 199, 0.52);
     }
 
     .mepco-oval-title {
       font-family: Georgia, 'Times New Roman', serif;
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #0b2545;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #071c38;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.85rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.15rem;
     }
 
     .mepco-oval-desc {
       font-family: Georgia, 'Times New Roman', serif;
-      font-size: 1.05rem;
-      line-height: 1.48;
+      font-size: 1.34rem;
+      line-height: 1.56;
       color: #ffffff;
-      font-weight: 400;
+      font-weight: 500;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
     }
 
     /* ── Right Column: Login Panel ───────────────────────────────────────────── */
     .login-panel {
       width: 100%;
-      max-width: 440px;
+      max-width: 560px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -232,10 +234,10 @@
     .login-card {
       width: 100%;
       background: var(--bg-card);
-      border-radius: 12px;
-      box-shadow: var(--shadow-card);
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(11, 37, 69, 0.16), 0 6px 20px rgba(0, 102, 179, 0.09);
       overflow: hidden;
-      border: 1px solid var(--border);
+      border: 1.5px solid #dbeafe;
     }
 
     /* Portal switcher tabs */
@@ -244,13 +246,13 @@
       grid-template-columns: 1fr 1fr;
     }
     .portal-tab {
-      padding: 0.75rem 1rem;
+      padding: 1.25rem 1.4rem;
       text-align: center;
       cursor: pointer;
       border: none;
       background: #f1f5f9;
       font-family: inherit;
-      font-size: 0.8125rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--text-sub);
       letter-spacing: 0.01em;
@@ -258,14 +260,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
+      gap: 0.65rem;
       position: relative;
     }
     .portal-tab::after {
       content: '';
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      height: 3px;
+      height: 4px;
       background: transparent;
       transition: var(--transition);
     }
@@ -283,42 +285,42 @@
     .portal-tab.active[data-portal="admin"]::after {
       background: var(--admin-alt);
     }
-    .tab-icon { font-size: 1rem; }
+    .tab-icon { font-size: 1.35rem; }
 
     /* Card body */
-    .card-body { padding: 1.25rem 1.5rem 1.5rem; }
+    .card-body { padding: 2.6rem 2.8rem 2.8rem; }
 
     /* Portal heading */
     .portal-heading-wrap {
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
+      gap: 1.15rem;
+      margin-bottom: 1.6rem;
     }
     .portal-avatar {
-      width: 40px; height: 40px;
-      border-radius: 8px;
+      width: 58px; height: 58px;
+      border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.15rem;
+      font-size: 1.75rem;
       flex-shrink: 0;
     }
     .portal-avatar.student { background: var(--student-badge); }
     .portal-avatar.admin   { background: var(--admin-badge); }
-    .portal-title  { font-size: 1.05rem; font-weight: 800; color: var(--text-main); line-height: 1.2; }
-    .portal-subtitle { font-size: 0.75rem; color: var(--text-sub); margin-top: 0.2rem; }
+    .portal-title  { font-size: 1.48rem; font-weight: 800; color: var(--text-main); line-height: 1.2; }
+    .portal-subtitle { font-size: 0.95rem; color: var(--text-sub); margin-top: 0.35rem; }
 
     /* Error banner */
     .error-banner {
       background: #fee2e2;
       border: 1px solid #fca5a5;
-      border-radius: 6px;
-      padding: 0.6rem 0.85rem;
-      margin-bottom: 1.25rem;
-      font-size: 0.78125rem;
+      border-radius: 10px;
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.92rem;
       color: #991b1b;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
     }
     .error-banner:empty { display: none; }
 
@@ -326,22 +328,22 @@
     .success-banner {
       background: #f0fdf4;
       border: 1px solid #86efac;
-      border-radius: 6px;
-      padding: 0.6rem 0.85rem;
-      margin-bottom: 1.25rem;
-      font-size: 0.78125rem;
+      border-radius: 10px;
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.92rem;
       color: #166534;
       display: none;
     }
 
     /* Form fields */
-    .field-group { margin-bottom: 0.85rem; }
+    .field-group { margin-bottom: 1.4rem; }
     .field-label {
       display: block;
-      font-size: 0.75rem;
+      font-size: 0.95rem;
       font-weight: 700;
       color: var(--text-sub);
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.5rem;
       letter-spacing: 0.02em;
     }
     .field-input-wrap {
@@ -349,20 +351,26 @@
     }
     .field-icon {
       position: absolute;
-      left: 0.75rem;
+      left: 1rem;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 0.875rem;
       pointer-events: none;
-      opacity: 0.55;
+      opacity: 0.65;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .field-icon svg {
+      width: 20px;
+      height: 20px;
     }
     .field-input {
       width: 100%;
-      padding: 0.65rem 0.75rem 0.65rem 2.25rem;
+      padding: 0.95rem 1.15rem 0.95rem 3.1rem;
       border: 1.5px solid var(--border);
-      border-radius: 7px;
+      border-radius: 12px;
       font-family: inherit;
-      font-size: 0.875rem;
+      font-size: 1.05rem;
       color: var(--text-main);
       background: #f8fafc;
       outline: none;
@@ -372,32 +380,32 @@
     .field-input:focus {
       border-color: var(--mepco-blue);
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(0,102,179,.12);
+      box-shadow: 0 0 0 4px rgba(0,102,179,.14);
     }
     .admin-active .field-input:focus {
       border-color: var(--admin-alt);
-      box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+      box-shadow: 0 0 0 4px rgba(217,119,6,.18);
     }
 
     /* Submit button */
     .btn-login {
       width: 100%;
-      padding: 0.75rem;
+      padding: 1.12rem 1.5rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       font-family: inherit;
-      font-size: 0.9375rem;
+      font-size: 1.15rem;
       font-weight: 800;
       cursor: pointer;
       transition: var(--transition);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
       letter-spacing: 0.01em;
       position: relative;
       overflow: hidden;
-      margin-top: 0.5rem;
+      margin-top: 0.85rem;
     }
     .btn-login::before {
       content: '';
@@ -406,51 +414,51 @@
       background: rgba(255,255,255,0);
       transition: var(--transition);
     }
-    .btn-login:hover::before { background: rgba(255,255,255,.12); }
+    .btn-login:hover::before { background: rgba(255,255,255,.14); }
     .btn-login:active { transform: translateY(1px); }
 
     .btn-login.student-btn {
       background: linear-gradient(135deg, var(--mepco-blue) 0%, #0080d8 100%);
       color: #fff;
-      box-shadow: 0 4px 14px rgba(0,102,179,.3);
+      box-shadow: 0 6px 22px rgba(0,102,179,.34);
     }
     .btn-login.admin-btn {
       background: linear-gradient(135deg, var(--mepco-navy) 0%, #163060 100%);
       color: #fff;
-      box-shadow: 0 4px 14px rgba(11,37,69,.35);
+      box-shadow: 0 6px 22px rgba(11,37,69,.4);
     }
 
     /* ── Developer Tag Card (Venki & Navi - AIDS Dept) ─────────────────────── */
     .developer-credit-tag {
-      margin-top: 1.25rem;
+      margin-top: 1.6rem;
       display: flex;
       justify-content: center;
       width: 100%;
-      max-width: 440px;
+      max-width: 560px;
     }
     .credit-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.85rem;
+      gap: 1.1rem;
       background: #ffffff;
       border: 1px solid #cbd5e1;
-      border-left: 4px solid var(--mepco-gold);
-      border-radius: 8px;
-      padding: 0.65rem 1.25rem;
-      box-shadow: 0 4px 12px rgba(11,37,69,.07);
+      border-left: 5px solid var(--mepco-gold);
+      border-radius: 12px;
+      padding: 0.95rem 1.6rem;
+      box-shadow: 0 6px 20px rgba(11,37,69,.09);
       width: 100%;
       transition: var(--transition);
     }
     .credit-pill:hover {
-      box-shadow: 0 6px 16px rgba(11,37,69,.12);
+      box-shadow: 0 10px 26px rgba(11,37,69,.15);
       border-color: #94a3b8;
     }
     .credit-avatar {
-      font-size: 1.4rem;
+      font-size: 1.7rem;
       background: #fef3c7;
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -463,34 +471,34 @@
       text-align: left;
     }
     .credit-line1 {
-      font-size: 0.875rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: var(--mepco-navy);
       letter-spacing: -0.01em;
     }
     .credit-line2 {
-      font-size: 0.72rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: var(--mepco-gold);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-top: 0.1rem;
+      margin-top: 0.15rem;
     }
 
     /* ── Page Footer ─────────────────────────────────────────────────────────── */
     .page-footer {
       background: var(--mepco-navy-deep);
-      color: rgba(255,255,255,.55);
+      color: rgba(255,255,255,.65);
       text-align: center;
-      font-size: 0.7rem;
-      padding: 0.55rem 1.5rem;
+      font-size: 0.8rem;
+      padding: 0.75rem 1.5rem;
       line-height: 1.5;
       flex-shrink: 0;
     }
 
     .btn-spinner {
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,.4);
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.4);
       border-top-color: #fff;
       border-radius: 50%;
       animation: spin .7s linear infinite;
@@ -501,7 +509,7 @@
     /* ── Header divider ──────────────────────────────────────────────────────── */
     .header-divider {
       width: 1px;
-      height: 38px;
+      height: 44px;
       background: rgba(255,255,255,0.25);
       margin: 0 0.25rem;
     }
@@ -510,7 +518,7 @@
     @media (max-width: 900px) {
       .portal-layout {
         grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 2.5rem;
       }
       .vision-panel {
         order: 2;
@@ -523,9 +531,9 @@
       }
     }
     @media (max-width: 480px) {
-      .card-body { padding: 1.25rem 1.25rem 1.5rem; }
-      .portal-tab { font-size: 0.75rem; padding: 0.75rem 0.5rem; }
-      .motto-phrase { font-size: 1.25rem; }
+      .card-body { padding: 1.5rem 1.25rem 1.75rem; }
+      .portal-tab { font-size: 0.85rem; padding: 0.85rem 0.5rem; }
+      .mepco-oval-card { padding: 1.6rem 1.5rem; }
     }
   </style>
 </head>
@@ -540,8 +548,8 @@
       <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="inst-logo">
       <div class="header-divider"></div>
       <div class="inst-text">
-        <div class="inst-name" style="font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em;">LabWatch</div>
-        <div class="inst-sub" style="color: #93c5fd; font-size: 0.78rem; font-weight: 600;">
+        <div class="inst-name">LabWatch</div>
+        <div class="inst-sub">
           Laboratory PC Fault Reporting &amp; Monitoring System &bull; AIDS Department
         </div>
       </div>
