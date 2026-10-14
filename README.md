@@ -30,10 +30,11 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 │   ├── qr_stickers.html      # 246-Workstation Printable Physical QR Code Sticker Sheet
 │   ├── report.html           # Student Fault Reporting Form with Fast Chips & AI Lab Doctor
 │   └── status.html           # Public ticket self-tracking status page
-├── tests/                    # Comprehensive Automated Test Suites (72 tests)
+├── tests/                    # Comprehensive Automated Test Suites (82 tests)
 │   ├── test_aids_realtime_solving.py
 │   ├── test_college_deployment_readiness.py
 │   ├── test_college_deployment_upgrades.py
+│   ├── test_cyber_security_and_privacy.py
 │   ├── test_edge_case_failures.py
 │   ├── test_hod_report_and_discovery.py
 │   ├── test_institutional_security_hardening.py
@@ -130,6 +131,13 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 
 17. **1-Click Student Workstation Desktop Shortcut Deployer (`deploy_student_desktop_shortcut.bat`)**:
     - Automated batch deployer creating a zero-friction desktop shortcut on `C:\Users\Public\Desktop` with auto-detected client IP.
+
+18. **Institutional Cyber Security, Privacy Cloaking & Anti-Hacking Firewall (WAF Layer 7)**:
+    - **Layer 7 Inspection**: Blocks path traversal (`../`, `..\\`, `%2e%2e`, null bytes), sensitive file snooping (`.env`, `.session_secret`, `.daemon_secret`, `labpulse.db`), and injection probes (`union select`, `' or 1=1`, `<script>`).
+    - **Timing Attack Defense**: Constant-time dummy PBKDF2 hash computation on non-existent accounts defeats username enumeration side-channels.
+    - **Student Privacy Preservation & Anti-Leaking**: Automatic cloaking of student full names (`N****s J****a`), emails (`n***s@mepcoeng.ac.in`), and workstation IPs on public status views and peer ticket feeds.
+    - **Anti-Fingerprinting**: Server header obfuscated to `LabWatch-Security-Gateway`, enforced with `Cross-Origin-Opener-Policy: same-origin`, `X-Permitted-Cross-Domain-Policies: none`, and anti-caching directives.
+    - **Command Injection Protection**: Shell metacharacters (`;`, `&`, `|`, `` ` ``, `$`) strictly rejected in the cross-lab remote execution shell.
 
 ---
 

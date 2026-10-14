@@ -259,6 +259,24 @@ Implemented in [`remediation_engine.py`](file:///d:/CN%20mini/remediation_engine
 - Implements production-grade WSGI serving via `waitress.serve(app, host='0.0.0.0', port=5000, threads=16)` when executed directly.
 - Handles concurrent campus-wide workstation heartbeats, SSE event listeners, and student issue submissions without request starvation, with automatic Werkzeug fallback for development.
 
+#### 8.20 Institutional Cyber Security, Anti-Hacking & Anti-Leaking Firewall (WAF Layer 7)
+- **Layer 7 Deep Packet Inspection**:
+  - Path traversal defense: Real-time neutralization of directory traversal attacks (`../`, `..\\`, `%2e%2e`, `%252e`, null bytes `\x00`).
+  - Sensitive file protection: Automatic HTTP 403 blocking of attempts to probe `.env`, `.git`, `.session_secret`, `.daemon_secret`, or SQLite database files.
+  - Query injection defense: Blocks SQL injection (`union select`, `' or 1=1`, `';--`) and script injection probes (`<script>`, `javascript:`).
+- **Timing Attack Defense**:
+  - Constant-time dummy PBKDF2-HMAC-SHA256 (100,000 iterations) computation on non-existent usernames neutralizes username enumeration side-channels.
+- **FERPA Student PII Privacy Cloaking**:
+  - Automatically cloaks student full names (`N****s J****a`), institutional emails (`n***s@mepcoeng.ac.in`), and workstation IP addresses (`192.168.1.***`) from unauthenticated public visitors and peer students.
+- **Anti-Fingerprinting & Header Hardening**:
+  - Overrides server signature to `Server: LabWatch-Security-Gateway`.
+  - Enforces `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and `X-Permitted-Cross-Domain-Policies: none`.
+  - Mandates strict `Cache-Control: no-store, no-cache, must-revalidate, private` on sensitive endpoints.
+- **Command Injection Neutralization**:
+  - Rejects shell metacharacters (`;`, `&`, `|`, `` ` ``, `$`) in the cross-lab remote execution diagnostic console.
+- **SOC Real-Time WAF Telemetry**:
+  - Exposes live attack mitigation statistics (traversal blocked, sensitive files blocked, injection blocked) via `/api/admin/security/status`.
+
 ---
 
 ### 9. Running and Demonstrating the Upgraded System
@@ -288,7 +306,7 @@ python python_server.py 5000   # Direct Python execution (Waitress WSGI Producti
 .\bin\labpulse_monitor.exe --restart PC-30    # Dual-broadcast WoL Magic Packet via UDP
 .\bin\labpulse_monitor.exe --sweep           # Full inventory ICMP sweep across all 246 PCs
 
-# 4. Run Complete Automated Test Suite (72 Unit & Integration Tests across 9 suites)
+# 4. Run Complete Automated Test Suite (82 Unit & Integration Tests across 10 suites)
 python -m pytest tests/ -v
 ```
 

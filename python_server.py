@@ -148,7 +148,86 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=2)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_NAME"] = "__LabPulse_Session"
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB maximum payload size (Anti-DoS)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+# ==============================================================================
+# 2.5 PRIVACY PRESERVATION & STUDENT PII CLOAKING ENGINE
+# ==============================================================================
+def mask_email(email: str) -> str:
+    """Mask email for privacy protection against data harvesting (e.g. n***s@mepcoeng.ac.in)."""
+    if not email or "@" not in email:
+        return "hidden@institutional.local"
+    user_part, domain_part = email.split("@", 1)
+    if len(user_part) <= 2:
+        masked_user = user_part[0] + "***"
+    else:
+        masked_user = user_part[0] + "***" + user_part[-1]
+    return f"{masked_user}@{domain_part}"
+
+def mask_name(name: str) -> str:
+    """Mask student full name for privacy protection against public stalking."""
+    if not name:
+        return "Student (Protected)"
+    parts = name.strip().split()
+    masked_parts = []
+    for p in parts:
+        if len(p) <= 2:
+            masked_parts.append(p[0] + "*")
+        else:
+            masked_parts.append(p[0] + "*" * (len(p) - 2) + p[-1])
+    return " ".join(masked_parts)
+
+def mask_ip(ip: str) -> str:
+    """Mask workstation IP for network privacy (e.g. 192.168.1.***)."""
+    if not ip or "." not in ip:
+        return "192.168.*.*"
+    parts = ip.split(".")
+    if len(parts) == 4:
+        return f"{parts[0]}.{parts[1]}.{parts[2]}.***"
+    return "192.168.*.***"
+
+class WAFMetrics:
+    """Thread-safe Web Application Firewall attack telemetry engine."""
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.traversal_blocked = 0
+        self.sensitive_files_blocked = 0
+        self.injection_probes_blocked = 0
+        self.large_payloads_blocked = 0
+
+    def record_traversal(self):
+        with self._lock:
+            self.traversal_blocked += 1
+
+    def record_sensitive_file(self):
+        with self._lock:
+            self.sensitive_files_blocked += 1
+
+    def record_injection(self):
+        with self._lock:
+            self.injection_probes_blocked += 1
+
+    def record_large_payload(self):
+        with self._lock:
+            self.large_payloads_blocked += 1
+
+    def get_stats(self) -> dict:
+        with self._lock:
+            return {
+                "traversal_blocked": self.traversal_blocked,
+                "sensitive_files_blocked": self.sensitive_files_blocked,
+                "injection_probes_blocked": self.injection_probes_blocked,
+                "large_payloads_blocked": self.large_payloads_blocked,
+                "total_attacks_blocked": (
+                    self.traversal_blocked +
+                    self.sensitive_files_blocked +
+                    self.injection_probes_blocked +
+                    self.large_payloads_blocked
+                )
+            }
+
+waf_metrics = WAFMetrics()
 
 # ==============================================================================
 # 3. DEFENSE-IN-DEPTH: RATE LIMITING & INPUT SANITIZATION
@@ -269,12 +348,22 @@ def apply_security_headers(response):
     """
     Enforce institutional HTTP security headers (OWASP Top 10 compliance).
     Protects against MIME sniffing, clickjacking, inline script execution, and frame injection.
+    Suppresses infrastructure fingerprinting via generic Server signature.
     """
+    response.headers["Server"] = "LabWatch-Security-Gateway"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+
+    # Enforce strict anti-caching headers on sensitive management, ticket, and telemetry APIs
+    if request.path.startswith(("/api/admin", "/api/tickets", "/api/auth/me", "/api/reports", "/admin")):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        response.headers["Pragma"] = "no-cache"
 
     csp_policy = (
         "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; "
@@ -286,6 +375,114 @@ def apply_security_headers(response):
     )
     response.headers["Content-Security-Policy"] = csp_policy
     return response
+
+
+# ==============================================================================
+# 3.5 INSTITUTIONAL WEB APPLICATION FIREWALL (WAF LAYER 7)
+# ==============================================================================
+@app.before_request
+def web_application_firewall():
+    """
+    Institutional Web Application Firewall (WAF) Layer 7 Deep Packet Inspection:
+    - Neutralizes Path Traversal attacks (../, ..\\, %2e%2e, null bytes)
+    - Prohibits Unauthorized Sensitive File Probing (.env, .git, .session_secret, .db, etc.)
+    - Intercepts Malicious Query Injection Probes (SQLi, Stored/Reflected XSS)
+    - Enforces Inactivity Session Invalidation (2-hour rolling timeout)
+    """
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+    raw_path = request.path or ""
+    raw_query = request.query_string.decode("utf-8", errors="ignore")
+    query_str = urllib.parse.unquote_plus(raw_query).lower()
+    full_target = f"{raw_path}?{query_str}".lower()
+
+    # 1. Path Traversal & Null Byte Neutralization
+    traversal_patterns = ["/../", "\\..\\", "../", "..\\", "%2e%2e", "\x00", "%00"]
+    if any(pat in raw_path or pat in query_str for pat in traversal_patterns):
+        waf_metrics.record_traversal()
+        audit_logger.warning(f"[WAF_PATH_TRAVERSAL_BLOCKED] Path traversal attempt blocked: '{raw_path}' from {client_ip}")
+        logger.warning(f"[-] [WAF] Blocked path traversal attempt from {client_ip} on '{raw_path}'")
+        return jsonify({"error": "Bad Request: Path traversal pattern detected by institutional WAF.", "status": 400}), 400
+
+    # 2. Sensitive Institutional File Probing Protection
+    sensitive_file_targets = [
+        "/.env", "/.git", "/.session_secret", "/.daemon_secret", "/.telegram_config.json",
+        "/labpulse.db", "/id_rsa", "/etc/passwd", "/windows/win.ini", "/wp-login", "/wp-admin"
+    ]
+    if any(target in full_target for target in sensitive_file_targets):
+        waf_metrics.record_sensitive_file()
+        audit_logger.warning(f"[WAF_SENSITIVE_FILE_PROBE] Blocked probe for protected file: '{raw_path}' from {client_ip}")
+        logger.warning(f"[-] [WAF] Blocked access to sensitive file '{raw_path}' from {client_ip}")
+        return jsonify({"error": "Access Denied: Protected institutional resource.", "status": 403}), 403
+
+    # 3. Injection Probe Inspection on Query String
+    injection_probes = [
+        "union select", "union all select", "information_schema",
+        "<script", "javascript:", "onload=", "onerror=", "' or 1=1", "';--"
+    ]
+    if any(probe in query_str for probe in injection_probes):
+        waf_metrics.record_injection()
+        audit_logger.warning(f"[WAF_INJECTION_PROBE_BLOCKED] Malicious injection pattern blocked in query: '{query_str[:80]}' from {client_ip}")
+        logger.warning(f"[-] [WAF] Blocked injection pattern in query from {client_ip}")
+        return jsonify({"error": "Bad Request: Malicious payload pattern detected by institutional WAF.", "status": 400}), 400
+
+    # 4. Session Inactivity Timeout Guard (2 hours)
+    if "user" in session:
+        now_ts = time.time()
+        last_active = session.get("last_active")
+        if last_active and (now_ts - last_active > 7200):
+            user_info = session.pop("user", None)
+            session.clear()
+            audit_logger.info(f"[SESSION_TIMEOUT] Inactive session expired for user '{user_info.get('username') if user_info else 'unknown'}' from {client_ip}")
+        else:
+            session["last_active"] = now_ts
+
+    return None
+
+
+# ==============================================================================
+# 3.6 CENTRALIZED SANITIZED ERROR HANDLERS (ANTI-INFORMATION LEAKAGE)
+# ==============================================================================
+@app.errorhandler(400)
+def handle_bad_request(e):
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Bad Request: Request validation failed.", "status": 400}), 400
+    return render_template("login.html", error="Bad Request: Validation failed.", portal="student"), 400
+
+@app.errorhandler(403)
+def handle_forbidden(e):
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Access Denied: Insufficient authorization.", "status": 403}), 403
+    return render_template("login.html", error="Access Denied: You do not have permission to access this resource.", portal="student"), 403
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Resource not found.", "status": 404}), 404
+    return render_template("login.html", error="The requested page could not be located.", portal="student"), 404
+
+@app.errorhandler(405)
+def handle_method_not_allowed(e):
+    return jsonify({"error": "HTTP method not allowed for this endpoint.", "status": 405}), 405
+
+@app.errorhandler(413)
+def handle_payload_too_large(e):
+    return jsonify({"error": "Payload Too Large: Maximum allowed upload is 2MB.", "status": 413}), 413
+
+@app.errorhandler(429)
+def handle_too_many_requests(e):
+    return jsonify({"error": "Security Rate Limit Exceeded. Please slow down and try again later.", "status": 429}), 429
+
+@app.errorhandler(500)
+def handle_internal_server_error(e):
+    logger.error(f"[-] [500 Server Error] {e}", exc_info=True)
+    audit_logger.error(f"[SERVER_ERROR_500] Handled internal exception on {request.path}")
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({
+            "error": "An internal server error occurred. Telemetry has been logged for system administrators.",
+            "status": 500
+        }), 500
+    return render_template("login.html", error="An internal system error occurred. Please contact IT support.", portal="student"), 500
+
 
 
 # ==============================================================================
@@ -1629,6 +1826,11 @@ def auth_login():
                     is_valid_pw = True
                 elif verify_password(username, user["password_hash"], user_salt):
                     is_valid_pw = True
+        else:
+            # Timing attack defense: Perform constant-time PBKDF2 hash verification on non-existent account
+            DUMMY_SALT = "0" * 32
+            DUMMY_HASH = f"pbkdf2:sha256:{PBKDF2_ITERATIONS}${'0'*32}${'0'*64}"
+            verify_password(password, DUMMY_HASH, DUMMY_SALT)
 
         if not is_valid_pw:
             is_newly_locked, lockout_secs = rate_limiter.record_failure(client_ip, username)
@@ -1707,6 +1909,20 @@ def auth_register():
 
     if len(password) < 6:
         return jsonify({"error": "Password must be at least 6 characters for institutional security compliance"}), 400
+
+    COMMON_PROHIBITED_PASSWORDS = {
+        "password", "123456", "admin123", "mepco123", "student123",
+        "qwerty", "welcome", "password123", "letmein", "12345678"
+    }
+    if password.lower() in COMMON_PROHIBITED_PASSWORDS:
+        return jsonify({"error": "Password is too common and easily guessable. Please choose a stronger passphrase."}), 400
+
+    import re
+    if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email):
+        return jsonify({"error": "Invalid institutional email address format"}), 400
+
+    if not re.match(r"^[a-zA-Z0-9_]{3,32}$", username):
+        return jsonify({"error": "Username must be 3-32 alphanumeric characters or underscores"}), 400
 
     conn = get_db_connection()
     try:
@@ -1847,6 +2063,16 @@ def get_tickets():
         cursor = conn.cursor()
         cursor.execute(query, params)
         rows = [dict(r) for r in cursor.fetchall()]
+
+        # Student Privacy Cloaking: Mask peer PII to prevent scraping / identity harvesting
+        if current_user.get("role") == "student":
+            for r in rows:
+                if r.get("user_id") != current_user.get("id"):
+                    r["reporter_name"] = mask_name(r.get("reporter_name", ""))
+                    r["reporter_email"] = mask_email(r.get("reporter_email", ""))
+                    if "ip_address" in r:
+                        r["ip_address"] = mask_ip(r.get("ip_address", ""))
+
         return jsonify({"count": len(rows), "tickets": rows})
     finally:
         conn.close()
@@ -2864,6 +3090,13 @@ def api_admin_remote_exec():
     raw_command = data.get("command")
     command = str(raw_command if raw_command is not None else "systeminfo").strip().lower()
 
+    # Cyber Security: Block shell injection metacharacters
+    disallowed_tokens = [";", "&", "|", "`", "$", ">", "<", "\n", "\r", "\x00"]
+    if any(tok in command for tok in disallowed_tokens):
+        client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+        audit_logger.warning(f"[COMMAND_INJECTION_BLOCKED] Blocked suspicious command token in '{command}' from {client_ip}")
+        return jsonify({"error": "Security validation failed: Prohibited shell metacharacters detected in command."}), 400
+
     if not pc_id:
         return jsonify({"error": "Workstation identifier (pc_id) is required"}), 400
 
@@ -3020,7 +3253,11 @@ def api_admin_security_status():
         "auth_lockout_count": sum(1 for line in audit_events if "[AUTH_LOCKOUT" in line),
         "csrf_blocked_count": sum(1 for line in audit_events if "[CSRF_REJECT]" in line),
         "rbac_violation_count": sum(1 for line in audit_events if "[RBAC_VIOLATION]" in line),
-        "daemon_reject_count": sum(1 for line in audit_events if "[DAEMON_AUTH_REJECT]" in line)
+        "daemon_reject_count": sum(1 for line in audit_events if "[DAEMON_AUTH_REJECT]" in line),
+        "waf_traversal_blocked": waf_metrics.traversal_blocked,
+        "waf_sensitive_files_blocked": waf_metrics.sensitive_files_blocked,
+        "waf_injection_blocked": waf_metrics.injection_probes_blocked,
+        "waf_total_blocked": waf_metrics.get_stats()["total_attacks_blocked"]
     }
 
     return jsonify({
@@ -3028,12 +3265,17 @@ def api_admin_security_status():
         "security_posture": {
             "rbac_zero_trust": "Enforced (Strict Role Isolation)",
             "daemon_m2m_auth": "Enforced (X-Daemon-Token Signature)",
-            "session_security": "HTTPOnly, SameSite=Lax, Auto-Generated 256-bit Key",
+            "session_security": "HTTPOnly, SameSite=Lax, Inactivity Timeout (2h)",
             "rate_limiting": "Active (Sliding Window, 5-fail / 15-min lockout)",
-            "input_sanitization": "Active (OWASP Anti-XSS, IPv4 RFC Validation)"
+            "input_sanitization": "Active (OWASP Anti-XSS, IPv4 RFC Validation)",
+            "web_application_firewall": "Active (WAF Layer 7 Deep Packet Inspection)",
+            "timing_attack_defense": "Active (Constant-Time Dummy Hash Verification)",
+            "privacy_cloaking": "Active (FERPA Student PII Cloaking)",
+            "anti_fingerprinting": "Active (Server Header Obfuscated to Security-Gateway)"
         },
         "active_lockouts": active_lockouts,
         "metrics": stats,
+        "waf_telemetry": waf_metrics.get_stats(),
         "recent_audit_events": audit_events
     }), 200
 
@@ -4561,7 +4803,7 @@ def reporter_ticket_status(ticket_number: str):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT t.id, t.ticket_number, t.issue_category, t.description,
+            SELECT t.id, t.ticket_number, t.user_id, t.issue_category, t.description,
                    t.status, t.priority, t.reported_at, t.resolved_at,
                    t.resolution_notes,
                    u.full_name AS reporter_name, coalesce(t.reporter_email, u.email) AS reporter_email,
@@ -4582,8 +4824,19 @@ def reporter_ticket_status(ticket_number: str):
                                    error=f"Ticket '{ticket_number}' not found in the system.",
                                    logged_user=session.get("user"))
 
+        current_user = session.get("user")
+        is_author = current_user and current_user.get("id") == ticket["user_id"]
+        is_admin_or_tech = current_user and current_user.get("role") in ("admin", "technician", "staff")
+        can_view_pii = is_author or is_admin_or_tech
+
+        ticket_dict = dict(ticket)
+        if not can_view_pii:
+            ticket_dict["reporter_name"] = mask_name(ticket_dict.get("reporter_name", ""))
+            ticket_dict["reporter_email"] = mask_email(ticket_dict.get("reporter_email", ""))
+            ticket_dict["ip_address"] = mask_ip(ticket_dict.get("ip_address", ""))
+
         return render_template("status.html",
-                               ticket=dict(ticket),
+                               ticket=ticket_dict,
                                ticket_number=ticket_number,
                                error=None,
                                logged_user=session.get("user"))
@@ -4720,6 +4973,9 @@ def get_deployment_posture() -> dict:
                 "rate_limiting": "Sliding-Window Account & IP Lockout Protection",
                 "active_lockouts_count": len(active_lockouts),
                 "csrf_protection": "Cryptographic Token Verification",
+                "waf_layer_7": "Active (Deep Packet Inspection & Anti-Traversal)",
+                "timing_attack_defense": "Active (Constant-Time PBKDF2 Dummy Compute)",
+                "privacy_cloaking": "Active (FERPA Masking on Public Endpoints)",
                 "zero_emojis_compliance": "100% Certified Institutional Clean",
             },
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
