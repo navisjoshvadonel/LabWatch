@@ -643,6 +643,32 @@
     .btn-demo-sim:hover {
       background: #bfdbfe;
     }
+    /* 1-Click Fast Reporting Chips */
+    .quick-fault-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+    .quick-fault-chip {
+      background: #f8fafc;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .quick-fault-chip:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -858,6 +884,34 @@
                 </div>
               </div>
 
+              <!-- 1-Click Fast Reporting Quick-Select Chips -->
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Quick-Select Common Fault</span>
+                  <span class="form-label-hint">1-Click Auto-Fill</span>
+                </label>
+                <div class="quick-fault-chips">
+                  <button type="button" class="quick-fault-chip" onclick="quickFillFault('Peripheral / Display', 'Blank Monitor / No display output on workstation screen.', 'High')">
+                    [No Display]
+                  </button>
+                  <button type="button" class="quick-fault-chip" onclick="quickFillFault('Peripheral / Display', 'Mouse optical sensor not tracking and keyboard key inputs unresponsive.', 'Medium')">
+                    [Mouse/Keyboard Stuck]
+                  </button>
+                  <button type="button" class="quick-fault-chip" onclick="quickFillFault('Network Connectivity', 'Network unreachable / LAN cable disconnected / Gateway ping timeout.', 'High')">
+                    [No Network / LAN]
+                  </button>
+                  <button type="button" class="quick-fault-chip" onclick="quickFillFault('Operating System', 'System frozen / BSOD kernel panic during practical laboratory session.', 'Critical')">
+                    [System Frozen / BSOD]
+                  </button>
+                  <button type="button" class="quick-fault-chip" onclick="quickFillFault('Software Crash', 'PyTorch CUDA Out of Memory (OOM) error allocating tensor on GPU.', 'Medium')">
+                    [CUDA GPU OOM]
+                  </button>
+                  <button type="button" class="quick-fault-chip" onclick="quickFillFault('Software Crash', 'JupyterLab server kernel deadlocked on port 8888 and unresponsive.', 'Medium')">
+                    [Jupyter Deadlock]
+                  </button>
+                </div>
+              </div>
+
               <!-- 3. Issue Category Dropdown -->
               <div class="form-group">
                 <label for="issue_category" class="form-label">
@@ -982,6 +1036,20 @@
       const tck = prompt("Enter your Ticket ID to check resolution status (e.g. TCK-101):");
       if (tck && tck.trim()) {
         window.location.href = "/status/" + encodeURIComponent(tck.trim());
+      }
+    }
+
+    function quickFillFault(category, desc, priority) {
+      const catSelect = document.getElementById("issue_category");
+      if (catSelect) catSelect.value = category;
+      const prioSelect = document.getElementById("priority");
+      if (prioSelect) prioSelect.value = priority;
+      const descEl = document.getElementById("description");
+      if (descEl) {
+        descEl.value = desc;
+        if (typeof triggerAiDoctorDebounced === "function") {
+          triggerAiDoctorDebounced();
+        }
       }
     }
     // Embedded JSON data of computers grouped by lab_id from Python

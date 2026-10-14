@@ -26,10 +26,11 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 │   ├── admin.html            # IT Staff Administration, SMTP Configuration & Triage Hub
 │   ├── index.html            # Unified SPA (Live Grid, Digital Twin, Triage, Exam Mode, Analytics)
 │   ├── login.html            # Institutional Authentication Portal
+│   ├── nba_naac_register.html # NBA Criterion 6 & NAAC 4.4 Equipment Maintenance Register
 │   ├── qr_stickers.html      # 246-Workstation Printable Physical QR Code Sticker Sheet
-│   ├── report.html           # Student Fault Reporting Form with AI Lab Doctor
+│   ├── report.html           # Student Fault Reporting Form with Fast Chips & AI Lab Doctor
 │   └── status.html           # Public ticket self-tracking status page
-├── tests/                    # Comprehensive Automated Test Suites (65 tests)
+├── tests/                    # Comprehensive Automated Test Suites (72 tests)
 │   ├── test_aids_realtime_solving.py
 │   ├── test_college_deployment_readiness.py
 │   ├── test_college_deployment_upgrades.py
@@ -39,15 +40,17 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 │   ├── test_live_gmail_smtp_protocol.py
 │   ├── test_phase_a_security.py
 │   └── test_zero_phone_college_reporting.py
+├── backups/                  # Automated SQLite online VACUUM snapshot directory
 ├── bin/
 │   └── .gitkeep              # Binary directory placeholder
-├── python_server.py          # Flask Core Server (Auth, Tickets, Automated Alert Handler, SPA)
+├── python_server.py          # Flask & Waitress WSGI Server (Auth, Tickets, Alerts, Snapshots)
 ├── event_broker.py           # Real-Time Server-Sent Events (SSE) Live Stream Pub/Sub Broker
 ├── ai_diagnostic.py          # AI Lab Doctor (Domain NLP & Root Cause Analysis Engine)
 ├── remediation_engine.py     # 1-Click Self-Healing Playbooks, L3/L4 Diagnostics & Pre-Exam Audit
 ├── qr_generator.py           # Pure-Python Vector SVG QR Code Mobile Reporting Generator
 ├── build.bat / Makefile      # Automated build scripts for Windows and Linux
 ├── deploy_labwatch.ps1       # Production PowerShell institutional deployer
+├── deploy_student_desktop_shortcut.bat # 1-Click Student Workstation Desktop Shortcut Deployer
 ├── start_labwatch.bat        # One-click Windows deployment launcher
 ├── report_issue.bat          # Workstation desktop zero-phone issue reporter
 ├── computers_monitor.txt     # Target inventory dynamically consumed by C daemon
@@ -112,6 +115,22 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 12. **College Deployment Pre-Flight Health & Posture Telemetry (`/api/deployment/status`)**:
     - Comprehensive system verification reporting SQLite WAL mode, database integrity check, C binary compilation, campus gateway reachability, active LAN interfaces, and security lockouts.
 
+13. **NBA Criterion 6 & NAAC Key Indicator 4.4 Equipment Down-Time & Maintenance Register (`/admin/reports/nba-naac-register`)**:
+    - Official academic accreditation audit register documenting Mean Time To Repair (MTTR), equipment breakdown frequencies, and servicing history.
+    - Includes one-click CSV export (`/api/reports/nba-naac-register?format=csv`) and institutional printable letterhead with 3-tier signature block (Lab In-Charge, HOD, Principal/Dean).
+
+14. **Real-Time Telegram Bot Mobile Technician Dispatch (`/api/admin/telegram/config`)**:
+    - Instant mobile notification broadcast to laboratory technician smartphones on new critical/high tickets and ticket resolutions without reliance on external SMS gateways.
+
+15. **Zero-Downtime Hot Online Database Snapshots (`/api/admin/database/backup`)**:
+    - Instant point-in-time database snapshots using SQLite `VACUUM INTO` with automated 10-file rolling rotation.
+
+16. **Enterprise WSGI Production Runner (`waitress`)**:
+    - Multi-threaded production WSGI server (`waitress` with 16 threads) for campus-wide concurrency, with automatic Werkzeug fallback for development.
+
+17. **1-Click Student Workstation Desktop Shortcut Deployer (`deploy_student_desktop_shortcut.bat`)**:
+    - Automated batch deployer creating a zero-friction desktop shortcut on `C:\Users\Public\Desktop` with auto-detected client IP.
+
 ---
 
 ## Quick Start & Running
@@ -129,7 +148,7 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 # Or Modern PowerShell Launcher:
 .\deploy_labwatch.ps1
 
-# Or Direct Python Execution:
+# Or Direct Python Execution (Starts Waitress WSGI Production Server):
 python python_server.py 5000
 ```
 Open **`http://127.0.0.1:5000`** in any browser to access the live dashboard.
@@ -139,6 +158,7 @@ Workstations across the campus lab LAN can access directly via **`http://<CAMPUS
 - **Live Digital Twin & Remediation Hub**: `http://127.0.0.1:5000/monitor`
 - **Student Fault Reporting Form**: `http://127.0.0.1:5000/report`
 - **IT Admin Triage Dashboard**: `http://127.0.0.1:5000/admin`
+- **NBA/NAAC Accreditation Maintenance Register**: `http://127.0.0.1:5000/admin/reports/nba-naac-register`
 - **Workstation QR Physical Label Sheet**: `http://127.0.0.1:5000/print-qr-stickers`
 - **Deployment Posture Health API**: `http://127.0.0.1:5000/api/deployment/status`
 

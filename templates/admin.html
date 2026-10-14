@@ -874,6 +874,9 @@
         <a href="/print-qr-stickers" target="_blank" class="nav-tab-link" style="background:#ecfdf5; color:#065f46; font-weight:700; border:1px solid #a7f3d0;">
           <span>QR Stickers</span>
         </a>
+        <a href="/admin/reports/nba-naac-register" target="_blank" class="nav-tab-link" style="background:#fef3c7; color:#92400e; font-weight:700; border:1px solid #fde68a;">
+          <span>NBA/NAAC Register</span>
+        </a>
         <a href="#security-section" class="nav-tab-link" style="background:#fee2e2; color:#991b1b; font-weight:700; border:1px solid #fecaca;">
           <span>SOC & Security</span>
         </a>
@@ -891,6 +894,12 @@
         <p>View and manage reported computer issues</p>
       </div>
       <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <button type="button" onclick="triggerDatabaseBackup()" id="btn-quick-backup" style="background:#0f766e; color:#ffffff; border:none; padding:0.4rem 0.85rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+          <span>[Snapshot DB]</span>
+        </button>
+        <a href="/admin/reports/nba-naac-register" target="_blank" style="background:#b45309; color:#ffffff; text-decoration:none; padding:0.4rem 0.85rem; border-radius:6px; font-size:0.75rem; font-weight:700;">
+          <span>[NBA/NAAC Register]</span>
+        </a>
         <div class="live-status-pill">
           <span class="pulsing-green-dot"></span>
           <span class="live-status-text">Live</span>
@@ -1220,6 +1229,10 @@
             padding:0.4rem 0.85rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;">
             <span>Configure Gmail SMTP</span>
           </button>
+          <button type="button" onclick="openTelegramConfigModal()" style="background:#059669;color:#fff;border:none;
+            padding:0.4rem 0.85rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;">
+            <span>Configure Telegram Bot</span>
+          </button>
           <button type="button" onclick="refreshNotifications()" style="background:var(--mepco-blue);color:#fff;border:none;
             padding:0.4rem 0.75rem;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;">
             <span>Refresh</span>
@@ -1232,6 +1245,7 @@
         <span><strong>Sender:</strong> <code id="smtp-sender-val">loading&hellip;</code></span>
         <span><strong>Protocol:</strong> <code>RFC 3207 STARTTLS (smtp.gmail.com:587)</code></span>
         <span id="smtp-live-status" style="font-weight:700; color: #b45309;">loading&hellip;</span>
+        <span><strong>Telegram Dispatch:</strong> <span id="telegram-live-status" style="font-weight:700; color: #b45309;">checking...</span></span>
       </div>
 
       <div id="email-log-body" style="padding: 1.25rem 1.5rem;">
@@ -1325,6 +1339,74 @@
             </button>
             <button type="button" id="btn-smtp-save" onclick="saveSmtpConfig()" style="background:#16a34a; color:#ffffff; border:none; padding:0.5rem 1.15rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
               Save &amp; Activate Live
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telegram Bot Mobile Notification Configuration Modal -->
+    <div id="telegram-config-modal" style="display:none; position:fixed; z-index:9999; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+      <div style="background:#ffffff; border-radius:12px; width:100%; max-width:580px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); border:1px solid #cbd5e1; overflow:hidden;">
+        <!-- Modal Header -->
+        <div style="background:linear-gradient(135deg, #065f46 0%, #047857 100%); padding:1.25rem 1.5rem; color:#ffffff; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; opacity:0.85;">
+              Mepco Schlenk Engineering College &bull; Department of AI &amp; DS
+            </div>
+            <div style="font-size:1.15rem; font-weight:800; margin-top:2px;">
+              Telegram Mobile Alert Dispatcher
+            </div>
+          </div>
+          <button type="button" onclick="closeTelegramConfigModal()" style="background:rgba(255,255,255,0.2); border:none; color:#ffffff; width:28px; height:28px; border-radius:50%; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+            &times;
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div style="padding:1.5rem; font-size:0.8125rem; color:#334155; line-height:1.5;">
+          <p style="margin-bottom:1rem; font-size:0.8125rem;">
+            Connect an institutional Telegram Bot to send instant push notifications to on-duty lab technicians when students report issues or when workstations go offline.
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:0.95rem;">
+            <div>
+              <label for="telegram-input-token" style="display:block; font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:0.35rem;">
+                Telegram Bot API Token <span style="color:#ef4444;">*</span>
+              </label>
+              <input type="text" id="telegram-input-token" placeholder="e.g. 7123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
+                     style="width:100%; padding:0.6rem 0.85rem; border:1px solid #cbd5e1; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:0.8125rem; box-sizing:border-box;">
+              <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">
+                Obtain from @BotFather on Telegram (free, instant setup).
+              </div>
+            </div>
+
+            <div>
+              <label for="telegram-input-chat" style="display:block; font-size:0.75rem; font-weight:700; color:#334155; margin-bottom:0.35rem;">
+                Target Chat ID / Channel ID <span style="color:#ef4444;">*</span>
+              </label>
+              <input type="text" id="telegram-input-chat" placeholder="e.g. -1001234567890 or @mepco_aids_alerts"
+                     style="width:100%; padding:0.6rem 0.85rem; border:1px solid #cbd5e1; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:0.8125rem; box-sizing:border-box;">
+              <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">
+                Group ID or Channel Username where lab technicians receive alerts.
+              </div>
+            </div>
+          </div>
+
+          <div id="telegram-test-result" style="display:none; margin-top:1rem; padding:0.85rem 1rem; border-radius:6px; font-size:0.75rem; font-family:'JetBrains Mono',monospace; line-height:1.45;"></div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div style="background:#f8fafc; padding:1rem 1.5rem; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
+          <button type="button" onclick="closeTelegramConfigModal()" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:0.5rem 1rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+            Cancel
+          </button>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" id="btn-telegram-verify" onclick="verifyTelegramHandshake()" style="background:#0284c7; color:#ffffff; border:none; padding:0.5rem 0.95rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+              Verify &amp; Test Alert
+            </button>
+            <button type="button" id="btn-telegram-save" onclick="saveTelegramConfig()" style="background:#059669; color:#ffffff; border:none; padding:0.5rem 1.15rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+              Save &amp; Activate
             </button>
           </div>
         </div>
@@ -1571,6 +1653,177 @@
         refreshNotifications();
       })
       .catch(err => alert(`Error: ${err}`));
+    }
+
+    function openTelegramConfigModal() {
+      const modal = document.getElementById('telegram-config-modal');
+      if (modal) modal.style.display = 'flex';
+      fetch('/api/admin/telegram/config')
+        .then(r => r.json())
+        .then(data => {
+          const chatInput = document.getElementById('telegram-input-chat');
+          if (chatInput && data.chat_id) chatInput.value = data.chat_id;
+        })
+        .catch(() => {});
+    }
+
+    function closeTelegramConfigModal() {
+      const modal = document.getElementById('telegram-config-modal');
+      if (modal) modal.style.display = 'none';
+      const resultBox = document.getElementById('telegram-test-result');
+      if (resultBox) resultBox.style.display = 'none';
+    }
+
+    function verifyTelegramHandshake() {
+      const token = (document.getElementById('telegram-input-token').value || '').trim();
+      const chat = (document.getElementById('telegram-input-chat').value || '').trim();
+      const resultBox = document.getElementById('telegram-test-result');
+      const verifyBtn = document.getElementById('btn-telegram-verify');
+
+      if (!token || !chat) {
+        alert('Please enter both Telegram Bot Token and Chat ID.');
+        return;
+      }
+
+      if (verifyBtn) {
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Contacting Telegram...';
+      }
+      if (resultBox) {
+        resultBox.style.display = 'block';
+        resultBox.style.background = '#e0f2fe';
+        resultBox.style.color = '#0369a1';
+        resultBox.style.border = '1px solid #7dd3fc';
+        resultBox.textContent = '[CONNECTING] Sending live verification message to Telegram chat...';
+      }
+
+      fetch('/api/admin/telegram/test-send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ bot_token: token, chat_id: chat })
+      })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && data.success) {
+          resultBox.style.background = '#dcfce7';
+          resultBox.style.color = '#15803d';
+          resultBox.style.border = '1px solid #86efac';
+          resultBox.textContent = '[SUCCESS] Test message delivered successfully to Telegram!';
+        } else {
+          resultBox.style.background = '#fee2e2';
+          resultBox.style.color = '#991b1b';
+          resultBox.style.border = '1px solid #fca5a5';
+          resultBox.textContent = `[FAILED] ${data.error || 'Could not dispatch Telegram alert.'}`;
+        }
+      })
+      .catch(err => {
+        resultBox.style.background = '#fee2e2';
+        resultBox.style.color = '#991b1b';
+        resultBox.style.border = '1px solid #fca5a5';
+        resultBox.textContent = `[NETWORK ERROR] ${err}`;
+      })
+      .finally(() => {
+        if (verifyBtn) {
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify & Test Alert';
+        }
+      });
+    }
+
+    function saveTelegramConfig() {
+      const token = (document.getElementById('telegram-input-token').value || '').trim();
+      const chat = (document.getElementById('telegram-input-chat').value || '').trim();
+      const saveBtn = document.getElementById('btn-telegram-save');
+      const resultBox = document.getElementById('telegram-test-result');
+
+      if (!token || !chat) {
+        alert('Both Telegram Bot Token and Chat ID are required.');
+        return;
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+      }
+
+      fetch('/api/admin/telegram/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ bot_token: token, chat_id: chat })
+      })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && data.success) {
+          closeTelegramConfigModal();
+          loadTelegramStatus();
+          alert('Telegram Bot alerts configured and activated successfully!');
+        } else {
+          resultBox.style.display = 'block';
+          resultBox.style.background = '#fee2e2';
+          resultBox.style.color = '#991b1b';
+          resultBox.style.border = '1px solid #fca5a5';
+          resultBox.textContent = `[FAILED] ${data.error || 'Could not save credentials.'}`;
+        }
+      })
+      .catch(err => alert(`Error saving Telegram config: ${err}`))
+      .finally(() => {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save & Activate';
+        }
+      });
+    }
+
+    function loadTelegramStatus() {
+      fetch('/api/admin/telegram/config')
+        .then(r => r.json())
+        .then(data => {
+          const el = document.getElementById('telegram-live-status');
+          if (!el) return;
+          if (data.configured) {
+            el.innerHTML = `<span style="color:#15803d;">[ACTIVE] Linked to Chat ID ${data.chat_id}</span>`;
+          } else {
+            el.innerHTML = `<span style="color:#b45309;">[NOT CONFIGURED] <button type="button" onclick="openTelegramConfigModal()" style="margin-left:4px;background:#059669;color:#fff;border:none;padding:1px 6px;border-radius:4px;font-size:0.6875rem;font-weight:700;cursor:pointer;">Connect Bot</button></span>`;
+          }
+        })
+        .catch(() => {});
+    }
+
+    function triggerDatabaseBackup() {
+      const btn = document.getElementById('btn-quick-backup');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>[Backing up...]</span>';
+      }
+      fetch('/api/admin/database/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ prefix: 'manual' })
+      })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && data.success) {
+          alert(`Database snapshot created successfully!\nFile: ${data.filename}\nSize: ${data.size_bytes.toLocaleString()} bytes\nLocation: backups/`);
+        } else {
+          alert(`Database backup failed: ${data.error || 'Unknown error'}`);
+        }
+      })
+      .catch(err => alert(`Backup error: ${err}`))
+      .finally(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>[Snapshot DB]</span>';
+        }
+      });
     }
 
     function getCsrfToken() {
@@ -1936,6 +2189,9 @@
 
     refreshNotifications();
     setInterval(refreshNotifications, 10000);
+
+    loadTelegramStatus();
+    setInterval(loadTelegramStatus, 15000);
 
     pollDashboardStats();
     setInterval(pollDashboardStats, 10000); // 10s poll as specified in requirements

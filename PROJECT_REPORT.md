@@ -230,6 +230,35 @@ Implemented in [`remediation_engine.py`](file:///d:/CN%20mini/remediation_engine
 #### 8.13 Institutional Deployment Posture & Pre-flight Diagnostics Telemetry (`/api/deployment/status`)
 - Comprehensive pre-flight system inspection auditing SQLite WAL mode, database integrity check (`PRAGMA integrity_check`), C binary executable health, departmental gateway connectivity (`192.16.16.200`), active multi-interface LAN IPv4 bindings, and account lockout rate limiter state.
 
+#### 8.14 NBA Criterion 6 & NAAC Key Indicator 4.4 Equipment Down-Time & Maintenance Register (`/admin/reports/nba-naac-register`, `/api/reports/nba-naac-register`)
+- Purpose-built academic accreditation audit register satisfying NBA (National Board of Accreditation) Tier-I Criterion 6 (Facilities and Technical Support) and NAAC (National Assessment and Accreditation Council) Key Indicator 4.4 (Maintenance of Campus Infrastructure).
+- Key Telemetry & Formulas:
+  - Mean Time To Repair (MTTR): $\text{MTTR} = \frac{\sum (\text{resolved\_at} - \text{created\_at})}{N_{\text{resolved}}}$.
+  - Workstation Breakdown Log: Dates of defect, fault symptoms, remediation playbook executed, technician notes, total downtime (hours/days), and current operational status.
+  - Three-tier official institutional signature block (Laboratory Technician In-Charge, Head of Department, Principal/Dean).
+  - Dual delivery: Printable institutional letterhead layout (`@media print`) and exportable CSV ledger.
+
+#### 8.15 Real-Time Telegram Bot Mobile Technician Dispatch (`/api/admin/telegram/config`, `/api/admin/telegram/test-send`)
+- Eliminates delayed desktop email checking by dispatching instant push notifications directly to floor technicians' mobile smartphones via the Telegram Bot API.
+- Triggered asynchronously on new high/critical ticket creation and ticket resolution without blocking Flask worker threads.
+- Includes administrative handshake verification and in-portal credential configuration.
+
+#### 8.16 Hot Zero-Downtime SQLite Online Database Snapshots (`/api/admin/database/backup`, `/api/admin/database/backups`)
+- Utilizes SQLite 3.27+ `VACUUM INTO` command to perform non-blocking, point-in-time binary database snapshots while the system is actively serving concurrent requests in WAL mode.
+- Automated rolling snapshot retention maintains the last 10 snapshots in `backups/`, preventing disk exhaustion.
+
+#### 8.17 1-Click Fast Reporting Quick-Select Chips (`/report`)
+- 6 predefined curricular fault chips (`[No Display]`, `[Mouse/Keyboard Stuck]`, `[No Network / LAN]`, `[System Frozen / BSOD]`, `[CUDA GPU OOM]`, `[Jupyter Deadlock]`).
+- Auto-populates category, priority, and diagnostic description in one click, instantly debouncing the AI Lab Doctor for immediate student self-healing recommendations.
+
+#### 8.18 1-Click Student Workstation Desktop Shortcut Deployer (`deploy_student_desktop_shortcut.bat`)
+- Automated Windows Batch deployer designed for campus laboratory image cloning.
+- Creates an official desktop shortcut in `C:\Users\Public\Desktop` pointing to the fault reporting portal with the workstation's detected LAN IP automatically prefilled.
+
+#### 8.19 Industrial WSGI Multi-Threaded Production Server (`waitress`)
+- Implements production-grade WSGI serving via `waitress.serve(app, host='0.0.0.0', port=5000, threads=16)` when executed directly.
+- Handles concurrent campus-wide workstation heartbeats, SSE event listeners, and student issue submissions without request starvation, with automatic Werkzeug fallback for development.
+
 ---
 
 ### 9. Running and Demonstrating the Upgraded System
@@ -243,13 +272,14 @@ Implemented in [`remediation_engine.py`](file:///d:/CN%20mini/remediation_engine
 # or
 .\deploy_labwatch.ps1          # Modern PowerShell Institutional Launcher
 # or
-python python_server.py 5000   # Direct Python execution
+python python_server.py 5000   # Direct Python execution (Waitress WSGI Production Server)
 
 # Portal Entry Points:
 #   - Interactive Digital Twin & Remediation Hub:  http://127.0.0.1:5000/monitor
 #   - HOD Executive Daily Dossier:                 http://127.0.0.1:5000/monitor?tab=hod-report
 #   - User Issue Reporting Form:                   http://127.0.0.1:5000/report
 #   - Admin IT Staff Dashboard:                    http://127.0.0.1:5000/admin
+#   - NBA/NAAC Accreditation Maintenance Register: http://127.0.0.1:5000/admin/reports/nba-naac-register
 #   - Workstation Physical QR Sticker Sheet:       http://127.0.0.1:5000/print-qr-stickers
 #   - Institutional Deployment Posture API:        http://127.0.0.1:5000/api/deployment/status
 
@@ -258,7 +288,7 @@ python python_server.py 5000   # Direct Python execution
 .\bin\labpulse_monitor.exe --restart PC-30    # Dual-broadcast WoL Magic Packet via UDP
 .\bin\labpulse_monitor.exe --sweep           # Full inventory ICMP sweep across all 246 PCs
 
-# 4. Run Complete Automated Test Suite (57 Unit & Integration Tests)
+# 4. Run Complete Automated Test Suite (72 Unit & Integration Tests across 9 suites)
 python -m pytest tests/ -v
 ```
 

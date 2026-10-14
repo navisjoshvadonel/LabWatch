@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA / NAAC Equipment Down-Time &amp; Maintenance Register | Mepco Schlenk Engineering College</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --mepco-navy: #002147;
+      --mepco-blue: #0066b3;
+      --mepco-gold: #c59b27;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-color: #cbd5e1;
+      --bg-page: #f8fafc;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    .register-wrapper {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 2rem 2.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--mepco-blue);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: #004d80;
+    }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    /* Official Letterhead Header */
+    .institutional-header {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 3px double var(--mepco-navy);
+      margin-bottom: 1.75rem;
+    }
+    .inst-logo {
+      height: 75px;
+      width: auto;
+      object-fit: contain;
+    }
+    .header-text {
+      flex: 1;
+      text-align: center;
+    }
+    .header-text h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--mepco-navy);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .header-text h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--mepco-blue);
+      margin-bottom: 0.25rem;
+    }
+    .header-text h3 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #991b1b;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-top: 0.35rem;
+    }
+    .header-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* KPI Summary Row */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .kpi-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
+    .kpi-label {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-num {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--mepco-navy);
+      margin-top: 0.2rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Official Table */
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 2rem;
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      text-align: left;
+    }
+    .audit-table th {
+      background-color: var(--mepco-navy);
+      color: #ffffff;
+      padding: 0.65rem 0.75rem;
+      font-weight: 700;
+      border: 1px solid #1e293b;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .audit-table td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .audit-table tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+    .badge-resolved {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.6875rem;
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .badge-pending {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.6875rem;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .code-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--mepco-blue);
+    }
+
+    /* Signatures Section */
+    .signatures-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3.5rem;
+      padding-top: 1rem;
+    }
+    .sig-col {
+      text-align: center;
+    }
+    .sig-line {
+      border-top: 1px dashed #64748b;
+      margin-bottom: 0.5rem;
+    }
+    .sig-title {
+      font-weight: 700;
+      font-size: 0.8125rem;
+      color: var(--mepco-navy);
+    }
+    .sig-desc {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+        font-size: 8.5pt;
+      }
+      .register-wrapper {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .kpi-row {
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      .kpi-item {
+        padding: 0.4rem;
+      }
+      .audit-table th, .audit-table td {
+        padding: 0.35rem 0.5rem;
+        font-size: 7.5pt;
+      }
+      .signatures-grid {
+        margin-top: 2.5rem;
+        page-break-inside: avoid;
+      }
+      @page {
+        size: landscape;
+        margin: 1cm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-wrapper">
+
+    <!-- Top Action Toolbar (Hidden during printing) -->
+    <div class="action-bar">
+      <div>
+        <a href="/admin" class="btn btn-secondary">&larr; Return to Admin Dashboard</a>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="/api/reports/nba-naac-register?format=csv" class="btn btn-secondary">
+          Export Official CSV
+        </a>
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+          Print Official Audit Ledger
+        </button>
+      </div>
+    </div>
+
+    <!-- Official Institutional Letterhead -->
+    <header class="institutional-header">
+      <img src="/static/mepco_logo.svg" alt="Mepco Schlenk Engineering College" class="inst-logo">
+      <div class="header-text">
+        <h1>Mepco Schlenk Engineering College (Autonomous), Sivakasi</h1>
+        <h2>Department of Artificial Intelligence and Data Science</h2>
+        <p>Approved by AICTE, New Delhi &bull; Affiliated to Anna University, Chennai &bull; Accredited by NAAC with 'A++' Grade</p>
+        <h3>Equipment Down-Time &amp; Maintenance Audit Register</h3>
+        <p>Compliant with National Board of Accreditation (NBA) Criterion 6.2 &amp; NAAC Key Indicator 4.4</p>
+      </div>
+    </header>
+
+    <!-- Key Metrics & Audit Summary -->
+    <div class="kpi-row">
+      <div class="kpi-item">
+        <div class="kpi-label">Monitored PCs</div>
+        <div class="kpi-num">246</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Total Faults Logged</div>
+        <div class="kpi-num">{{ data.total_incidents }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Resolved Faults</div>
+        <div class="kpi-num">{{ data.resolved_incidents }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Active / In-Triage</div>
+        <div class="kpi-num">{{ data.pending_incidents }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Mean Time To Repair</div>
+        <div class="kpi-num">{{ data.mean_time_to_repair_display }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Register Generated</div>
+        <div class="kpi-num" style="font-size:0.875rem;">{{ data.generated_at.split(' ')[0] }}</div>
+      </div>
+    </div>
+
+    <!-- Audit Ledger Table -->
+    <div class="table-container">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Entry ID</th>
+            <th>Ticket</th>
+            <th>Laboratory Room</th>
+            <th>Workstation &amp; Network</th>
+            <th>Fault Category</th>
+            <th>Symptom &amp; Observation</th>
+            <th>Remediation Action / Notes</th>
+            <th>Reported At</th>
+            <th>Resolved At</th>
+            <th>Downtime</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if data.records %}
+            {% for row in data.records %}
+            <tr>
+              <td><span class="code-pill">{{ row.entry_code }}</span></td>
+              <td><strong>{{ row.ticket_number }}</strong></td>
+              <td>{{ row.lab_name }}<br><span style="color:#64748b; font-size:0.7rem;">{{ row.location }}</span></td>
+              <td>
+                <strong>{{ row.pc_number }}</strong><br>
+                <span class="code-pill" style="font-size:0.6875rem;">{{ row.ip_address }}</span>
+              </td>
+              <td>{{ row.issue_category }}</td>
+              <td>{{ row.description }}</td>
+              <td>{{ row.resolution_notes }}</td>
+              <td style="white-space:nowrap;">{{ row.reported_at }}</td>
+              <td style="white-space:nowrap;">{{ row.resolved_at }}</td>
+              <td style="font-weight:700;">{{ row.downtime_display }}</td>
+              <td>
+                {% if row.status == 'Resolved' %}
+                  <span class="badge-resolved">Resolved</span>
+                {% else %}
+                  <span class="badge-pending">Pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="11" style="text-align:center; padding:2rem; color:#64748b;">
+                No equipment breakdown incidents logged. All laboratory workstations operating at 100% availability.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Official Sign-off Signature Blocks -->
+    <div class="signatures-grid">
+      <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">Signature of System Programmer / Lab Technician</div>
+        <div class="sig-desc">Department of AI &amp; DS</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">Signature of Faculty Lab In-Charge</div>
+        <div class="sig-desc">Laboratory In-Charge &bull; AIDS</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">Signature of Head of Department</div>
+        <div class="sig-desc">Department of AI &amp; DS &bull; MSEC</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

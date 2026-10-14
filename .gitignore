@@ -37,3 +37,7 @@ Desktop.ini
 # Secrets & Credentials
 .session_secret
 .daemon_secret
+.telegram_config.json
+
+# Backups
+backups/*.db

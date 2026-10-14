@@ -37,6 +37,7 @@ import subprocess
 import sys
 import time
 import threading
+import urllib.request
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -532,6 +533,213 @@ def save_smtp_credentials(sender_email: str, app_password: str, sender_name: str
     os.environ["LABPULSE_SMTP_DEMO_MODE"] = "1" if SMTP_DEMO_MODE else "0"
 
 
+TELEGRAM_BOT_TOKEN = os.environ.get("LABPULSE_TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("LABPULSE_TELEGRAM_CHAT_ID", "")
+
+
+def save_telegram_credentials(bot_token: str, chat_id: str):
+    """Persist Telegram credentials to .env file and update live runtime state immediately."""
+    global TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+    env_file = os.path.join(BASE_DIR, ".env")
+    env_vars = {}
+    if os.path.exists(env_file):
+        try:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        env_vars[k.strip()] = v.strip().strip('"').strip("'")
+        except Exception as err:
+            logger.warning(f"[-] Error reading existing .env: {err}")
+
+    env_vars["LABPULSE_TELEGRAM_BOT_TOKEN"] = bot_token.strip()
+    env_vars["LABPULSE_TELEGRAM_CHAT_ID"] = chat_id.strip()
+
+    try:
+        with open(env_file, "w", encoding="utf-8") as f:
+            for k, v in env_vars.items():
+                f.write(f'{k}="{v}"\n')
+    except Exception as err:
+        logger.error(f"[-] Error saving .env file: {err}")
+
+    TELEGRAM_BOT_TOKEN = bot_token.strip()
+    TELEGRAM_CHAT_ID = chat_id.strip()
+    os.environ["LABPULSE_TELEGRAM_BOT_TOKEN"] = TELEGRAM_BOT_TOKEN
+    os.environ["LABPULSE_TELEGRAM_CHAT_ID"] = TELEGRAM_CHAT_ID
+
+
+def send_telegram_alert(message_text: str) -> dict:
+    """
+    Send real-time mobile push notification to on-duty lab technicians via Telegram Bot API.
+    Zero external dependencies (uses standard urllib.request).
+    """
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return {"success": False, "error": "Telegram Bot Token or Chat ID not configured."}
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = json.dumps({
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message_text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("ok"):
+                add_telemetry("TELEGRAM_DISPATCH", f"Mobile alert dispatched to Telegram chat {TELEGRAM_CHAT_ID}")
+                return {"success": True, "message_id": data.get("result", {}).get("message_id")}
+            else:
+                return {"success": False, "error": data.get("description", "Unknown Telegram error")}
+    except Exception as exc:
+        logger.warning(f"[-] Telegram dispatch error: {exc}")
+        return {"success": False, "error": str(exc)}
+
+
+def backup_database_snapshot(prefix: str = "auto") -> dict:
+    """
+    Perform an online, non-blocking zero-downtime backup of labpulse.db
+    using SQLite's native VACUUM INTO statement.
+    Maintains a rolling archive of the 10 most recent snapshots.
+    """
+    backup_dir = os.path.join(BASE_DIR, "backups")
+    os.makedirs(backup_dir, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"labpulse_{prefix}_{ts}.db"
+    dest_path = os.path.join(backup_dir, filename)
+
+    conn = get_db_connection()
+    try:
+        safe_dest = dest_path.replace("\\", "/")
+        conn.execute(f"VACUUM INTO '{safe_dest}';")
+        conn.close()
+
+        size_bytes = os.path.getsize(dest_path)
+        logger.info(f"[+] [DATABASE BACKUP] Created snapshot {filename} ({size_bytes:,} bytes)")
+        add_telemetry("DATABASE_BACKUP", f"Created SQLite database snapshot: {filename} ({size_bytes:,} bytes)")
+
+        backups = sorted(
+            [f for f in os.listdir(backup_dir) if f.startswith("labpulse_") and f.endswith(".db")],
+            key=lambda f: os.path.getmtime(os.path.join(backup_dir, f)),
+            reverse=True
+        )
+        for old in backups[10:]:
+            try:
+                os.remove(os.path.join(backup_dir, old))
+            except Exception:
+                pass
+
+        return {
+            "success": True,
+            "filename": filename,
+            "path": dest_path,
+            "size_bytes": size_bytes,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except Exception as exc:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        logger.error(f"[-] [DATABASE BACKUP] Failed: {exc}")
+        return {"success": False, "error": str(exc)}
+
+
+def get_nba_naac_register_data() -> dict:
+    """
+    Compile official NBA / NAAC Criterion 6 Equipment Down-Time & Maintenance Register
+    for Mepco Schlenk Engineering College, Department of Artificial Intelligence and Data Science.
+    """
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                t.id, t.ticket_number, t.issue_category, t.description, t.status, t.priority,
+                t.reported_at, t.resolved_at, t.resolution_notes,
+                l.lab_name, l.location,
+                c.pc_number, c.ip_address, c.mac_address,
+                u.full_name AS reporter_name, u.username AS reporter_roll
+            FROM TICKETS t
+            JOIN LABS l ON t.lab_id = l.id
+            JOIN COMPUTERS c ON t.computer_id = c.id
+            LEFT JOIN USERS u ON t.user_id = u.id
+            ORDER BY t.reported_at DESC
+        """)
+        rows = cursor.fetchall()
+
+        total_tickets = len(rows)
+        resolved_count = sum(1 for r in rows if r["status"] == "Resolved")
+        pending_count = total_tickets - resolved_count
+
+        total_mttr_minutes = 0
+        mttr_samples = 0
+        records = []
+
+        for idx, r in enumerate(rows, 1):
+            downtime_mins = 0
+            downtime_display = "Active (Pending)"
+            if r["resolved_at"] and r["reported_at"]:
+                try:
+                    rep_t = datetime.strptime(r["reported_at"], "%Y-%m-%d %H:%M:%S")
+                    res_t = datetime.strptime(r["resolved_at"], "%Y-%m-%d %H:%M:%S")
+                    downtime_mins = max(1, int((res_t - rep_t).total_seconds() / 60))
+                    total_mttr_minutes += downtime_mins
+                    mttr_samples += 1
+                    if downtime_mins < 60:
+                        downtime_display = f"{downtime_mins} mins"
+                    else:
+                        hours = downtime_mins // 60
+                        rem_m = downtime_mins % 60
+                        downtime_display = f"{hours}h {rem_m}m"
+                except Exception:
+                    downtime_display = "Resolved"
+
+            entry_code = f"MSEC-AIDS-EQ-{idx:04d}"
+            records.append({
+                "entry_code": entry_code,
+                "ticket_number": r["ticket_number"],
+                "lab_name": r["lab_name"],
+                "location": r["location"],
+                "pc_number": r["pc_number"],
+                "ip_address": r["ip_address"],
+                "mac_address": r["mac_address"],
+                "issue_category": r["issue_category"],
+                "description": r["description"],
+                "status": r["status"],
+                "priority": r["priority"],
+                "reported_at": r["reported_at"],
+                "resolved_at": r["resolved_at"] or "In Progress",
+                "downtime_display": downtime_display,
+                "downtime_minutes": downtime_mins,
+                "resolution_notes": r["resolution_notes"] or "Under technician triage",
+                "reporter": f"{r['reporter_name'] or 'Student'} ({r['reporter_roll'] or '24BAD'})"
+            })
+
+        avg_mttr_min = round(total_mttr_minutes / mttr_samples, 1) if mttr_samples > 0 else 0
+        return {
+            "institution": "Mepco Schlenk Engineering College (Autonomous), Sivakasi",
+            "department": "Department of Artificial Intelligence and Data Science (AIDS)",
+            "accreditation": "NBA Criterion 6 & NAAC Key Indicator 4.4 Maintenance Register",
+            "total_incidents": total_tickets,
+            "resolved_incidents": resolved_count,
+            "pending_incidents": pending_count,
+            "mean_time_to_repair_minutes": avg_mttr_min,
+            "mean_time_to_repair_display": f"{avg_mttr_min} mins" if avg_mttr_min < 60 else f"{int(avg_mttr_min//60)}h {int(avg_mttr_min%60)}m",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "records": records
+        }
+    finally:
+        conn.close()
+
+
 def test_and_verify_gmail_smtp(sender_email: str, app_password: str, recipient_email: str = None) -> dict:
     """
     Execute live STARTTLS handshake with Gmail SMTP (smtp.gmail.com:587)
@@ -971,7 +1179,7 @@ def _send_email_async(to_email, reporter_name, ticket_number, pc_number,
 
 def _send_ticket_ack_async(to_email, reporter_name, ticket_number, pc_number,
                            lab_name, issue_category, description, priority, reported_at):
-    """Fire-and-forget wrapper for initial ticket submission confirmation email."""
+    """Fire-and-forget wrapper for initial ticket submission confirmation email and Telegram alert."""
     try:
         send_ticket_acknowledgment_email(
             to_email, reporter_name, ticket_number, pc_number,
@@ -979,6 +1187,24 @@ def _send_ticket_ack_async(to_email, reporter_name, ticket_number, pc_number,
         )
     except Exception as exc:
         logger.error(f"[-] [EMAIL THREAD] Unhandled exception in ack dispatch: {exc}")
+
+    try:
+        if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+            msg = (
+                f"<b>[LABWATCH FAULT ALERT]</b>\n"
+                f"<b>College:</b> Mepco Schlenk Engineering College\n"
+                f"<b>Department:</b> AIDS Laboratory System\n"
+                f"<b>Ticket ID:</b> <code>{ticket_number}</code> ({priority})\n"
+                f"<b>Workstation:</b> {pc_number}\n"
+                f"<b>Lab Room:</b> {lab_name}\n"
+                f"<b>Category:</b> {issue_category}\n"
+                f"<b>Description:</b> {description}\n"
+                f"<b>Reporter:</b> {reporter_name}\n"
+                f"<b>Status:</b> Pending Triage"
+            )
+            send_telegram_alert(msg)
+    except Exception as exc:
+        logger.error(f"[-] [TELEGRAM THREAD] Unhandled exception in alert dispatch: {exc}")
 
 
 def get_db_connection():
@@ -4162,6 +4388,165 @@ def test_send_email():
     return jsonify(result), (200 if result.get("success") else 400)
 
 
+# ─── ADMIN TELEGRAM BOT ALERT MANAGEMENT ROUTES ───────────────────────────────
+
+@app.route("/api/admin/telegram/config", methods=["GET"])
+@login_required(roles=["admin", "technician"])
+def get_telegram_config():
+    """Retrieve current Telegram Bot alert configuration status."""
+    has_token = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_TOKEN.strip())
+    has_chat = bool(TELEGRAM_CHAT_ID and TELEGRAM_CHAT_ID.strip())
+    masked_token = (TELEGRAM_BOT_TOKEN[:6] + "..." + TELEGRAM_BOT_TOKEN[-4:]) if (has_token and len(TELEGRAM_BOT_TOKEN) > 12) else ""
+    return jsonify({
+        "configured": has_token and has_chat,
+        "bot_token_masked": masked_token,
+        "chat_id": TELEGRAM_CHAT_ID,
+        "has_token": has_token,
+        "has_chat": has_chat
+    })
+
+
+@app.route("/api/admin/telegram/save", methods=["POST"])
+@login_required(roles=["admin", "technician"])
+def save_telegram_config():
+    """Save Telegram Bot credentials to .env and update runtime state."""
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    bot_token = (data.get("bot_token") or "").strip()
+    chat_id = (data.get("chat_id") or "").strip()
+
+    if not bot_token or not chat_id:
+        return jsonify({"error": "Both Telegram Bot Token and Chat ID are required."}), 400
+
+    save_telegram_credentials(bot_token, chat_id)
+    add_telemetry("TELEGRAM_CONFIG_UPDATED", f"Telegram bot configuration updated for chat ID {chat_id}")
+
+    return jsonify({
+        "success": True,
+        "message": f"Telegram Bot configuration saved successfully for chat {chat_id}!"
+    })
+
+
+@app.route("/api/admin/telegram/test-send", methods=["POST"])
+@login_required(roles=["admin", "technician"])
+def test_send_telegram():
+    """Send a real-time test notification to the configured Telegram group/channel."""
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    token = (data.get("bot_token") or TELEGRAM_BOT_TOKEN).strip()
+    chat = (data.get("chat_id") or TELEGRAM_CHAT_ID).strip()
+
+    if not token or not chat:
+        return jsonify({"error": "Telegram Bot Token and Chat ID must be configured before testing."}), 400
+
+    test_msg = (
+        "<b>[LABWATCH TEST DISPATCH]</b>\n"
+        "<b>Mepco Schlenk Engineering College (Autonomous), Sivakasi</b>\n"
+        "Department of Artificial Intelligence and Data Science\n"
+        "Live Mobile Notification Channel Verified successfully!\n"
+        f"Timestamp: <code>{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</code>"
+    )
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = json.dumps({
+        "chat_id": chat,
+        "text": test_msg,
+        "parse_mode": "HTML"
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8.0) as resp:
+            resp_data = json.loads(resp.read().decode("utf-8"))
+            if resp_data.get("ok"):
+                return jsonify({"success": True, "message": "Telegram test alert delivered successfully!"})
+            else:
+                return jsonify({"success": False, "error": resp_data.get("description", "Telegram API error")}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"Failed to reach Telegram API: {exc}"}), 400
+
+
+# ─── DATABASE SNAPSHOT & ZERO-DOWNTIME BACKUP ROUTES ──────────────────────────
+
+@app.route("/api/admin/database/backup", methods=["POST"])
+@login_required(roles=["admin", "technician"])
+def api_database_backup():
+    """Trigger an online zero-downtime SQLite backup via VACUUM INTO."""
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    prefix = (data.get("prefix") or "manual").strip()
+    result = backup_database_snapshot(prefix=prefix)
+    status_code = 200 if result.get("success") else 500
+    return jsonify(result), status_code
+
+
+@app.route("/api/admin/database/backups", methods=["GET"])
+@login_required(roles=["admin", "technician"])
+def api_list_database_backups():
+    """List all available database snapshots in the backups archive."""
+    backup_dir = os.path.join(BASE_DIR, "backups")
+    if not os.path.exists(backup_dir):
+        return jsonify({"backups": [], "count": 0})
+
+    files = []
+    for f in os.listdir(backup_dir):
+        if f.startswith("labpulse_") and f.endswith(".db"):
+            fpath = os.path.join(backup_dir, f)
+            files.append({
+                "filename": f,
+                "size_bytes": os.path.getsize(fpath),
+                "created_at": datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+    files.sort(key=lambda x: x["created_at"], reverse=True)
+    return jsonify({"backups": files, "count": len(files)})
+
+
+# ─── NBA / NAAC ACCREDITATION EQUIPMENT REGISTER ROUTES ───────────────────────
+
+@app.route("/api/reports/nba-naac-register", methods=["GET"])
+@login_required(roles=["admin", "technician"])
+def api_nba_naac_register():
+    """Export NBA / NAAC Equipment Down-Time & Maintenance Register as JSON or CSV."""
+    data = get_nba_naac_register_data()
+    fmt = request.args.get("format", "json").lower()
+    if fmt == "csv":
+        import io
+        import csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Entry Code", "Ticket Number", "Laboratory Room", "Campus Location",
+            "Workstation ID", "IP Address", "MAC Address", "Issue Category",
+            "Fault Description", "Status", "Priority", "Reported At",
+            "Resolved At", "Downtime Duration", "Action Taken / Notes", "Reporter"
+        ])
+        for r in data["records"]:
+            writer.writerow([
+                r["entry_code"], r["ticket_number"], r["lab_name"], r["location"],
+                r["pc_number"], r["ip_address"], r["mac_address"], r["issue_category"],
+                r["description"], r["status"], r["priority"], r["reported_at"],
+                r["resolved_at"], r["downtime_display"], r["resolution_notes"], r["reporter"]
+            ])
+        output.seek(0)
+        filename = f"MSEC_AIDS_NBA_NAAC_Register_{datetime.now().strftime('%Y%m%d')}.csv"
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    return jsonify(data)
+
+
+@app.route("/admin/reports/nba-naac-register", methods=["GET"])
+@login_required(roles=["admin", "technician"])
+def render_nba_naac_register_page():
+    """Render the official printable NBA / NAAC Equipment Maintenance Register."""
+    data = get_nba_naac_register_data()
+    return render_template("nba_naac_register.html", data=data)
+
+
 @app.route("/status/<ticket_number>", methods=["GET"])
 def reporter_ticket_status(ticket_number: str):
     """
@@ -4452,5 +4837,16 @@ if __name__ == "__main__":
         start_background_sweep()
         port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
         print_college_deployment_banner(port)
-        logger.info(f"[+] Starting LabPulse Flask Core Server at http://127.0.0.1:{port} (0.0.0.0 all interfaces)")
-        app.run(host="0.0.0.0", port=port, debug=False)
+        use_waitress = os.environ.get("LABPULSE_USE_WAITRESS", "1") == "1"
+        if use_waitress:
+            try:
+                from waitress import serve
+                logger.info(f"[+] Starting LabWatch Institutional Server using Production WSGI Engine (Waitress) on 0.0.0.0:{port} with 16 worker threads")
+                print(f"[+] Production WSGI Engine (Waitress) active on http://0.0.0.0:{port} (16 worker threads)")
+                serve(app, host="0.0.0.0", port=port, threads=16, channel_timeout=30)
+            except ImportError:
+                logger.info(f"[+] Starting LabPulse Flask Core Server at http://127.0.0.1:{port} (0.0.0.0 all interfaces)")
+                app.run(host="0.0.0.0", port=port, debug=False)
+        else:
+            logger.info(f"[+] Starting LabPulse Flask Core Server at http://127.0.0.1:{port} (0.0.0.0 all interfaces)")
+            app.run(host="0.0.0.0", port=port, debug=False)

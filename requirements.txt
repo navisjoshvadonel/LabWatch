@@ -5,8 +5,9 @@
 # Core Application and Test Suite Dependencies
 # ==============================================================================
 
-# Web Application Framework
+# Web Application Framework & Production WSGI Server
 Flask>=3.0.0
+waitress>=3.0.0
 
 # Automated Testing Framework
 pytest>=8.0.0
