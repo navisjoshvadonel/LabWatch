@@ -4845,55 +4845,8 @@ def reporter_ticket_status(ticket_number: str):
 
 
 # ==============================================================================
-# 8. COLLEGE DEPLOYMENT: QR STICKER SHEET & DEPLOYMENT POSTURE AUDIT
+# 8. COLLEGE DEPLOYMENT: DEPLOYMENT POSTURE AUDIT
 # ==============================================================================
-
-@app.route("/print-qr-stickers", methods=["GET"])
-def print_qr_stickers():
-    """
-    College-Level Deployment: Workstation QR Code Physical Sticker Sheet.
-    Generates print-ready high-contrast SVG QR codes for physical monitor labeling.
-    """
-    lab_id = request.args.get("lab_id", "all")
-    host = request.host_url.rstrip("/")
-
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, lab_name, department, location, total_pcs FROM LABS ORDER BY id")
-        labs = [dict(r) for r in cursor.fetchall()]
-
-        if lab_id and lab_id != "all":
-            cursor.execute("""
-                SELECT c.id, c.pc_number, c.ip_address, c.mac_address, c.lab_id, l.lab_name
-                FROM COMPUTERS c
-                JOIN LABS l ON c.lab_id = l.id
-                WHERE c.lab_id = ?
-                ORDER BY c.id
-            """, (int(lab_id),))
-        else:
-            cursor.execute("""
-                SELECT c.id, c.pc_number, c.ip_address, c.mac_address, c.lab_id, l.lab_name
-                FROM COMPUTERS c
-                JOIN LABS l ON c.lab_id = l.id
-                ORDER BY l.id, c.id
-            """)
-        rows = cursor.fetchall()
-
-        workstations = []
-        for r in rows:
-            w = dict(r)
-            w["qr_svg"] = generate_pc_qr_svg(w["pc_number"], w["lab_id"], base_url=host)
-            workstations.append(w)
-
-        return render_template(
-            "qr_stickers.html",
-            labs=labs,
-            workstations=workstations,
-            selected_lab_id=str(lab_id)
-        )
-    finally:
-        conn.close()
 
 
 def get_deployment_posture() -> dict:
@@ -5016,7 +4969,6 @@ def print_college_deployment_banner(port: int):
     print(f"  Student Reporting Form  : http://{primary_ip}:{port}/report")
     print(f"  IT Admin Triage Portal  : http://{primary_ip}:{port}/admin")
     print(f"  Digital Twin & Monitor  : http://{primary_ip}:{port}/monitor")
-    print(f"  Workstation QR Stickers : http://{primary_ip}:{port}/print-qr-stickers")
     print(f"  Deployment Audit Status : http://{primary_ip}:{port}/api/deployment/status")
     print("=" * 80)
 

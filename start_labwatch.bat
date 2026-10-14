@@ -42,7 +42,6 @@ echo     - Localhost Portal     : http://127.0.0.1:5000
 echo     - Student Report Form  : http://127.0.0.1:5000/report
 echo     - IT Admin Triage Hub  : http://127.0.0.1:5000/admin
 echo     - Digital Twin & Floor : http://127.0.0.1:5000/monitor
-echo     - Workstation QR Sheet : http://127.0.0.1:5000/print-qr-stickers
 echo.
 echo [*] Starting LabWatch Institutional Server on 0.0.0.0:5000...
 echo [*] Press Ctrl+C in this console to stop the server.

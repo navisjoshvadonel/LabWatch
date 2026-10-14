@@ -41,7 +41,6 @@ foreach ($ip in $ipAddresses) {
 Write-Host "    - Student Report Form  : http://127.0.0.1:5000/report" -ForegroundColor Gray
 Write-Host "    - IT Admin Triage Hub  : http://127.0.0.1:5000/admin" -ForegroundColor Gray
 Write-Host "    - Digital Twin Floor   : http://127.0.0.1:5000/monitor" -ForegroundColor Gray
-Write-Host "    - Workstation QR Sheet : http://127.0.0.1:5000/print-qr-stickers" -ForegroundColor Gray
 Write-Host "    - Deployment Status API: http://127.0.0.1:5000/api/deployment/status" -ForegroundColor Gray
 
 Write-Host "`n[*] Opening default web browser..." -ForegroundColor Yellow

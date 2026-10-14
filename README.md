@@ -27,7 +27,6 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 │   ├── index.html            # Unified SPA (Live Grid, Digital Twin, Triage, Exam Mode, Analytics)
 │   ├── login.html            # Institutional Authentication Portal
 │   ├── nba_naac_register.html # NBA Criterion 6 & NAAC 4.4 Equipment Maintenance Register
-│   ├── qr_stickers.html      # 246-Workstation Printable Physical QR Code Sticker Sheet
 │   ├── report.html           # Student Fault Reporting Form with Fast Chips & AI Lab Doctor
 │   └── status.html           # Public ticket self-tracking status page
 ├── tests/                    # Comprehensive Automated Test Suites (82 tests)
@@ -92,7 +91,7 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
    - Visual row-by-row layout of all 6 departmental laboratories with click-to-remediate drawer.
 
 6. **Native Vector SVG QR Code Generator (`/api/pc-qr/<pc_id>`)**:
-   - Scan physical QR stickers on monitors to prefill and report issues in 5 seconds.
+   - Instant direct digital access for workstations to prefill and report issues in 5 seconds.
 
 7. **Designated Master Admin Consoles & 246 Workstation Matrix**:
    - 60 Workstations in flagship labs (Deep Learning Lab AI-201, Machine Learning Lab AI-202).
@@ -109,30 +108,26 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 10. **Zero-Hardcoding Adaptive LAN & Subnet Auto-Discovery (`/api/computers/discover`)**:
     - Dynamically scans ARP tables and lab subnets, registers newly connected workstations, updates heartbeats, and re-syncs C daemon monitoring target files without restarting binaries.
 
-11. **Printable Workstation QR Code Physical Sticker Sheet (`/print-qr-stickers`)**:
-    - One-click print-ready sheet generating institutional QR labels for all 246 workstations across all 6 department labs or single-lab batches.
-    - Designed with `@media print` CSS for standard A4 sticker paper to affix directly onto student workstation monitors.
-
-12. **College Deployment Pre-Flight Health & Posture Telemetry (`/api/deployment/status`)**:
+11. **College Deployment Pre-Flight Health & Posture Telemetry (`/api/deployment/status`)**:
     - Comprehensive system verification reporting SQLite WAL mode, database integrity check, C binary compilation, campus gateway reachability, active LAN interfaces, and security lockouts.
 
-13. **NBA Criterion 6 & NAAC Key Indicator 4.4 Equipment Down-Time & Maintenance Register (`/admin/reports/nba-naac-register`)**:
+12. **NBA Criterion 6 & NAAC Key Indicator 4.4 Equipment Down-Time & Maintenance Register (`/admin/reports/nba-naac-register`)**:
     - Official academic accreditation audit register documenting Mean Time To Repair (MTTR), equipment breakdown frequencies, and servicing history.
     - Includes one-click CSV export (`/api/reports/nba-naac-register?format=csv`) and institutional printable letterhead with 3-tier signature block (Lab In-Charge, HOD, Principal/Dean).
 
-14. **Real-Time Telegram Bot Mobile Technician Dispatch (`/api/admin/telegram/config`)**:
+13. **Real-Time Telegram Bot Mobile Technician Dispatch (`/api/admin/telegram/config`)**:
     - Instant mobile notification broadcast to laboratory technician smartphones on new critical/high tickets and ticket resolutions without reliance on external SMS gateways.
 
-15. **Zero-Downtime Hot Online Database Snapshots (`/api/admin/database/backup`)**:
+14. **Zero-Downtime Hot Online Database Snapshots (`/api/admin/database/backup`)**:
     - Instant point-in-time database snapshots using SQLite `VACUUM INTO` with automated 10-file rolling rotation.
 
-16. **Enterprise WSGI Production Runner (`waitress`)**:
+15. **Enterprise WSGI Production Runner (`waitress`)**:
     - Multi-threaded production WSGI server (`waitress` with 16 threads) for campus-wide concurrency, with automatic Werkzeug fallback for development.
 
-17. **1-Click Student Workstation Desktop Shortcut Deployer (`deploy_student_desktop_shortcut.bat`)**:
+16. **1-Click Student Workstation Desktop Shortcut Deployer (`deploy_student_desktop_shortcut.bat`)**:
     - Automated batch deployer creating a zero-friction desktop shortcut on `C:\Users\Public\Desktop` with auto-detected client IP.
 
-18. **Institutional Cyber Security, Privacy Cloaking & Anti-Hacking Firewall (WAF Layer 7)**:
+17. **Institutional Cyber Security, Privacy Cloaking & Anti-Hacking Firewall (WAF Layer 7)**:
     - **Layer 7 Inspection**: Blocks path traversal (`../`, `..\\`, `%2e%2e`, null bytes), sensitive file snooping (`.env`, `.session_secret`, `.daemon_secret`, `labpulse.db`), and injection probes (`union select`, `' or 1=1`, `<script>`).
     - **Timing Attack Defense**: Constant-time dummy PBKDF2 hash computation on non-existent accounts defeats username enumeration side-channels.
     - **Student Privacy Preservation & Anti-Leaking**: Automatic cloaking of student full names (`N****s J****a`), emails (`n***s@mepcoeng.ac.in`), and workstation IPs on public status views and peer ticket feeds.
@@ -167,7 +162,6 @@ Workstations across the campus lab LAN can access directly via **`http://<CAMPUS
 - **Student Fault Reporting Form**: `http://127.0.0.1:5000/report`
 - **IT Admin Triage Dashboard**: `http://127.0.0.1:5000/admin`
 - **NBA/NAAC Accreditation Maintenance Register**: `http://127.0.0.1:5000/admin/reports/nba-naac-register`
-- **Workstation QR Physical Label Sheet**: `http://127.0.0.1:5000/print-qr-stickers`
 - **Deployment Posture Health API**: `http://127.0.0.1:5000/api/deployment/status`
 
 ### 4. Trigger C Protocol Daemon & Automated Ticket Creation

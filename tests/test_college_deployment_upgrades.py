@@ -10,10 +10,8 @@ Validates:
    - Database WAL mode & PRAGMA integrity_check
    - Multi-interface LAN IPv4 address enumeration
    - 246 Workstations & 6 Labs verification
-2. Workstation Physical QR Sticker Sheet (/print-qr-stickers):
-   - Renders valid SVG QR codes for all 246 workstations
-   - Supports filtered lab view (e.g. ?lab_id=1 for Deep Learning Lab)
-   - Zero emojis compliance across qr_stickers.html template
+2. Complete Removal of QR Stickers (/print-qr-stickers):
+   - Confirms endpoint returns 404 and qr_stickers.html is deleted
 """
 
 import os
@@ -65,47 +63,12 @@ class TestCollegeDeploymentUpgrades(unittest.TestCase):
         self.assertIsInstance(he["active_lan_ips"], list)
         self.assertEqual(he["bound_port"], 5000)
 
-    def test_02_print_qr_stickers_all_labs(self):
-        """Verify bulk workstation physical sticker generator renders HTML with vector SVGs."""
+    def test_02_qr_stickers_endpoint_removed(self):
+        """Verify /print-qr-stickers has been completely removed and returns 404."""
         res = self.client.get("/print-qr-stickers")
-        self.assertEqual(res.status_code, 200)
-        html = res.get_data(as_text=True)
-
-        self.assertIn("Mepco Schlenk Engineering College", html)
-        self.assertIn("Artificial Intelligence", html)
-        self.assertIn("PC-01", html)
-        self.assertIn("Deep Learning Lab", html)
-        self.assertIn("<svg", html)
-        self.assertIn("Scan with Phone to Report Issue", html)
-
-    def test_03_print_qr_stickers_filtered_lab(self):
-        """Verify single lab QR sticker generation."""
-        res = self.client.get("/print-qr-stickers?lab_id=1")
-        self.assertEqual(res.status_code, 200)
-        html = res.get_data(as_text=True)
-
-        self.assertIn("Deep Learning Lab", html)
-        self.assertIn("<svg", html)
-
-    def test_04_zero_emojis_in_qr_stickers_template(self):
-        """Verify zero emojis in templates/qr_stickers.html."""
-        def is_emoji(ch):
-            cp = ord(ch)
-            return (
-                (0x1F300 <= cp <= 0x1FAFF) or
-                (0x1F600 <= cp <= 0x1F64F) or
-                (0x1F680 <= cp <= 0x1F6FF) or
-                (0x2600 <= cp <= 0x27BF) or
-                (0x2300 <= cp <= 0x23FF) or
-                (0x2B50 <= cp <= 0x2B55)
-            )
-
+        self.assertEqual(res.status_code, 404)
         filepath = os.path.join(BASE_DIR, "templates", "qr_stickers.html")
-        self.assertTrue(os.path.exists(filepath))
-        with open(filepath, "r", encoding="utf-8") as f:
-            for idx, line in enumerate(f, 1):
-                emojis = [c for c in line if is_emoji(c)]
-                self.assertEqual(len(emojis), 0, f"Found emoji in qr_stickers.html at line {idx}: {emojis}")
+        self.assertFalse(os.path.exists(filepath))
 
     def test_05_nba_naac_register_api_json(self):
         """Verify NBA / NAAC Equipment Down-Time & Maintenance Register JSON API."""
