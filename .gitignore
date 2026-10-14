@@ -4,10 +4,20 @@ __pycache__/
 *$py.class
 *.sqlite3
 *.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary Database Locks & WAL
+*.db-journal
+*.db-wal
+*.db-shm
 
 # C compilation artifacts
 bin/*.exe
 bin/*.o
+bin/*.ilk
+bin/*.pdb
 *.o
 *.obj
 

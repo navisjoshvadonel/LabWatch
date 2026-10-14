@@ -1,0 +1,37 @@
+# ==============================================================================
+# Git Attributes configuration for LabWatch
+# Mepco Schlenk Engineering College (Autonomous), Sivakasi
+# ==============================================================================
+
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Python, C, Web, and SQL source code (use LF)
+*.py text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.sql text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.csv text eol=lf
+*.svg text eol=lf
+
+# Windows Batch and PowerShell scripts (must use CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets
+*.db binary
+*.ico binary
+*.exe binary
+*.dll binary
+*.o binary
+*.obj binary
+*.png binary
+*.jpg binary
+*.jpeg binary

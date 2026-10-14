@@ -19,23 +19,45 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
 │   ├── udp.h / udp.c         # [UDP]  Remote Restart (Wake-on-LAN Magic Packet via IPPROTO_UDP)
 │   ├── tcp.h / tcp.c         # [TCP]  Dynamic alert bridge (HTTP POST via stream socket to Python)
 │   └── main.c                # Daemon orchestrator & CLI entry point
+├── static/
+│   ├── favicon.ico           # Official institutional browser favicon
+│   └── mepco_logo.svg        # Scalable vector institutional logo
 ├── templates/
+│   ├── admin.html            # IT Staff Administration, SMTP Configuration & Triage Hub
 │   ├── index.html            # Unified SPA (Live Grid, Digital Twin, Triage, Exam Mode, Analytics)
-│   ├── admin.html            # IT Staff Administration & Triage Portal
-│   ├── report.html           # User Issue Reporting Form with AI Lab Doctor
-│   └── login.html            # Institutional Authentication Portal
+│   ├── login.html            # Institutional Authentication Portal
+│   ├── qr_stickers.html      # 246-Workstation Printable Physical QR Code Sticker Sheet
+│   ├── report.html           # Student Fault Reporting Form with AI Lab Doctor
+│   └── status.html           # Public ticket self-tracking status page
+├── tests/                    # Comprehensive Automated Test Suites (65 tests)
+│   ├── test_aids_realtime_solving.py
+│   ├── test_college_deployment_readiness.py
+│   ├── test_college_deployment_upgrades.py
+│   ├── test_edge_case_failures.py
+│   ├── test_hod_report_and_discovery.py
+│   ├── test_institutional_security_hardening.py
+│   ├── test_live_gmail_smtp_protocol.py
+│   ├── test_phase_a_security.py
+│   └── test_zero_phone_college_reporting.py
 ├── bin/
-│   └── labpulse_monitor.exe  # Compiled high-performance C binary
+│   └── .gitkeep              # Binary directory placeholder
 ├── python_server.py          # Flask Core Server (Auth, Tickets, Automated Alert Handler, SPA)
 ├── event_broker.py           # Real-Time Server-Sent Events (SSE) Live Stream Pub/Sub Broker
 ├── ai_diagnostic.py          # AI Lab Doctor (Domain NLP & Root Cause Analysis Engine)
 ├── remediation_engine.py     # 1-Click Self-Healing Playbooks, L3/L4 Diagnostics & Pre-Exam Audit
 ├── qr_generator.py           # Pure-Python Vector SVG QR Code Mobile Reporting Generator
 ├── build.bat / Makefile      # Automated build scripts for Windows and Linux
+├── deploy_labwatch.ps1       # Production PowerShell institutional deployer
+├── start_labwatch.bat        # One-click Windows deployment launcher
+├── report_issue.bat          # Workstation desktop zero-phone issue reporter
 ├── computers_monitor.txt     # Target inventory dynamically consumed by C daemon
+├── computers_monitor.csv     # Workstation inventory CSV export
 ├── labpulse.db               # SQLite database (WAL mode enabled)
 ├── schema.sql                # DDL database schema with performance indexes
 ├── setup_db.py               # Database setup, seeding, and monitor exporter
+├── requirements.txt          # Python application & testing dependencies
+├── .gitattributes            # Line ending normalization & binary rules
+├── .gitignore                # Git ignore rules for caches, secrets, and logs
 └── PROJECT_REPORT.md         # Comprehensive engineering report
 ```
 

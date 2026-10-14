@@ -1,0 +1,12 @@
+# ==============================================================================
+# LabWatch - Laboratory PC Fault Reporting & Monitoring System
+# Mepco Schlenk Engineering College (Autonomous), Sivakasi
+# Department of Artificial Intelligence and Data Science (AIDS)
+# Core Application and Test Suite Dependencies
+# ==============================================================================
+
+# Web Application Framework
+Flask>=3.0.0
+
+# Automated Testing Framework
+pytest>=8.0.0

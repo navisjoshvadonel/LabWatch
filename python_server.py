@@ -41,7 +41,7 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, Response
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, Response, send_from_directory
 
 from event_broker import event_broker
 from ai_diagnostic import ai_diagnostic_engine
@@ -3466,6 +3466,11 @@ def logout():
     if user:
         add_telemetry("AUTH_LOGOUT", f"User '{user['username']}' logged out")
     return redirect(url_for("login_page", msg="You have been successfully signed out."))
+
+@app.route("/favicon.ico")
+def favicon():
+    """Serve institutional favicon from static assets folder."""
+    return send_from_directory(app.static_folder, "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
 @app.route("/")
