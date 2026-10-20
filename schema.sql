@@ -92,3 +92,22 @@ CREATE INDEX IF NOT EXISTS idx_tickets_status ON TICKETS(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_computer_id ON TICKETS(computer_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_user_id ON TICKETS(user_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_lab_id ON TICKETS(lab_id);
+
+-- 5. EQUIPMENT_REPLACEMENTS TABLE (NBA Criterion 4 & NAAC Audit)
+CREATE TABLE IF NOT EXISTS EQUIPMENT_REPLACEMENTS (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER,
+    computer_id INTEGER NOT NULL,
+    pc_number TEXT NOT NULL,
+    component_type TEXT NOT NULL,
+    old_serial TEXT DEFAULT 'N/A',
+    new_serial TEXT NOT NULL,
+    technician_name TEXT NOT NULL,
+    notes TEXT,
+    rma_status TEXT DEFAULT 'Pending RMA',
+    replaced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE CASCADE,
+    FOREIGN KEY (ticket_id) REFERENCES TICKETS (id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_equip_repl_pc ON EQUIPMENT_REPLACEMENTS(pc_number);
+CREATE INDEX IF NOT EXISTS idx_equip_repl_date ON EQUIPMENT_REPLACEMENTS(replaced_at);

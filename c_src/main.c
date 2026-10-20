@@ -94,6 +94,9 @@ int load_computers_inventory(const char *filepath, LabComputer computers[], int 
     return count;
 }
 
+#define DEBOUNCE_FAIL_THRESHOLD 3
+#define PING_SWEEP_TIMEOUT_MS   150
+
 void run_monitoring_sweep(LabComputer computers[], int count, int auto_wol) {
     char ts[64];
     get_timestamp(ts, sizeof(ts));
@@ -110,7 +113,7 @@ void run_monitoring_sweep(LabComputer computers[], int count, int auto_wol) {
     for (int i = 0; i < count; i++) {
         LabComputer *pc = &computers[i];
         double rtt = 0.0;
-        int res = icmp_ping(pc->ip_address, 300, &rtt);
+        int res = icmp_ping(pc->ip_address, PING_SWEEP_TIMEOUT_MS, &rtt);
 
         if (res == 0) {
             pc->consecutive_failures = 0;
@@ -121,19 +124,39 @@ void run_monitoring_sweep(LabComputer computers[], int count, int auto_wol) {
             print_colored_status("ONLINE", 1);
             printf(" | %.2f ms\n", rtt);
         } else {
-            pc->consecutive_failures++;
-            pc->is_offline = 1;
-            offline_count++;
-            printf("%-8s | %-15s | %-17s | ", pc->pc_number, pc->ip_address, pc->mac_address);
-            print_colored_status("OFFLINE", 0);
-            printf(" | Timeout (Fail #%d)\n", pc->consecutive_failures);
+            /* Quick debounce verification: retry ping up to DEBOUNCE_FAIL_THRESHOLD */
+            int fails = 1;
+            while (fails < DEBOUNCE_FAIL_THRESHOLD) {
+                SLEEP_MS(30);
+                res = icmp_ping(pc->ip_address, PING_SWEEP_TIMEOUT_MS, &rtt);
+                if (res == 0) break;
+                fails++;
+            }
 
-            tcp_dispatch_alert(pc->pc_number, "offline", pc->ip_address, pc->mac_address);
+            if (res == 0) {
+                /* Transient glitch debounced successfully */
+                pc->consecutive_failures = 0;
+                pc->is_offline = 0;
+                pc->last_rtt_ms = rtt;
+                online_count++;
+                printf("%-8s | %-15s | %-17s | ", pc->pc_number, pc->ip_address, pc->mac_address);
+                print_colored_status("ONLINE", 1);
+                printf(" | %.2f ms (Debounced #%d)\n", rtt, fails);
+            } else {
+                pc->consecutive_failures = fails;
+                pc->is_offline = 1;
+                offline_count++;
+                printf("%-8s | %-15s | %-17s | ", pc->pc_number, pc->ip_address, pc->mac_address);
+                print_colored_status("OFFLINE", 0);
+                printf(" | Timeout (%d consecutive failures)\n", pc->consecutive_failures);
 
-            if (auto_wol) {
-                printf("[*] [Auto-Restart] Sending Reliable WoL Magic Packet to %s (MAC: %s)...\n",
-                       pc->pc_number, pc->mac_address);
-                udp_send_wol_reliable(pc->mac_address, DEFAULT_WOL_PORT);
+                tcp_dispatch_alert(pc->pc_number, "offline", pc->ip_address, pc->mac_address);
+
+                if (auto_wol) {
+                    printf("[*] [Auto-Restart] Sending Reliable WoL Magic Packet to %s (MAC: %s)...\n",
+                           pc->pc_number, pc->mac_address);
+                    udp_send_wol_reliable(pc->mac_address, DEFAULT_WOL_PORT);
+                }
             }
         }
     }

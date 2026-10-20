@@ -1,0 +1,24 @@
+{
+  "name": "LabWatch AIDS - Institutional PC Monitor",
+  "short_name": "LabWatch",
+  "description": "Mepco Schlenk Engineering College - AIDS Lab PC Fault Reporting & Mobile Field Triage System",
+  "start_url": "/report",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#071a35",
+  "theme_color": "#0066b3",
+  "icons": [
+    {
+      "src": "/static/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/static/mepco_logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

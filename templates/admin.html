@@ -6,6 +6,11 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Admin Dashboard & IT Staff Triage | Mepco Schlenk Engineering College</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#071a35">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LabWatch Admin">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -902,6 +907,58 @@
           <span class="live-status-text">Live</span>
         </div>
       </div>
+    </div>
+
+    <!-- Autonomous Practical Examination Controller & Emergency Workstation Swap Hub -->
+    <div class="exam-control-hub" style="background:#ffffff; border:1px solid var(--border-card); border-radius:10px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; box-shadow:var(--shadow-sm); border-left:6px solid {% if exam_mode and exam_mode['active'] %}#ef4444{% else %}#0066b3{% endif %};">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; border-bottom:1px solid #f1f5f9; padding-bottom:1rem; margin-bottom:1rem;">
+        <div>
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span style="font-weight:800; font-size:1.05rem; color:var(--text-main);">Autonomous Practical Examination Mode</span>
+            <span id="exam-mode-badge" style="background:{% if exam_mode and exam_mode['active'] %}#fee2e2{% else %}#f1f5f9{% endif %}; color:{% if exam_mode and exam_mode['active'] %}#991b1b{% else %}#475569{% endif %}; padding:0.2rem 0.6rem; border-radius:4px; font-weight:800; font-size:0.75rem; text-transform:uppercase;">
+              {% if exam_mode and exam_mode['active'] %}ACTIVE LOCKOUT{% else %}STANDBY / NORMAL{% endif %}
+            </span>
+          </div>
+          <p style="font-size:0.82rem; color:var(--text-secondary); margin-top:0.25rem;">
+            Freezes student self-reporting to maintain exam integrity. Enables instant invigilator Emergency PC Swaps without exam time loss.
+          </p>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <button type="button" id="btn-toggle-exam-mode" onclick="toggleExamLockoutMode()" style="background:{% if exam_mode and exam_mode['active'] %}#dc2626{% else %}#0066b3{% endif %}; color:#ffffff; border:none; padding:0.55rem 1.25rem; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            {% if exam_mode and exam_mode['active'] %}Deactivate Exam Mode{% else %}Activate Exam Lockout{% endif %}
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Emergency Swap Form -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) 160px; gap:0.85rem; align-items:flex-end;">
+        <div>
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Student Roll Number
+          </label>
+          <input type="text" id="swap-input-roll" placeholder="e.g. 24BAD019" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase; font-size:0.85rem;">
+        </div>
+        <div>
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Faulty Workstation
+          </label>
+          <input type="text" id="swap-input-pc" placeholder="e.g. PC-14" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase; font-size:0.85rem;">
+        </div>
+        <div>
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin-bottom:0.35rem;">
+            Failure Reason
+          </label>
+          <input type="text" id="swap-input-reason" placeholder="e.g. Screen frozen / OS panic" value="System frozen during practical exam" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+        </div>
+        <div>
+          <button type="button" onclick="dispatchEmergencySwap()" style="width:100%; height:38px; background:#d97706; color:#ffffff; border:none; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.35rem;">
+            <span>Allocate Spare PC</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Swap Result Card -->
+      <div id="swap-result-box" style="display:none; margin-top:1rem; padding:0.9rem 1.15rem; background:#f0fdf4; border:1px solid #86efac; border-radius:6px; color:#14532d; font-size:0.85rem;"></div>
     </div>
 
     {% if status_msg %}
@@ -2192,7 +2249,275 @@
 
     pollDashboardStats();
     setInterval(pollDashboardStats, 10000); // 10s poll as specified in requirements
+
+    // =========================================================================
+    // AUTONOMOUS EXAM MODE & EMERGENCY WORKSTATION SWAP CONTROLLERS
+    // =========================================================================
+    async function toggleExamLockoutMode() {
+      const btn = document.getElementById("btn-toggle-exam-mode");
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch("/api/exam-mode/toggle", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
+          },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+          const badge = document.getElementById("exam-mode-badge");
+          const isActive = data.exam_mode.active;
+          if (badge) {
+            badge.textContent = isActive ? "ACTIVE LOCKOUT" : "STANDBY / NORMAL";
+            badge.style.background = isActive ? "#fee2e2" : "#f1f5f9";
+            badge.style.color = isActive ? "#991b1b" : "#475569";
+          }
+          if (btn) {
+            btn.textContent = isActive ? "Deactivate Exam Mode" : "Activate Exam Lockout";
+            btn.style.background = isActive ? "#dc2626" : "#0066b3";
+          }
+          const hub = document.querySelector(".exam-control-hub");
+          if (hub) hub.style.borderLeftColor = isActive ? "#ef4444" : "#0066b3";
+          alert(data.message);
+        } else {
+          alert("Error: " + (data.error || "Could not toggle exam mode"));
+        }
+      } catch (err) {
+        alert("Failed to contact server: " + err);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function dispatchEmergencySwap() {
+      const rollInput = document.getElementById("swap-input-roll");
+      const pcInput = document.getElementById("swap-input-pc");
+      const reasonInput = document.getElementById("swap-input-reason");
+      const resultBox = document.getElementById("swap-result-box");
+
+      const studentRoll = rollInput?.value.trim().toUpperCase();
+      const faultyPc = pcInput?.value.trim().toUpperCase();
+      const reason = reasonInput?.value.trim() || "Hardware failure during practical exam";
+
+      if (!studentRoll || !faultyPc) {
+        alert("Please enter both the Student Roll Number and the Faulty PC Number.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/exam-mode/emergency-swap", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
+          },
+          body: JSON.stringify({ student_roll: studentRoll, faulty_pc: faultyPc, reason: reason })
+        });
+        const data = await res.json();
+        if (data.success && resultBox) {
+          resultBox.style.display = "block";
+          resultBox.innerHTML = `
+            <div style="font-weight:800; font-size:0.95rem; color:#15803d; margin-bottom:0.35rem;">
+              [EMERGENCY SWAP PASS ISSUED: ${data.swap_token}]
+            </div>
+            <div>Student <strong>${data.student_roll}</strong> successfully reassigned: 
+              <span style="text-decoration:line-through; color:#b91c1c;">${data.faulty_pc}</span> 
+              &rarr; 
+              <span style="color:#15803d; font-weight:800; font-size:1.05rem; background:#dcfce7; padding:2px 8px; border-radius:4px;">${data.spare_pc} (IP: ${data.spare_ip})</span>
+            </div>
+            <div style="font-size:0.75rem; color:#475569; margin-top:0.4rem;">
+              Timestamp: ${data.timestamp} | Invigilator: ${data.invigilator} | Faulty PC WoL reboot dispatched.
+            </div>
+          `;
+          rollInput.value = "";
+          pcInput.value = "";
+          pollDashboardStats();
+        } else {
+          alert("Swap failed: " + (data.error || "No spare PCs available"));
+        }
+      } catch (err) {
+        alert("Emergency swap request failed: " + err);
+      }
+    }
+
+    // =========================================================================
+    // HARDWARE / PERIPHERAL SWAP MODAL FOR NBA/NAAC REGISTER
+    // =========================================================================
+    function openHardwareSwapModal(pcNum, ticketId) {
+      const modal = document.getElementById("hardware-swap-modal");
+      const pcInput = document.getElementById("hw-pc-number");
+      const tckInput = document.getElementById("hw-ticket-id");
+      const fb = document.getElementById("hw-swap-feedback");
+      if (fb) fb.style.display = "none";
+      if (pcInput && pcNum) pcInput.value = pcNum;
+      if (tckInput) tckInput.value = ticketId || "";
+      if (modal) modal.style.display = "flex";
+    }
+
+    function closeHardwareSwapModal() {
+      const modal = document.getElementById("hardware-swap-modal");
+      if (modal) modal.style.display = "none";
+    }
+
+    async function submitHardwareReplacement() {
+      const pcNum = document.getElementById("hw-pc-number")?.value.trim().toUpperCase();
+      const compType = document.getElementById("hw-component-type")?.value;
+      const oldSerial = document.getElementById("hw-old-serial")?.value.trim() || "N/A";
+      const newSerial = document.getElementById("hw-new-serial")?.value.trim();
+      const notes = document.getElementById("hw-notes")?.value.trim();
+      const ticketId = document.getElementById("hw-ticket-id")?.value;
+      const fb = document.getElementById("hw-swap-feedback");
+
+      if (!pcNum || !newSerial) {
+        alert("Please specify the Workstation PC Number and the New Spare Serial Number.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/hardware/replace", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
+          },
+          body: JSON.stringify({
+            pc_number: pcNum,
+            component_type: compType,
+            old_serial: oldSerial,
+            new_serial: newSerial,
+            notes: notes,
+            ticket_id: ticketId
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (fb) {
+            fb.style.display = "block";
+            fb.style.background = "#dcfce7";
+            fb.style.color = "#15803d";
+            fb.textContent = data.message;
+          }
+          setTimeout(() => {
+            closeHardwareSwapModal();
+            window.location.reload();
+          }, 1200);
+        } else {
+          if (fb) {
+            fb.style.display = "block";
+            fb.style.background = "#fee2e2";
+            fb.style.color = "#991b1b";
+            fb.textContent = "Error: " + (data.error || "Failed to commit replacement");
+          }
+        }
+      } catch (err) {
+        alert("Hardware replacement submission failed: " + err);
+      }
+    }
+
+    // Register PWA Service Worker for Mobile Dashboard
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
   </script>
 
+  <!-- Field Technician Mobile Floating Action Bar (Mobile Screens) -->
+  <div class="tech-mobile-nav" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:9000; background:#071a35; border-top:1px solid rgba(255,255,255,0.15); padding:0.6rem 1rem; box-shadow:0 -4px 12px rgba(0,0,0,0.25);">
+    <div style="display:flex; align-items:center; justify-content:space-around; gap:0.5rem;">
+      <a href="#triage-section" style="color:#ffffff; text-decoration:none; display:flex; flex-direction:column; align-items:center; font-size:0.7rem; font-weight:700;">
+        <span style="font-size:1.1rem; color:#38bdf8;">[TICKETS]</span>
+        <span>Pending</span>
+      </a>
+      <button type="button" onclick="openHardwareSwapModal('', '')" style="background:#0066b3; color:#ffffff; border:none; border-radius:20px; padding:0.45rem 0.9rem; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:0.35rem; box-shadow:0 2px 6px rgba(0,102,179,0.4);">
+        <span>[SWAP PART]</span>
+      </button>
+      <a href="/report" style="color:#ffffff; text-decoration:none; display:flex; flex-direction:column; align-items:center; font-size:0.7rem; font-weight:700;">
+        <span style="font-size:1.1rem; color:#38bdf8;">[SCAN]</span>
+        <span>QR Code</span>
+      </a>
+      <a href="#wol-section" style="color:#ffffff; text-decoration:none; display:flex; flex-direction:column; align-items:center; font-size:0.7rem; font-weight:700;">
+        <span style="font-size:1.1rem; color:#f87171;">[WOL]</span>
+        <span>Reboot</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Hardware / Peripheral Replacement Modal (NBA/NAAC Audit Tracking) -->
+  <div id="hardware-swap-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(7, 26, 53, 0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#ffffff; width:100%; max-width:480px; border-radius:12px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column;">
+      <div style="background:var(--mepco-navy); color:#ffffff; padding:0.9rem 1.25rem; display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="font-size:1.1rem; color:#38bdf8; font-weight:800;">[NBA/NAAC]</span>
+          <span style="font-weight:700; font-size:0.95rem;">Log Equipment / Peripheral Swap</span>
+        </div>
+        <button type="button" onclick="closeHardwareSwapModal()" style="background:transparent; border:none; color:#cbd5e1; font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="padding:1.25rem;">
+        <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Record physical component replacement for NBA Criterion 4 laboratory maintenance registers.
+        </p>
+
+        <input type="hidden" id="hw-ticket-id">
+
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-main); margin-bottom:0.35rem;">
+            Workstation PC Number <span style="color:#ef4444;">*</span>
+          </label>
+          <input type="text" id="hw-pc-number" placeholder="e.g. PC-15" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase; font-size:0.85rem;">
+        </div>
+
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-main); margin-bottom:0.35rem;">
+            Component Replaced <span style="color:#ef4444;">*</span>
+          </label>
+          <select id="hw-component-type" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-size:0.85rem;">
+            <option value="Dell Optical USB Mouse">Dell Optical USB Mouse</option>
+            <option value="Dell USB Membrane Keyboard">Dell USB Membrane Keyboard</option>
+            <option value="Cat6 RJ-45 Patch Cable (2M)">Cat6 RJ-45 Patch Cable (2M)</option>
+            <option value="Crucial 32GB DDR5-4800 RAM">Crucial 32GB DDR5-4800 RAM</option>
+            <option value="Antec 650W SMPS Power Supply">Antec 650W SMPS Power Supply</option>
+            <option value="HDMI to DisplayPort Cable (1.8M)">HDMI to DisplayPort Cable (1.8M)</option>
+            <option value="CR2032 3V CMOS Battery">CR2032 3V CMOS Battery</option>
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.85rem;">
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-main); margin-bottom:0.35rem;">
+              Old Serial Number
+            </label>
+            <input type="text" id="hw-old-serial" placeholder="e.g. CN-04R408 (or N/A)" value="N/A" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:0.82rem;">
+          </div>
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-main); margin-bottom:0.35rem;">
+              New Spare Serial <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="text" id="hw-new-serial" placeholder="e.g. CN-09K112" style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.82rem;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-main); margin-bottom:0.35rem;">
+            Technician Notes & Verification
+          </label>
+          <input type="text" id="hw-notes" placeholder="e.g. Swapped from cupboard spare stock; tested tracking OK." value="Swapped from laboratory spare inventory; verified operational." style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border-color); border-radius:6px; font-size:0.82rem;">
+        </div>
+
+        <div id="hw-swap-feedback" style="display:none; padding:0.6rem; border-radius:6px; font-size:0.82rem; font-weight:700; margin-bottom:0.75rem;"></div>
+
+        <button type="button" onclick="submitHardwareReplacement()" style="width:100%; padding:0.65rem; background:#0066b3; color:#ffffff; border:none; border-radius:6px; font-weight:700; font-size:0.85rem; cursor:pointer;">
+          Commit Replacement & Update Register
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @media (max-width: 768px) {
+      .tech-mobile-nav { display: block !important; }
+      body { padding-bottom: 60px !important; }
+    }
+  </style>
 </body>
 </html>

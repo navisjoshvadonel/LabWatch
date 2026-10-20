@@ -6,6 +6,11 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>User Issue Reporting Form | Mepco Schlenk Engineering College</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0066b3">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LabWatch">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -818,6 +823,32 @@
     </div>
     {% endif %}
 
+    <!-- Autonomous Practical Examination Lockout Banner -->
+    {% if exam_mode and exam_mode['active'] %}
+    <div class="exam-lockout-banner" style="background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); color: #ffffff; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 14px rgba(153, 27, 27, 0.3); border-left: 6px solid #f87171;">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 260px;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.22); color: #fecaca; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.72rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Practical Exam Lockout Active</span>
+            <span style="font-weight: 800; font-size: 1.05rem;">{{ exam_mode['subject'] }}</span>
+          </div>
+          <p style="margin-top: 0.5rem; color: #fecaca; font-size: 0.85rem; line-height: 1.45;">
+            {{ exam_mode['instructions'] }}
+          </p>
+          <div style="margin-top: 0.65rem; display: flex; align-items: center; gap: 1.25rem; font-size: 0.78rem; color: #fed7d7; flex-wrap: wrap;">
+            <span><strong>Staff Invigilator:</strong> {{ exam_mode['invigilator'] }}</span>
+            <span><strong>Emergency Protocol:</strong> Inform invigilator immediately for an official Emergency Workstation Swap.</span>
+          </div>
+        </div>
+        <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); padding: 0.75rem 1rem; border-radius: 6px; text-align: center; min-width: 140px;">
+          <div style="font-size: 0.7rem; color: #fca5a5; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Student Action</div>
+          <div style="font-size: 0.88rem; font-weight: 800; color: #ffffff; margin-top: 0.2rem;">Direct Form Locked</div>
+          <div style="font-size: 0.7rem; color: #cbd5e1; margin-top: 0.2rem;">Anti-Distraction Policy</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- User Issue Reporting Form Card -->
     <div class="form-card">
       <div class="card-header">
@@ -844,6 +875,27 @@
             <div class="form-column">
               <!-- Manual selection group -->
               <div id="manual-selection-group" style="{{ 'display: none;' if detected_pc else 'display: block;' }}">
+
+                <!-- Mobile & Field QR Scanner Banner -->
+                <div class="mobile-scan-strip" style="background: linear-gradient(135deg, #071a35 0%, #003e6d 100%); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.15rem; display: flex; align-items: center; justify-content: space-between; gap: 0.85rem; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.12);">
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="background: rgba(255,255,255,0.15); border-radius: 6px; padding: 0.4rem 0.55rem; color: #38bdf8; font-weight: 800; font-size: 1rem;">
+                      QR
+                    </div>
+                    <div>
+                      <div style="color: #ffffff; font-weight: 700; font-size: 0.88rem;">
+                        Workstation QR Scanner
+                      </div>
+                      <div style="color: #94a3b8; font-size: 0.74rem;">
+                        Scan physical sticker on monitor / CPU chassis
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" class="btn" onclick="openQrScannerModal()" style="background: #0099da; color: #ffffff; border: none; font-weight: 700; padding: 0.45rem 0.95rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; box-shadow: 0 2px 6px rgba(0,153,218,0.35);">
+                    <span>Scan with Camera</span>
+                  </button>
+                </div>
+
                 <!-- 1. Lab Room Dropdown -->
                 <div class="form-group">
                   <label for="lab_id" class="form-label">
@@ -1284,7 +1336,199 @@
         const catSelect = document.getElementById("issue_category");
         if (catSelect) catSelect.value = prefillCategory;
       }
+
+      // Check for exam lockout to lock submit button for students
+      {% if exam_mode and exam_mode['active'] and logged_user and logged_user['role'] == 'student' %}
+      const submitBtn = document.querySelector(".btn-submit-request");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = "0.5";
+        submitBtn.style.cursor = "not-allowed";
+        submitBtn.innerHTML = "<span>[LOCKED] Practical Exam In Progress</span>";
+      }
+      {% endif %}
+
+      // Register PWA Service Worker for Mobile Caching
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
     });
+
+    // =========================================================================
+    // MOBILE CAMERA QR SCANNER ENGINE
+    // =========================================================================
+    let qrVideoTrack = null;
+    let qrScanInterval = null;
+
+    async function openQrScannerModal() {
+      const modal = document.getElementById("qr-scanner-modal");
+      const loadingEl = document.getElementById("qr-scanner-loading");
+      const videoEl = document.getElementById("qr-camera-video");
+      if (!modal) return;
+      modal.style.display = "flex";
+      if (loadingEl) loadingEl.style.display = "block";
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        qrVideoTrack = stream.getVideoTracks()[0];
+        videoEl.srcObject = stream;
+        videoEl.onloadedmetadata = () => {
+          if (loadingEl) loadingEl.style.display = "none";
+          startBarcodeInspection(videoEl);
+        };
+      } catch (err) {
+        console.warn("[QR Scanner] Camera access failed or denied:", err);
+        if (loadingEl) {
+          loadingEl.innerHTML = "Camera permission not granted.<br>Use manual PC Number below.";
+          loadingEl.style.color = "#f87171";
+        }
+      }
+    }
+
+    function closeQrScannerModal() {
+      const modal = document.getElementById("qr-scanner-modal");
+      if (modal) modal.style.display = "none";
+      if (qrScanInterval) {
+        clearInterval(qrScanInterval);
+        qrScanInterval = null;
+      }
+      if (qrVideoTrack) {
+        qrVideoTrack.stop();
+        qrVideoTrack = null;
+      }
+      const videoEl = document.getElementById("qr-camera-video");
+      if (videoEl) videoEl.srcObject = null;
+    }
+
+    function startBarcodeInspection(videoEl) {
+      if ('BarcodeDetector' in window) {
+        const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+        qrScanInterval = setInterval(async () => {
+          try {
+            const barcodes = await barcodeDetector.detect(videoEl);
+            if (barcodes && barcodes.length > 0) {
+              const rawData = barcodes[0].rawValue;
+              handleDetectedQrData(rawData);
+            }
+          } catch (e) {}
+        }, 500);
+      }
+    }
+
+    function handleDetectedQrData(rawUrl) {
+      // Parses format: http://192.16.16.200:5000/report?lab_id=1&pc_number=PC-15
+      try {
+        const urlObj = new URL(rawUrl, window.location.origin);
+        const labParam = urlObj.searchParams.get("lab_id");
+        const pcParam = urlObj.searchParams.get("pc_number") || urlObj.searchParams.get("pc");
+        if (labParam || pcParam) {
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+          const toast = document.getElementById("qr-scan-result-toast");
+          if (toast) {
+            toast.style.display = "block";
+            toast.innerText = `Matched Workstation: ${pcParam || 'Lab ' + labParam}`;
+          }
+          setTimeout(() => {
+            if (labParam) {
+              const labSel = document.getElementById("lab_id");
+              if (labSel) { labSel.value = labParam; onLabChange(); }
+            }
+            if (pcParam) {
+              const pcSel = document.getElementById("pc_number");
+              if (pcSel) { pcSel.value = pcParam; onPCChange(); }
+            }
+            closeQrScannerModal();
+          }, 800);
+        }
+      } catch (err) {
+        console.warn("[QR Scanner] Parsing error:", err);
+      }
+    }
+
+    function applyModalQuickPc() {
+      const input = document.getElementById("modal-quick-pc-input");
+      if (!input || !input.value.trim()) return;
+      const targetPc = input.value.trim().toUpperCase();
+
+      // Search matching PC across computers_by_lab data
+      let matchedLabId = null;
+      for (const [lid, pcs] of Object.entries(COMPUTERS_BY_LAB)) {
+        if (pcs.some(p => p.pc_number.toUpperCase() === targetPc)) {
+          matchedLabId = lid;
+          break;
+        }
+      }
+
+      if (matchedLabId) {
+        const labSel = document.getElementById("lab_id");
+        if (labSel) { labSel.value = matchedLabId; onLabChange(); }
+        const pcSel = document.getElementById("pc_number");
+        if (pcSel) { pcSel.value = targetPc; onPCChange(); }
+        closeQrScannerModal();
+      } else {
+        alert(`Workstation '${targetPc}' not found in active laboratory inventory.`);
+      }
+    }
   </script>
+
+  <!-- Physical Workstation QR Scanner Modal (Camera Stream) -->
+  <div id="qr-scanner-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(7, 26, 53, 0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#ffffff; width:100%; max-width:440px; border-radius:12px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column;">
+      <div style="background:var(--mepco-navy); color:#ffffff; padding:0.9rem 1.25rem; display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="font-size:1.1rem; color:#38bdf8; font-weight:700;">[SCAN]</span>
+          <span style="font-weight:700; font-size:0.95rem;">Workstation QR Scanner</span>
+        </div>
+        <button type="button" onclick="closeQrScannerModal()" style="background:transparent; border:none; color:#cbd5e1; font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="padding:1rem; text-align:center;">
+        <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.75rem;">
+          Point your phone or webcam at the workstation QR sticker (on monitor bezel or chassis).
+        </p>
+        <div style="position:relative; width:100%; height:260px; background:#0f172a; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+          <video id="qr-camera-video" playsinline autoplay muted style="width:100%; height:100%; object-fit:cover;"></video>
+          <!-- Animated Target Reticle -->
+          <div style="position:absolute; width:180px; height:180px; border:2px solid #38bdf8; border-radius:10px; box-shadow:0 0 0 9999px rgba(0,0,0,0.45); pointer-events:none; display:flex; align-items:center; justify-content:center;">
+            <div style="width:100%; height:2px; background:linear-gradient(90deg, transparent, #38bdf8, transparent); position:absolute; top:50%; animation:qrScanLaser 2s infinite ease-in-out;"></div>
+          </div>
+          <div id="qr-scanner-loading" style="position:absolute; color:#38bdf8; font-size:0.85rem; font-weight:600;">
+            Initializing Camera...
+          </div>
+        </div>
+        
+        <div id="qr-scan-result-toast" style="display:none; margin-top:0.75rem; padding:0.5rem; background:#dcfce7; border:1px solid #86efac; color:#15803d; border-radius:6px; font-size:0.8rem; font-weight:700;">
+          Workstation Identified! Auto-filling...
+        </div>
+
+        <!-- Manual Quick-Select Fallback -->
+        <div style="margin-top:0.85rem; padding-top:0.75rem; border-top:1px dashed var(--border-color); text-align:left;">
+          <label style="font-size:0.74rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem;">
+            Or Quick-Select by PC Number:
+          </label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="modal-quick-pc-input" placeholder="e.g. PC-15 or PC-30" style="flex:1; padding:0.45rem 0.65rem; border:1px solid var(--border-input); border-radius:6px; font-family:'JetBrains Mono',monospace; font-weight:700; text-transform:uppercase; font-size:0.85rem;">
+            <button type="button" onclick="applyModalQuickPc()" style="background:var(--mepco-blue); color:#ffffff; border:none; padding:0.45rem 0.85rem; border-radius:6px; font-weight:700; font-size:0.8rem; cursor:pointer;">
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="background:#f8fafc; padding:0.65rem 1.25rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end;">
+        <button type="button" onclick="closeQrScannerModal()" style="background:#e2e8f0; color:#334155; border:none; padding:0.45rem 1rem; border-radius:6px; font-weight:600; font-size:0.8rem; cursor:pointer;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes qrScanLaser {
+      0% { top: 15%; opacity: 0.3; }
+      50% { top: 85%; opacity: 1; }
+      100% { top: 15%; opacity: 0.3; }
+    }
+  </style>
 </body>
 </html>

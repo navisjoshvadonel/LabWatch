@@ -134,9 +134,15 @@ LabWatch is an end-to-end, network-aware PC fault reporting and monitoring platf
     - **Anti-Fingerprinting**: Server header obfuscated to `LabWatch-Security-Gateway`, enforced with `Cross-Origin-Opener-Policy: same-origin`, `X-Permitted-Cross-Domain-Policies: none`, and anti-caching directives.
     - **Command Injection Protection**: Shell metacharacters (`;`, `&`, `|`, `` ` ``, `$`) strictly rejected in the cross-lab remote execution shell.
 
+18. **False-Positive Prevention, 3-Sweep Debounce & Lab Operating Schedule Engine (`/api/admin/schedule`)**:
+    - **3-Sweep Debounce Threshold**: Transient network drops require 3 consecutive failed sweeps before confirming an Offline status, eliminating flutter.
+    - **Optimized C ICMP Sweeps**: Sweep ping timeout tuned to 150ms with rapid in-flight retries, and Python background thread timeout increased to 90s for full 246-workstation inventory sweeps.
+    - **Laboratory Working Hours & Schedule Matrix**: Suppresses automatic offline ticket creation when lab main power breakers are shut down outside instructional periods (default: Mon-Sat, 08:00 to 17:30). Dedicated timetable matrix ready for per-lab timetable details.
+
 ---
 
 ## Quick Start & Running
+
 
 ### 1. Build the C Daemon
 ```bash

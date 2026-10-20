@@ -209,7 +209,25 @@ def initialize_schema(conn: sqlite3.Connection):
             FOREIGN KEY (lab_id) REFERENCES LABS (id) ON DELETE CASCADE
         );
     """)
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_exam_audits_lab ON EXAM_AUDITS(lab_id);")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS EQUIPMENT_REPLACEMENTS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER,
+            computer_id INTEGER NOT NULL,
+            pc_number TEXT NOT NULL,
+            component_type TEXT NOT NULL,
+            old_serial TEXT DEFAULT 'N/A',
+            new_serial TEXT NOT NULL,
+            technician_name TEXT NOT NULL,
+            notes TEXT,
+            rma_status TEXT DEFAULT 'Pending RMA',
+            replaced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE CASCADE,
+            FOREIGN KEY (ticket_id) REFERENCES TICKETS (id) ON DELETE SET NULL
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_equip_repl_pc ON EQUIPMENT_REPLACEMENTS(pc_number);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_equip_repl_date ON EQUIPMENT_REPLACEMENTS(replaced_at);")
 
     conn.commit()
     print("[+] Database schema successfully created and verified.")

@@ -604,13 +604,13 @@ class BackgroundSweepThread(threading.Thread):
                         [BIN_PATH, "--sweep"],
                         capture_output=True,
                         text=True,
-                        timeout=25,
+                        timeout=90,
                         cwd=BASE_DIR
                     )
                     self.last_sweep_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     logger.info(f"[+] Automated ICMP sweep completed at {self.last_sweep_ts}")
                 except subprocess.TimeoutExpired:
-                    logger.warning("[-] Automated ICMP sweep subprocess timed out after 25s")
+                    logger.warning("[-] Automated ICMP sweep subprocess timed out after 90s")
                 except Exception as exc:
                     logger.error(f"[-] Automated ICMP sweep error: {exc}")
             else:
@@ -630,6 +630,110 @@ def start_background_sweep():
         interval = int(os.environ.get("LABPULSE_SWEEP_INTERVAL", "30"))
         sweep_thread = BackgroundSweepThread(interval_seconds=interval)
         sweep_thread.start()
+
+# ==============================================================================
+# 4.5 LABORATORY OPERATING SCHEDULE & FALSE-POSITIVE PREVENTION ENGINE
+# ==============================================================================
+# College Laboratory Timetable and Operating Schedule Matrix.
+# Prevents false-alarm ticket creation when lab power breakers are shut down
+# outside instructional periods, during lunch breaks, or over weekends.
+#
+# NOTE: The lab schedule details will be populated soon. This structure is ready
+# to accept timetable intervals per laboratory ID (1 to 6) or specific lab names.
+LAB_OPERATING_SCHEDULE = {
+    # Default institutional operating hours: Mon-Sat, 08:00 AM to 05:30 PM (17:30)
+    "default": {
+        "operating_days": [0, 1, 2, 3, 4, 5],  # Monday (0) through Saturday (5)
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+    },
+    # Reserved slots for specific departmental laboratory timetables:
+    1: {
+        "name": "Deep Learning Lab",
+        "operating_days": [0, 1, 2, 3, 4, 5],
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+        "schedule_slots": []  # Space reserved for timetable: e.g. [{"batch": "24bad", "period": "FN", ...}]
+    },
+    2: {
+        "name": "Machine Learning Lab",
+        "operating_days": [0, 1, 2, 3, 4, 5],
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+        "schedule_slots": []
+    },
+    3: {
+        "name": "Data Science Lab",
+        "operating_days": [0, 1, 2, 3, 4, 5],
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+        "schedule_slots": []
+    },
+    4: {
+        "name": "Gen AI Lab",
+        "operating_days": [0, 1, 2, 3, 4, 5],
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+        "schedule_slots": []
+    },
+    5: {
+        "name": "Data Analytics Lab",
+        "operating_days": [0, 1, 2, 3, 4, 5],
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+        "schedule_slots": []
+    },
+    6: {
+        "name": "Language Processing Lab",
+        "operating_days": [0, 1, 2, 3, 4, 5],
+        "start_time": "08:00",
+        "end_time": "17:30",
+        "auto_ticket_enabled": True,
+        "schedule_slots": []
+    },
+}
+
+def is_lab_operational_hours(lab_id: int = None, check_time: datetime = None) -> tuple:
+    """
+    Evaluates whether the current or specified time falls within active laboratory
+    instructional hours. Outside operational hours, automated ticket creation
+    for powered-off workstations is suppressed to prevent queue flooding.
+
+    Can be bypassed by setting environment variable:
+        LABPULSE_ENFORCE_SCHEDULE=0
+    """
+    if os.environ.get("LABPULSE_ENFORCE_SCHEDULE", "1") == "0":
+        return True, "Operational schedule enforcement bypassed via environment configuration"
+
+    now = check_time or datetime.now()
+    weekday = now.weekday()  # 0 = Monday, 6 = Sunday
+    current_time_str = now.strftime("%H:%M")
+
+    sched = LAB_OPERATING_SCHEDULE.get(lab_id) or LAB_OPERATING_SCHEDULE.get("default")
+    if not sched:
+        return True, "No operational constraints defined"
+
+    if not sched.get("auto_ticket_enabled", True):
+        return False, f"Automated ticket dispatch disabled for laboratory (Lab ID: {lab_id})"
+
+    allowed_days = sched.get("operating_days", [0, 1, 2, 3, 4, 5])
+    if weekday not in allowed_days:
+        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        return False, f"Outside operating days ({day_names[weekday]}). Laboratory power shutdown in effect."
+
+    start_str = sched.get("start_time", "08:00")
+    end_str = sched.get("end_time", "17:30")
+
+    if not (start_str <= current_time_str <= end_str):
+        return False, f"Outside active laboratory hours ({current_time_str} is not in {start_str}-{end_str}). Workstations powered off."
+
+    return True, "Within active laboratory operating hours"
 
 # ==============================================================================
 # STEP 5: SMTP EMAIL NOTIFICATION CONFIGURATION & GMAIL PROTOCOL ENGINE
@@ -1576,6 +1680,28 @@ def ensure_schema_migrations():
             """, sample_logs)
             conn.commit()
 
+        # Auto-create EQUIPMENT_REPLACEMENTS table for NBA/NAAC Criterion 4 Asset Tracking
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS EQUIPMENT_REPLACEMENTS (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id INTEGER,
+                computer_id INTEGER NOT NULL,
+                pc_number TEXT NOT NULL,
+                component_type TEXT NOT NULL,
+                old_serial TEXT DEFAULT 'N/A',
+                new_serial TEXT NOT NULL,
+                technician_name TEXT NOT NULL,
+                notes TEXT,
+                rma_status TEXT DEFAULT 'Pending RMA',
+                replaced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (computer_id) REFERENCES COMPUTERS (id) ON DELETE CASCADE,
+                FOREIGN KEY (ticket_id) REFERENCES TICKETS (id) ON DELETE SET NULL
+            );
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_equip_repl_pc ON EQUIPMENT_REPLACEMENTS(pc_number);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_equip_repl_date ON EQUIPMENT_REPLACEMENTS(replaced_at);")
+        conn.commit()
+
         if migrated_count > 0:
             conn.commit()
             logger.info(f"[+] Security Migration: Upgraded {migrated_count} user accounts to PBKDF2-HMAC-SHA256 (100k rounds).")
@@ -1590,6 +1716,19 @@ try:
     ensure_schema_migrations()
 except Exception as _mig_err:
     logger.warning(f"[-] Schema migration initialization note: {_mig_err}")
+
+
+# ==============================================================================
+# 2.8 AUTONOMOUS PRACTICAL EXAMINATION LOCKOUT STATE
+# ==============================================================================
+EXAM_LOCKOUT_STATE = {
+    "active": False,
+    "subject": "CS3461 - Operating Systems Laboratory",
+    "invigilator": "Prof. AiDS Staff Advisor",
+    "instructions": "Autonomous Practical Examination in progress. Student self-reporting is locked. Inform the Lab Invigilator for an instant Emergency PC Swap.",
+    "started_at": None,
+    "swaps_count": 0
+}
 
 
 def sync_computers_export_files():
@@ -2129,6 +2268,13 @@ def create_ticket():
     user_id = current_user.get("id")
     if not user_id:
         return jsonify({"error": "Authentication required to report issues."}), 401
+
+    # Autonomous Practical Examination Lockout Enforcement
+    if EXAM_LOCKOUT_STATE.get("active") and current_user.get("role") == "student":
+        return jsonify({
+            "error": f"Exam Lockout Active: Practical Examination in progress ({EXAM_LOCKOUT_STATE.get('subject', 'Laboratory Exam')}). Student self-reporting is temporarily locked. Inform the Lab Invigilator for an instant Emergency PC Swap."
+        }), 403
+
     lab_id = data.get("lab_id")
     computer_id = data.get("computer_id")
     pc_param = data.get("pc_id") or data.get("pc_number")
@@ -2471,78 +2617,118 @@ def receive_c_daemon_alert():
         hist_list = hist_list[-10:]
         new_hist_json = json.dumps(hist_list)
 
+        # DEBOUNCE THRESHOLD (3 consecutive failed sweeps):
+        # A single dropped packet or transient glitch should not flip status to Offline.
+        # Only when 3 consecutive failed sweeps occur (last 3 entries == [0, 0, 0])
+        # do we confirm hard Offline state and evaluate ticket creation.
+        is_hard_offline = (len(hist_list) >= 3 and hist_list[-3:] == [0, 0, 0])
+
+        if canonical_status in ("Offline", "Faulty") and not is_hard_offline:
+            effective_status = old_status if old_status != "Offline" else "Offline"
+            fail_streak = 0
+            for v in reversed(hist_list):
+                if v == 0:
+                    fail_streak += 1
+                else:
+                    break
+            logger.info(
+                f"[*] [Debounce Active] Workstation '{pc_number}' transient drop detected "
+                f"(Streak: {fail_streak}/3). Status retained as '{effective_status}' pending 3 consecutive failures."
+            )
+            add_telemetry("DEBOUNCE_HOLD", f"Workstation {pc_number} missed ping (Streak: {fail_streak}/3). Status retained as '{effective_status}'.", {
+                "pc_id": pc_number,
+                "fail_streak": fail_streak,
+                "required": 3
+            })
+        else:
+            effective_status = canonical_status
+
         cursor.execute(
             """
             UPDATE COMPUTERS 
             SET status = ?, last_heartbeat = CURRENT_TIMESTAMP, ping_history = ?
             WHERE id = ?
             """,
-            (canonical_status, new_hist_json, comp_id)
+            (effective_status, new_hist_json, comp_id)
         )
         conn.commit()
         db_ms = (time.perf_counter() - t_start) * 1000.0
 
         created_ticket_number = None
-        action_msg = f"Status updated from '{old_status}' to '{canonical_status}'"
+        action_msg = f"Status updated from '{old_status}' to '{effective_status}'"
 
-        # 2. AUTOMATED TICKET HANDLING FOR FROZEN/OFFLINE WORKSTATION (PC-30 Scenario)
-        if canonical_status in ("Offline", "Faulty"):
-            # DEBOUNCE WINDOW (15-min): check active tickets OR tickets reported/resolved within the last 15 minutes
-            cursor.execute(
-                """
-                SELECT id, ticket_number, status, reported_at, resolved_at 
-                FROM TICKETS 
-                WHERE computer_id = ?
-                  AND (
-                    status IN ('Pending', 'In Progress')
-                    OR (status IN ('Resolved', 'Closed') AND datetime(resolved_at, '+15 minutes') > datetime('now'))
-                    OR (datetime(reported_at, '+15 minutes') > datetime('now'))
-                  )
-                ORDER BY id DESC LIMIT 1
-                """,
-                (comp_id,)
-            )
-            existing_ticket = cursor.fetchone()
-
-            if not existing_ticket:
-                # Generate new Ticket ID atomically
-                ticket_desc = f"{pc_number} is offline or unreachable. Needs restart or check."
-                with _ticket_generation_lock:
-                    for attempt in range(5):
-                        ticket_number = generate_next_ticket_number(cursor)
-                        try:
-                            cursor.execute(
-                                """
-                                INSERT INTO TICKETS (
-                                    ticket_number, user_id, lab_id, computer_id,
-                                    issue_category, description, status, priority, reported_at
-                                )
-                                VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical', CURRENT_TIMESTAMP)
-                                """,
-                                (ticket_number, lab_id, comp_id, ticket_desc)
-                            )
-                            conn.commit()
-                            break
-                        except sqlite3.IntegrityError:
-                            conn.rollback()
-                            if attempt == 4:
-                                raise
-                created_ticket_number = ticket_number
-                action_msg = f"Offline detected! Automated 'Network Down' ticket {ticket_number} created on dashboard."
-
-                logger.info(f"[+] [AUTOMATED TICKET] Created {ticket_number} for {pc_number} ({comp['ip_address']})")
-                add_telemetry("AUTOMATED_TICKET", action_msg, {
+        # 2. AUTOMATED TICKET HANDLING FOR CONFIRMED OFFLINE WORKSTATION
+        if effective_status in ("Offline", "Faulty") and is_hard_offline:
+            # Check laboratory operating schedule first
+            is_operational, sched_reason = is_lab_operational_hours(lab_id)
+            if not is_operational:
+                action_msg = (
+                    f"Workstation {pc_number} is Offline (debounced 3/3), but ticket creation was suppressed: "
+                    f"{sched_reason}"
+                )
+                logger.info(f"[*] [Off-Hours Suppressed] {action_msg}")
+                add_telemetry("SCHEDULE_SUPPRESSED", action_msg, {
                     "pc_id": pc_number,
-                    "ticket_number": ticket_number,
-                    "ip": comp["ip_address"],
-                    "priority": "Critical"
+                    "reason": sched_reason,
+                    "lab_id": lab_id
                 })
             else:
-                action_msg = (
-                    f"Offline detected on {pc_number}. Suppressed duplicate ticket: "
-                    f"Ticket {existing_ticket['ticket_number']} ({existing_ticket['status']}) "
-                    f"is active or was updated within the 15-minute debounce window."
+                # DEBOUNCE WINDOW (15-min): check active tickets OR tickets reported/resolved within the last 15 minutes
+                cursor.execute(
+                    """
+                    SELECT id, ticket_number, status, reported_at, resolved_at 
+                    FROM TICKETS 
+                    WHERE computer_id = ?
+                      AND (
+                        status IN ('Pending', 'In Progress')
+                        OR (status IN ('Resolved', 'Closed') AND datetime(resolved_at, '+15 minutes') > datetime('now'))
+                        OR (datetime(reported_at, '+15 minutes') > datetime('now'))
+                      )
+                    ORDER BY id DESC LIMIT 1
+                    """,
+                    (comp_id,)
                 )
+                existing_ticket = cursor.fetchone()
+
+                if not existing_ticket:
+                    # Generate new Ticket ID atomically
+                    ticket_desc = f"{pc_number} is offline or unreachable. Needs restart or check."
+                    with _ticket_generation_lock:
+                        for attempt in range(5):
+                            ticket_number = generate_next_ticket_number(cursor)
+                            try:
+                                cursor.execute(
+                                    """
+                                    INSERT INTO TICKETS (
+                                        ticket_number, user_id, lab_id, computer_id,
+                                        issue_category, description, status, priority, reported_at
+                                    )
+                                    VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical', CURRENT_TIMESTAMP)
+                                    """,
+                                    (ticket_number, lab_id, comp_id, ticket_desc)
+                                )
+                                conn.commit()
+                                break
+                            except sqlite3.IntegrityError:
+                                conn.rollback()
+                                if attempt == 4:
+                                    raise
+                    created_ticket_number = ticket_number
+                    action_msg = f"Offline detected! Automated 'Network Down' ticket {ticket_number} created on dashboard."
+
+                    logger.info(f"[+] [AUTOMATED TICKET] Created {ticket_number} for {pc_number} ({comp['ip_address']})")
+                    add_telemetry("AUTOMATED_TICKET", action_msg, {
+                        "pc_id": pc_number,
+                        "ticket_number": ticket_number,
+                        "ip": comp["ip_address"],
+                        "priority": "Critical"
+                    })
+                else:
+                    action_msg = (
+                        f"Offline detected on {pc_number}. Suppressed duplicate ticket: "
+                        f"Ticket {existing_ticket['ticket_number']} ({existing_ticket['status']}) "
+                        f"is active or was updated within the 15-minute debounce window."
+                    )
                 logger.info(f"[*] [Debounce Active] {action_msg}")
 
         add_telemetry("ICMP_ALERT", f"C Daemon reported {pc_number} as [{canonical_status}]", {
@@ -4168,7 +4354,8 @@ def user_issue_reporting():
             client_ip=client_ip,
             success_ticket=success_ticket,
             error_message=error_message,
-            logged_user=session.get("user")
+            logged_user=session.get("user"),
+            exam_mode=EXAM_LOCKOUT_STATE
         )
     finally:
         conn.close()
@@ -4265,7 +4452,8 @@ def admin_dashboard():
             restarted_pc=restarted_pc,
             c_output=c_output,
             status_msg=status_msg,
-            logged_user=session.get("user")
+            logged_user=session.get("user"),
+            exam_mode=EXAM_LOCKOUT_STATE
         )
     finally:
         conn.close()
@@ -4745,6 +4933,74 @@ def api_list_database_backups():
     return jsonify({"backups": files, "count": len(files)})
 
 
+# ─── LABORATORY OPERATING SCHEDULE & TIMETABLE ROUTES ────────────────────────
+
+@app.route("/api/admin/schedule", methods=["GET", "POST"])
+@login_required(roles=["admin", "technician"])
+def api_admin_schedule():
+    """
+    Query or update laboratory operating schedules and timetable slots.
+    GET: Returns current active schedule matrix, current time, and operational status.
+    POST: Updates lab operational parameters or registers timetable slots.
+    """
+    now = datetime.now()
+    if request.method == "GET":
+        schedules_info = {}
+        for lab_key, sched in LAB_OPERATING_SCHEDULE.items():
+            if lab_key == "default":
+                is_op, reason = is_lab_operational_hours(None, now)
+            else:
+                is_op, reason = is_lab_operational_hours(lab_key, now)
+            schedules_info[str(lab_key)] = {
+                **sched,
+                "is_operational_now": is_op,
+                "status_reason": reason
+            }
+
+        return jsonify({
+            "enforce_schedule": os.environ.get("LABPULSE_ENFORCE_SCHEDULE", "1") == "1",
+            "current_time": now.strftime("%H:%M"),
+            "current_weekday": now.weekday(),
+            "current_day_name": now.strftime("%A"),
+            "schedules": schedules_info
+        }), 200
+
+    # POST: Update schedule settings or timetable slots
+    body = request.get_json() or {}
+    lab_id = body.get("lab_id")
+    target_key = lab_id if lab_id in LAB_OPERATING_SCHEDULE else "default"
+
+    if target_key not in LAB_OPERATING_SCHEDULE:
+        LAB_OPERATING_SCHEDULE[target_key] = {
+            "name": body.get("name", f"Laboratory {target_key}"),
+            "operating_days": [0, 1, 2, 3, 4, 5],
+            "start_time": "08:00",
+            "end_time": "17:30",
+            "auto_ticket_enabled": True,
+            "schedule_slots": []
+        }
+
+    sched = LAB_OPERATING_SCHEDULE[target_key]
+    if "start_time" in body:
+        sched["start_time"] = str(body["start_time"])
+    if "end_time" in body:
+        sched["end_time"] = str(body["end_time"])
+    if "operating_days" in body and isinstance(body["operating_days"], list):
+        sched["operating_days"] = [int(d) for d in body["operating_days"]]
+    if "auto_ticket_enabled" in body:
+        sched["auto_ticket_enabled"] = bool(body["auto_ticket_enabled"])
+    if "schedule_slots" in body and isinstance(body["schedule_slots"], list):
+        sched["schedule_slots"] = body["schedule_slots"]
+
+    logger.info(f"[+] [SCHEDULE UPDATE] Admin updated operating schedule for key '{target_key}'")
+    add_telemetry("SCHEDULE_UPDATE", f"Admin updated operating schedule for '{target_key}'", {"target": str(target_key)})
+    return jsonify({
+        "success": True,
+        "message": f"Operating schedule updated for '{target_key}'",
+        "schedule": sched
+    }), 200
+
+
 # ─── NBA / NAAC ACCREDITATION EQUIPMENT REGISTER ROUTES ───────────────────────
 
 @app.route("/api/reports/nba-naac-register", methods=["GET"])
@@ -4931,6 +5187,14 @@ def get_deployment_posture() -> dict:
                 "privacy_cloaking": "Active (FERPA Masking on Public Endpoints)",
                 "zero_emojis_compliance": "100% Certified Institutional Clean",
             },
+            "monitoring_tier": {
+                "sweep_interval_sec": int(os.environ.get("LABPULSE_SWEEP_INTERVAL", "30")),
+                "sweep_timeout_sec": 90,
+                "debounce_threshold_sweeps": 3,
+                "operating_schedule_enforced": os.environ.get("LABPULSE_ENFORCE_SCHEDULE", "1") == "1",
+                "current_operational_status": is_lab_operational_hours()[0],
+                "schedule_reason": is_lab_operational_hours()[1],
+            },
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
     finally:
@@ -4941,6 +5205,273 @@ def get_deployment_posture() -> dict:
 def api_deployment_status():
     """College Deployment Posture & System Readiness API."""
     return jsonify(get_deployment_posture()), 200
+
+
+@app.route("/manifest.json")
+def pwa_manifest():
+    """Serve PWA manifest for mobile devices."""
+    return send_from_directory(os.path.join(BASE_DIR, "static"), "manifest.json", mimetype="application/manifest+json")
+
+
+@app.route("/sw.js")
+def pwa_service_worker():
+    """Serve PWA Service Worker for offline resilience and mobile shell."""
+    return send_from_directory(os.path.join(BASE_DIR, "static"), "sw.js", mimetype="application/javascript")
+
+
+@app.route("/api/exam-mode", methods=["GET"])
+def api_get_exam_mode():
+    """Check current autonomous practical examination lockout status."""
+    return jsonify({
+        "success": True,
+        "exam_mode": EXAM_LOCKOUT_STATE
+    }), 200
+
+
+@app.route("/api/exam-mode/toggle", methods=["POST"])
+@login_required(roles=["admin", "technician", "staff"])
+def api_toggle_exam_mode():
+    """Toggle practical exam lockout mode to freeze student self-reporting."""
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    new_active = data.get("active")
+    if new_active is None:
+        EXAM_LOCKOUT_STATE["active"] = not EXAM_LOCKOUT_STATE.get("active", False)
+    else:
+        EXAM_LOCKOUT_STATE["active"] = bool(new_active)
+
+    if data.get("subject"):
+        EXAM_LOCKOUT_STATE["subject"] = sanitize_text(data["subject"], 120)
+    if data.get("invigilator"):
+        EXAM_LOCKOUT_STATE["invigilator"] = sanitize_text(data["invigilator"], 100)
+    if data.get("instructions"):
+        EXAM_LOCKOUT_STATE["instructions"] = sanitize_text(data["instructions"], 300)
+
+    curr_user = session.get("user", {})
+    uname = curr_user.get("username", "admin")
+
+    if EXAM_LOCKOUT_STATE["active"]:
+        EXAM_LOCKOUT_STATE["started_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        action_msg = f"ACTIVATED by {uname} for subject '{EXAM_LOCKOUT_STATE['subject']}'"
+    else:
+        EXAM_LOCKOUT_STATE["started_at"] = None
+        action_msg = f"DEACTIVATED by {uname}"
+
+    logger.info(f"[!] Autonomous Exam Mode {action_msg}")
+    audit_logger.info(f"[EXAM_LOCKOUT_TOGGLE] {action_msg}")
+
+    # Broadcast real-time SSE event to all connected dashboards & forms
+    event_broker.publish("exam_mode_change", {
+        "active": EXAM_LOCKOUT_STATE["active"],
+        "subject": EXAM_LOCKOUT_STATE["subject"],
+        "instructions": EXAM_LOCKOUT_STATE["instructions"],
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+    return jsonify({
+        "success": True,
+        "message": f"Autonomous Practical Exam Mode is now {'ACTIVE' if EXAM_LOCKOUT_STATE['active'] else 'INACTIVE'}",
+        "exam_mode": EXAM_LOCKOUT_STATE
+    }), 200
+
+
+@app.route("/api/exam-mode/emergency-swap", methods=["POST"])
+@login_required(roles=["admin", "technician", "staff"])
+def api_emergency_pc_swap():
+    """
+    Emergency Workstation Swap during Autonomous/Anna University practical exams.
+    Allocates an idle online spare machine and auto-reassigns student roll number.
+    """
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    student_roll = sanitize_text(data.get("student_roll", ""), 30).upper()
+    faulty_pc_num = sanitize_text(data.get("faulty_pc", ""), 30).upper()
+    reason = sanitize_text(data.get("reason", "Hardware freeze during examination"), 200)
+
+    if not student_roll or not faulty_pc_num:
+        return jsonify({"error": "Student roll number and faulty PC number are required for emergency swap"}), 400
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, lab_id, pc_number, ip_address, mac_address FROM COMPUTERS WHERE UPPER(pc_number) = ?", (faulty_pc_num,))
+        faulty_pc = cursor.fetchone()
+        if not faulty_pc:
+            return jsonify({"error": f"Workstation '{faulty_pc_num}' not found in inventory"}), 404
+
+        lab_id = faulty_pc["lab_id"]
+        cursor.execute("SELECT lab_name FROM LABS WHERE id = ?", (lab_id,))
+        lab_row = cursor.fetchone()
+        lab_name = lab_row["lab_name"] if lab_row else f"Lab #{lab_id}"
+
+        # Find healthy online spare workstation in the same laboratory with NO active pending tickets
+        cursor.execute("""
+            SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address
+            FROM COMPUTERS c
+            WHERE c.lab_id = ? 
+              AND c.status = 'Online'
+              AND c.id != ?
+              AND c.id NOT IN (SELECT computer_id FROM TICKETS WHERE status IN ('Pending', 'In Progress'))
+            ORDER BY c.id ASC
+            LIMIT 1
+        """, (lab_id, faulty_pc["id"]))
+        spare_pc = cursor.fetchone()
+
+        if not spare_pc:
+            cursor.execute("""
+                SELECT c.id, c.lab_id, c.pc_number, c.ip_address, c.mac_address, l.lab_name
+                FROM COMPUTERS c
+                JOIN LABS l ON c.lab_id = l.id
+                WHERE c.status = 'Online' AND c.id != ?
+                ORDER BY c.id ASC LIMIT 1
+            """, (faulty_pc["id"],))
+            spare_pc = cursor.fetchone()
+
+        if not spare_pc:
+            return jsonify({"error": "No verified healthy spare workstations currently available in inventory."}), 409
+
+        swap_token = f"SWAP-{secrets.token_hex(3).upper()}"
+        EXAM_LOCKOUT_STATE["swaps_count"] = EXAM_LOCKOUT_STATE.get("swaps_count", 0) + 1
+
+        cursor.execute("SELECT id FROM USERS WHERE username = 'admin' LIMIT 1")
+        admin_u = cursor.fetchone()
+        admin_id = admin_u["id"] if admin_u else 1
+        ticket_num = f"TCK-EXAM-{secrets.token_hex(2).upper()}"
+
+        cursor.execute("""
+            INSERT INTO TICKETS (ticket_number, user_id, lab_id, computer_id, issue_category, description, status, priority, reporter_email)
+            VALUES (?, ?, ?, ?, 'Hardware Fault', ?, 'Pending', 'Critical', ?)
+        """, (
+            ticket_num,
+            admin_id,
+            lab_id,
+            faulty_pc["id"],
+            f"[EXAM EMERGENCY SWAP] Student {student_roll} moved to {spare_pc['pc_number']}. Reason: {reason}",
+            f"{student_roll.lower()}@mepcoeng.ac.in"
+        ))
+        conn.commit()
+
+        invigilator_name = session.get("user", {}).get("full_name", "Lab Invigilator")
+        cursor.execute("""
+            INSERT INTO TECHNICIAN_LOGS (technician_name, lab_id, computer_id, action_type, details, status)
+            VALUES (?, ?, ?, 'EMERGENCY_PC_SWAP', ?, 'Success')
+        """, (
+            invigilator_name,
+            lab_id,
+            faulty_pc["id"],
+            f"Emergency swap issued: {student_roll} from {faulty_pc['pc_number']} -> {spare_pc['pc_number']} (Pass: {swap_token})"
+        ))
+        conn.commit()
+
+        try:
+            dispatch_wol_magic_packet(faulty_pc["mac_address"], faulty_pc["ip_address"])
+        except Exception:
+            pass
+
+        result = {
+            "success": True,
+            "message": f"Student {student_roll} successfully reassigned to {spare_pc['pc_number']}.",
+            "swap_token": swap_token,
+            "student_roll": student_roll,
+            "faulty_pc": faulty_pc["pc_number"],
+            "spare_pc": spare_pc["pc_number"],
+            "spare_ip": spare_pc["ip_address"],
+            "lab_name": lab_name,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "invigilator": invigilator_name
+        }
+        return jsonify(result), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/hardware/replace", methods=["POST"])
+@login_required(roles=["admin", "technician"])
+def api_hardware_replace():
+    """
+    Log physical hardware/peripheral replacements for NBA Criterion 4 and NAAC asset registers.
+    """
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    pc_num = sanitize_text(data.get("pc_number", ""), 30).upper()
+    comp_type = sanitize_text(data.get("component_type", "Mouse"), 50)
+    old_sn = sanitize_text(data.get("old_serial", "N/A"), 60)
+    new_sn = sanitize_text(data.get("new_serial", ""), 60)
+    ticket_id = data.get("ticket_id")
+    notes = sanitize_text(data.get("notes", "Routine laboratory hardware swap"), 300)
+
+    if not pc_num or not new_sn:
+        return jsonify({"error": "Workstation PC Number and New Serial Number are required"}), 400
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, lab_id, pc_number FROM COMPUTERS WHERE UPPER(pc_number) = ?", (pc_num,))
+        comp = cursor.fetchone()
+        if not comp:
+            return jsonify({"error": f"Workstation '{pc_num}' not found"}), 404
+
+        tech_name = session.get("user", {}).get("full_name", "Lab Technician")
+
+        cursor.execute("""
+            INSERT INTO EQUIPMENT_REPLACEMENTS (ticket_id, computer_id, pc_number, component_type, old_serial, new_serial, technician_name, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            int(ticket_id) if (ticket_id and str(ticket_id).isdigit()) else None,
+            comp["id"],
+            comp["pc_number"],
+            comp_type,
+            old_sn,
+            new_sn,
+            tech_name,
+            notes
+        ))
+
+        cursor.execute("""
+            INSERT INTO TECHNICIAN_LOGS (technician_name, lab_id, computer_id, action_type, details, status)
+            VALUES (?, ?, ?, 'HARDWARE_REPAIR', ?, 'Success')
+        """, (
+            tech_name,
+            comp["lab_id"],
+            comp["id"],
+            f"Replaced {comp_type} (Old S/N: {old_sn} -> New S/N: {new_sn}). {notes}"
+        ))
+
+        if ticket_id and str(ticket_id).isdigit():
+            cursor.execute("""
+                UPDATE TICKETS
+                SET status = 'Resolved',
+                    resolved_at = CURRENT_TIMESTAMP,
+                    resolution_notes = ?
+                WHERE id = ?
+            """, (f"Hardware replacement verified: {comp_type} replaced with S/N {new_sn}.", int(ticket_id)))
+
+        conn.commit()
+        return jsonify({
+            "success": True,
+            "message": f"{comp_type} replacement logged successfully for {pc_num} in NBA/NAAC Register."
+        }), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/hardware/replacements", methods=["GET"])
+@login_required(roles=["admin", "technician", "staff"])
+def api_get_hardware_replacements():
+    """Retrieve equipment replacement register for NBA/NAAC inspection."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT r.id, r.pc_number, r.component_type, r.old_serial, r.new_serial, r.technician_name, r.notes, r.rma_status, r.replaced_at,
+                   c.lab_id, l.lab_name
+            FROM EQUIPMENT_REPLACEMENTS r
+            LEFT JOIN COMPUTERS c ON r.computer_id = c.id
+            LEFT JOIN LABS l ON c.lab_id = l.id
+            ORDER BY r.id DESC
+            LIMIT 100
+        """)
+        rows = [dict(r) for r in cursor.fetchall()]
+        return jsonify({"success": True, "count": len(rows), "replacements": rows}), 200
+    finally:
+        conn.close()
 
 
 def print_college_deployment_banner(port: int):
@@ -5004,26 +5535,30 @@ def update_pc_status_cli(pc_id: str, status: str, ip_address: str = None, mac_ad
         cursor.execute("UPDATE COMPUTERS SET status = ?, last_heartbeat = CURRENT_TIMESTAMP WHERE id = ?", (canonical_status, comp_id))
         conn.commit()
 
-        # If offline/frozen, automatically create ticket if none exists
+        # If offline/frozen, automatically create ticket if none exists and within operating hours
         if canonical_status in ("Offline", "Faulty"):
-            cursor.execute("SELECT id FROM TICKETS WHERE computer_id = ? AND status IN ('Pending', 'In Progress')", (comp_id,))
-            if not cursor.fetchone():
-                with _ticket_generation_lock:
-                    for attempt in range(5):
-                        tck_num = generate_next_ticket_number(cursor)
-                        desc = f"{pc_num} is offline. Needs restart or check."
-                        try:
-                            cursor.execute(
-                                "INSERT INTO TICKETS (ticket_number, user_id, lab_id, computer_id, issue_category, description, status, priority) VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical')",
-                                (tck_num, lab_id, comp_id, desc)
-                            )
-                            conn.commit()
-                            logger.info(f"[+] [AUTOMATED TICKET] Created {tck_num} for {pc_num}")
-                            break
-                        except sqlite3.IntegrityError:
-                            conn.rollback()
-                            if attempt == 4:
-                                raise
+            is_operational, sched_reason = is_lab_operational_hours(lab_id)
+            if not is_operational:
+                logger.info(f"[*] [Off-Hours Suppressed] CLI report for {pc_num} ticket creation suppressed: {sched_reason}")
+            else:
+                cursor.execute("SELECT id FROM TICKETS WHERE computer_id = ? AND status IN ('Pending', 'In Progress')", (comp_id,))
+                if not cursor.fetchone():
+                    with _ticket_generation_lock:
+                        for attempt in range(5):
+                            tck_num = generate_next_ticket_number(cursor)
+                            desc = f"{pc_num} is offline. Needs restart or check."
+                            try:
+                                cursor.execute(
+                                    "INSERT INTO TICKETS (ticket_number, user_id, lab_id, computer_id, issue_category, description, status, priority) VALUES (?, 1, ?, ?, 'Network Connectivity', ?, 'Pending', 'Critical')",
+                                    (tck_num, lab_id, comp_id, desc)
+                                )
+                                conn.commit()
+                                logger.info(f"[+] [AUTOMATED TICKET] Created {tck_num} for {pc_num}")
+                                break
+                            except sqlite3.IntegrityError:
+                                conn.rollback()
+                                if attempt == 4:
+                                    raise
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
         logger.info(f"[+] [DB UPDATE] Workstation '{pc_num}': '{old_status}' -> '{canonical_status}' (in {elapsed_ms:.2f} ms)")
